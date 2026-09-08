@@ -72,7 +72,7 @@ jobs:
       - run: |
           # .github holds this guard's own pattern; CHANGELOG, DEPRECATIONS and
           # spec/legacy record what was retired. None of the four is normative text.
-          ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa-p256|P-256" \
+          ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa|P-256" \
               --include='*.md' --include='*.json' --include='*.ts' \
               --exclude-dir=node_modules --exclude-dir=legacy --exclude-dir=.github \
               --exclude=CHANGELOG.md --exclude=DEPRECATIONS.md .

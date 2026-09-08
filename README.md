@@ -111,7 +111,7 @@ Full definitions and requirement IDs: [aria.bar/spec#trust](https://aria.bar/spe
 |-------|------|---------|-------------|----------|--------|
 | **L0** | Anchored | Cryptographic existence of the agent. Nothing more; every declared name is self-declared. E-mail challenge + key possession. Automatic. | Self-signed | 366 days | **Live** |
 | **L1** | Identified | A verified natural person answers for the agent (ICAO 9303 document, ISO/IEC 30107-3 liveness, biometric match, human review) and the agent controls its domain (DoH + RDAP). **Not automatic.** | DV | 366 days | [PLANNED] |
-| **L2** | Certified | L1, plus the entity exists per its Authoritative Source, the person is linked to it, and neither is sanctioned (OFAC/EU/UN ≤7 d). | OV | 200 days | [PLANNED] |
+| **L2** | Certified | L1, plus the entity exists per its Authoritative Source, the person is linked to it, and neither appears on OFAC, EU or UN lists screened no older than 7 days. | OV | 200 days | [PLANNED] |
 | **L3** | Sovereign | L2, plus a Binding Officer with power to bind the entity, keys in FIPS 140-3 L2+ / CC EAL4+ hardware (MUST), signed accountability. | EV+ | 180 days | [PLANNED] |
 
 ## AID schema highlights
@@ -123,8 +123,9 @@ Each AID is a W3C Verifiable Credential signed with the composite cryptosuite
 
 | Version | File | Status | Adds |
 |---|---|---|---|
-| **1.2** | [`schema/aid-v1.2.json`](schema/aid-v1.2.json) · [`examples/aid-example-v1.2.json`](examples/aid-example-v1.2.json) | **Preview line — current file shape.** ARIA 1.0 adopts this shape with `legalName` deprecated for natural persons (see DEPRECATIONS.md); the file is re-cut as `aid-1.0.json` at cutover. | `credentialSubject.holderKey` (required) — per-agent Ed25519 keypair for proof-of-possession. Eliminates the bearer-credential vulnerability of v1.x. Private key delivered to registrant once; never stored by the registry. See also [`examples/holder-proof-example.json`](examples/holder-proof-example.json). |
+| **1.2** | [`schema/aid-v1.2.json`](schema/aid-v1.2.json) · [`examples/aid-example-v1.2.json`](examples/aid-example-v1.2.json) | **Preview line — current file shape.** ARIA 1.0 adopts this shape with `legalName` deprecated for natural persons (see DEPRECATIONS.md); the file is re-cut as `aid-1.0.json` at cutover. | `credentialSubject.holderKey` (required) — per-agent Ed25519 keypair for proof-of-possession. Eliminates the bearer-credential vulnerability of v1.x. The controller generates the keypair on its own machine and only the public half is submitted; the registry never holds it (spec §3.5.1). See also [`examples/holder-proof-example.json`](examples/holder-proof-example.json). |
 | 1.1 | [`schema/aid-v1.1.json`](schema/aid-v1.1.json) · [`examples/aid-example-v1.1.json`](examples/aid-example-v1.1.json) | Preview line — superseded | `principal.verificationStatus`, top-level `id` as credential-instance URL (per W3C VC 2.0 §4.4), `credentialSubject.previousCredentialId`. |
+| 1.3 | [`schema/aid-v1.3.json`](schema/aid-v1.3.json) | **Draft, never issued against.** Prepared when the next schema was expected to be numbered 1.3, before the stable line was numbered 1.0. Kept for reference; nothing validates against it. The stable file is `aid-1.0.json`, re-cut at the issuance cutover. | — |
 
 Notable fields:
 
@@ -133,11 +134,11 @@ Notable fields:
 | `id` (top-level) | Unique credential-instance URL — `https://api.aria.bar/v1/credentials/{uuidv7}`. New on every issuance. Equivalent to a TLS certificate serial number. Per W3C VC 2.0 §4.4. |
 | `credentialSubject.id` | The agent DID (`did:aria:…`). Stable across reissuances. |
 | `credentialSubject.spec_version` | `"1.2"` on preview-line credentials issued today; `"1.0"` on ARIA 1.0 credentials after the [PLANNED] cutover. Verifiers distinguish the regime by issuer DID, not by this number. |
-| `credentialSubject.holderKey` | **Required (v1.2).** Ed25519 public key (multibase) bound to this AID. Verifiers MUST check a holder proof signed with the corresponding private key. Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
+| `credentialSubject.holderKey` | **Required (v1.2).** Ed25519 public key (multibase) bound to this AID. Verifiers MUST check a holder proof signed with the corresponding private key (the challenge endpoint is `[PLANNED]`, so this cannot be done yet). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
 | `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability. |
 | `credentialSubject.principal.verificationStatus` | Machine-readable provenance of `principal.legalName`. Enum: `self-declared` (L0, L1), `registry-confirmed` (L2 — confirmed against the Authoritative Source), `legal-verified` (L3 — primary register + Binding Officer). Verifiers MUST consult this before treating `legalName` as authoritative. `legalName` is an **organization** name: natural-person principals MUST NOT populate it (COM-09, L0-03). |
 | `credentialSubject.trustLevel` | `L0`–`L3`. |
-| `credentialStatus` | W3C Bitstring Status List v1.0 entry — flipped to revoked atomically on every reissue. |
+| `credentialStatus` | W3C Bitstring Status List v1.0 entry. The bit is set on every reissue: the superseded instance is no longer active. Superseded and revoked are different states (spec §7) that share one bit. |
 | `proof.proofValue` | Composite ML-DSA-65 + Ed25519 signature; both must verify. Critically, the signature covers `credentialSubject.holderKey` — preventing key substitution by anyone other than the registry. |
 
 ## Agent Trust Protocol (ATP)
@@ -145,11 +146,11 @@ Notable fields:
 ATP is the three-phase handshake between an agent and a receiving system:
 
 1. **Declare** — Agent presents AID + intent declaration
-2. **Evaluate** — Receiver checks against DNS policy (`_aria-policy.<domain>`)
+2. **Evaluate** — the receiver checks against its configured policy: the one it publishes at `_aria-policy.<host>`
 3. **Admit** — Pass or reject, returned as an ATP response code. The
-   admit/reject decision is queued for the Agent Interaction Log (future
-   — see spec §05). Credential lifecycle events are recorded separately
-   in the Trust Ledger.
+   admit/reject decision is queued for the Agent Interaction Log, which is
+   `[PLANNED]` — see spec §7. Credential lifecycle events are recorded
+   separately in the Trust Ledger.
 
 ```
 _aria-policy.bank.com TXT "v=ATP1; min=L2; enforce=strict; req=commerce:order:*,finance:invoice:read; deny=identity:principal:*; intent=purpose,principal_ref; depth=3; fresh=300s; rua=https://bank.com/atp-reports"
@@ -163,7 +164,7 @@ Enforcement modes: `monitor` → `warn` → `strict` (graduated adoption, like D
 - **Classical:** Ed25519 (RFC 8032) — transition signature
 - **Mode:** Composite AND — both signatures must verify
 - **Suite:** `mldsa65-ed25519-2026`
-- **Sunset:** ECDSA/classical-only credentials expire December 31, 2029
+- **Sunset:** the composite mode ends December 31, 2029; ML-DSA-only credentials are required after that date
 
 ## Standards alignment
 
