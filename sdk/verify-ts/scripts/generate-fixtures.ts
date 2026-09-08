@@ -150,10 +150,8 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
         'data:general:write',
         'communication:email:send',
       ],
-      hitlRequired: {
-        financialTransactions: true,
-        dataExport: true,
-      },
+      // Scope identifiers, per the schema — not a map of named triggers.
+      hitlRequired: ['data:general:write'],
     },
     credentialStatus: {
       id: 'https://api.aria.bar/v1/status/list/1#42',
@@ -203,7 +201,20 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
   // without this fixture the suite never exercises the branch that matters.
   const productionVc = {
     ...validVc,
-    credentialSubject: { ...validVc.credentialSubject, spec_version: '1.2' },
+    credentialSubject: {
+      ...validVc.credentialSubject,
+      spec_version: '1.2',
+      // The principal the schema defines and the registry issues: a DID and a
+      // legal name. `name` and `type` appear nowhere in aid-1.0.json and in no
+      // credential ever issued -- the other fixtures still carry them, which is
+      // why parse.ts has to accept both.
+      principal: {
+        did: 'did:aria:example.com:org',
+        legalName: 'Example Corp',
+        jurisdiction: 'US',
+        verificationStatus: 'registry-confirmed',
+      },
+    },
   };
   const prodPayload = new TextEncoder().encode(canonicalJson(productionVc));
   const prodPq = ml_dsa65.sign(prodPayload, pqKeys.secretKey);

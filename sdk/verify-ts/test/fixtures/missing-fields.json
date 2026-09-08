@@ -9,8 +9,8 @@
     "AgentIdentityDocument"
   ],
   "issuer": "did:aria:registry",
-  "validFrom": "2026-09-08T14:36:34.438Z",
-  "validUntil": "2027-09-08T14:36:34.438Z",
+  "validFrom": "2026-09-08T15:47:34.477Z",
+  "validUntil": "2027-09-08T15:47:34.477Z",
   "credentialSubject": {
     "id": "did:aria:example.com:incomplete-agent",
     "version": "1.0.0",

@@ -97,8 +97,13 @@ export interface VerifyResult {
    */
   scopes: string[];
 
-  /** Human-in-the-loop configuration, or `null` if HITL is not required. */
-  hitlRequired: Record<string, unknown> | null;
+  /**
+   * Scope identifiers that require human approval before the agent may act on
+   * them, or `null` when the credential does not carry the field. A subset of
+   * {@link ParsedAID.scopes}: the schema types it as an array of scope strings,
+   * not a map of named triggers.
+   */
+  hitlRequired: string[] | null;
 
   /** ISO 8601 timestamp of when the credential was issued. */
   issuedAt: string;
@@ -294,8 +299,11 @@ export interface ParsedCredential {
   /** Permission scopes granted to this agent. */
   scopes: string[];
 
-  /** Human-in-the-loop configuration, or `null` if not required. */
-  hitlRequired: Record<string, unknown> | null;
+  /**
+   * Scope identifiers that require human approval before the agent may act on
+   * them, or `null` when the credential does not carry the field.
+   */
+  hitlRequired: string[] | null;
 
   /** ISO 8601 timestamp of when the credential was issued. */
   issuedAt: string;
