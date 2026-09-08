@@ -12,7 +12,7 @@
  * Usage: node conformance/run.mjs [--sdk <path to the verify SDK entry>]
  */
 import { readFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -75,44 +75,70 @@ async function abnfCheck(sdkEntry) {
   for (const c of wrong) console.log(`        ${c.did} — ${c.note ?? c.reason ?? ''}`);
 }
 
-// ── 3 · JSON-LD expansion loses nothing ───────────────────────────────────────
-// A term with no definition is dropped when the document is expanded. A credential
-// whose holder key or proof value disappears is not a Verifiable Credential in any
-// useful sense, so this checks every property against the contexts the credential
-// actually declares — no more, no less.
-function expansionCheck() {
-  const name = 'every property of the example credential has a term definition';
+// ── 3 · the context redefines nothing the W3C context already defines ────────
+// Our context is listed after the VC v2 one and declares @protected, so a term we
+// redefine here is not merely redundant: it stops the standard definition from
+// applying, and a conforming processor refuses the document outright. This ran
+// once by hand and found nine, statusListIndex and proofValue among them.
+function redefinitionCheck() {
+  const name = 'the ARIA context redefines no term the W3C VC v2 context defines';
   const vc2 = load('context-credentials-v2.json')['@context'];
   const aria = JSON.parse(readFileSync(join(root, 'context', 'v1.jsonld'), 'utf8'))['@context'];
-  const example = join(root, 'examples', 'aid-example.json');
-  if (!existsSync(example)) return skip(name, 'examples/aid-example.json not found');
-  const cred = JSON.parse(readFileSync(example, 'utf8'));
 
-  const plain = (ctx) => new Set(Object.keys(ctx).filter((k) => !k.startsWith('@')));
-  const scoped = Object.fromEntries(
-    Object.entries(vc2)
-      .filter(([, v]) => v && typeof v === 'object' && v['@context'])
-      .map(([k, v]) => [k, plain(v['@context'])]),
-  );
-
-  const dropped = [];
-  const walk = (node, path, allowed) => {
-    if (Array.isArray(node)) return node.forEach((n) => walk(n, path, allowed));
-    if (!node || typeof node !== 'object') return;
-    for (const [k, v] of Object.entries(node)) {
-      if (k.startsWith('@')) continue;
-      if (!allowed.has(k)) dropped.push(`${path}/${k}`);
-      let next = new Set([...allowed, ...(scoped[k] ?? [])]);
-      if (k === 'type') for (const t of [].concat(v)) next = new Set([...next, ...(scoped[t] ?? [])]);
-      walk(v, `${path}/${k}`, next);
+  const terms = (ctx, out = new Set()) => {
+    for (const [k, v] of Object.entries(ctx)) {
+      if (!k.startsWith('@')) out.add(k);
+      if (v && typeof v === 'object' && v['@context']) terms(v['@context'], out);
     }
+    return out;
   };
-  let base = new Set([...plain(vc2), ...plain(aria)]);
-  for (const t of [].concat(cred.type ?? [])) base = new Set([...base, ...(scoped[t] ?? [])]);
-  walk(cred, '', base);
+  const standard = terms(vc2);
+  const clashes = Object.keys(aria).filter(
+    (k) => !k.startsWith('@') && standard.has(k) && aria[k]?.['@protected'] !== false,
+  );
+  report(name, clashes.length === 0, clashes.length ? clashes.join(', ') : 'none');
+}
 
-  report(name, dropped.length === 0, dropped.length ? `${dropped.length} dropped` : 'none dropped');
-  for (const d of dropped) console.log(`        ${d}`);
+// ── 4 · a real processor expands the documents without losing anything ────────
+// jsonld.js in safe mode throws on any dropped property or relative IRI, which is
+// the only version of this claim a reviewer can reproduce. The loader refuses the
+// network: both contexts are pinned in vectors/, so a run is deterministic and
+// offline. Install the processor with `npm install` inside conformance/.
+async function expansionCheck(strict) {
+  const name = 'the example and a production-shaped credential expand losslessly';
+  let jsonld;
+  try {
+    jsonld = (await import('jsonld')).default;
+  } catch {
+    const why = 'jsonld not installed — run `npm install` in conformance/';
+    if (strict) return report(name, false, why);
+    return skip(name, why);
+  }
+
+  const pinned = new Map([
+    ['https://www.w3.org/ns/credentials/v2', load('context-credentials-v2.json')],
+    ['https://aria.bar/ns/v1', JSON.parse(readFileSync(join(root, 'context', 'v1.jsonld'), 'utf8'))],
+  ]);
+  const documentLoader = async (url) => {
+    if (!pinned.has(url)) throw new Error(`refused to fetch ${url}: a conformance run is offline`);
+    return { contextUrl: null, documentUrl: url, document: pinned.get(url) };
+  };
+
+  const documents = [
+    join(root, 'examples', 'aid-example.json'),
+    join(root, 'sdk', 'verify-ts', 'test', 'fixtures', 'valid-aid-production-form.json'),
+  ].filter(existsSync);
+  if (documents.length === 0) return skip(name, 'no credential documents found');
+
+  const failed = [];
+  for (const file of documents) {
+    try {
+      await jsonld.expand(JSON.parse(readFileSync(file, 'utf8')), { documentLoader, safe: true });
+    } catch (err) {
+      failed.push(`${basename(file)}: ${err.details?.code ?? err.message}`);
+    }
+  }
+  report(name, failed.length === 0, failed.length ? failed.join(' · ') : `${documents.length}/${documents.length}`);
 }
 
 // ── run ───────────────────────────────────────────────────────────────────────
@@ -128,6 +154,7 @@ console.log(`ARIA conformance — vectors in ${vectors}`);
 console.log(sdkEntry ? `SDK under test: ${sdkEntry}\n` : 'No SDK under test; SDK-dependent checks are skipped.\n');
 await canonicalJsonCheck(sdkEntry);
 await abnfCheck(sdkEntry);
-expansionCheck();
+redefinitionCheck();
+await expansionCheck(process.argv.includes('--strict'));
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) failed.`}`);
 process.exit(failures === 0 ? 0 : 1);

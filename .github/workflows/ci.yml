@@ -29,8 +29,11 @@ jobs:
 
   conformance:
     # The vectors are the contract between implementations, so they run on every
-    # change. The harness needs the SDK built, since it tests the published
-    # entry point rather than the source.
+    # change. The harness needs the SDK built, since it tests the published entry
+    # point rather than the source, and a JSON-LD processor, because the expansion
+    # check has to be run by something that implements the specification. --strict
+    # turns a missing processor into a failure: a check that quietly skips proves
+    # nothing.
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,7 +50,10 @@ jobs:
         working-directory: sdk/verify-ts
       - run: pnpm build
         working-directory: sdk/verify-ts
-      - run: node conformance/run.mjs
+      - run: npm install --no-audit --no-fund
+        working-directory: conformance
+      - run: node run.mjs --strict
+        working-directory: conformance
 
   identity-guard:
     runs-on: ubuntu-latest

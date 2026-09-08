@@ -22,6 +22,7 @@ it, and presents the result. Nobody has to take anybody's word for it.
 
 ```
 run.mjs                          the runner each implementation embeds
+package.json                     one dependency, a JSON-LD processor
 vectors/
   canonical-json.json            canonical serialisation and identity commitment, byte for byte
   abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
@@ -31,8 +32,12 @@ vectors/
 Run it against an implementation:
 
 ```bash
-node conformance/run.mjs --sdk path/to/entry.mjs
+cd conformance && npm install      # a JSON-LD processor, for the expansion check
+node run.mjs --sdk path/to/entry.mjs
 ```
+
+Without the processor the expansion check skips and says so. CI passes `--strict`,
+which turns that skip into a failure: a check that quietly skips proves nothing.
 
 **What is not here yet**, named so nobody assumes otherwise:
 
@@ -66,7 +71,8 @@ the second one possible, which is the whole reason it exists before it is needed
 | # | Check | Who runs it | What it protects |
 |---|---|---|---|
 | 1 | Canonical serialisation and identity commitment match the vectors byte for byte | every implementation | the cross-implementation contract |
-| 1b | Every property of the example credential has a term definition | every implementation | that expansion drops nothing — a credential whose `holderKey` or `proofValue` disappears is not a Verifiable Credential |
+| 1b | The ARIA context redefines no term the W3C VC v2 context defines | every implementation | that the two contexts compose. Ours is listed second and declares `@protected`: a term redefined here does not shadow the standard one, it makes a conforming processor reject the credential outright |
+| 1c | The example and a production-shaped credential expand losslessly | every implementation | that nothing is silently dropped. Run by `jsonld` in safe mode, which throws on a dropped property or a relative IRI — the only version of this claim a reviewer can reproduce |
 | 2 | A freshly issued AID verifies against the **published, unmodified** verify SDK | the authority | that the protocol did not change by accident |
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
