@@ -70,3 +70,15 @@ before writing the pull request, because most of it cannot move.
 ## Security
 
 Do not open an issue for a vulnerability. Follow [SECURITY.md](SECURITY.md).
+
+## Dependencies
+
+There is no scheduled dependency bot on this repository. Three runtime
+dependencies, one of which implements the signature suite that
+[INVARIANTS.md](INVARIANTS.md) fixes and that credentials already signed depend
+on: a bot proposing to move them is noise at best and a supply-chain decision at
+worst. Security advisories still arrive, through Dependabot alerts, and are
+acted on deliberately.
+
+Updating a dependency is a pull request like any other, with a reason in the
+message and the SDK test suite green.
