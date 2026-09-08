@@ -26,25 +26,41 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist", "LICENSE", "README.md"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "sideEffects": false,
   "keywords": [
-    "aria", "agent-identity", "ai-agent", "did", "verifiable-credentials",
-    "post-quantum", "ml-dsa", "ed25519", "offline-verification", "w3c-vc",
-    "trust", "atp", "ariaprotocol"
+    "aria",
+    "agent-identity",
+    "ai-agent",
+    "did",
+    "verifiable-credentials",
+    "post-quantum",
+    "ml-dsa",
+    "ed25519",
+    "offline-verification",
+    "w3c-vc",
+    "trust",
+    "atp",
+    "ariaprotocol"
   ],
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "@noble/post-quantum": "^0.5.4",
     "@noble/curves": "^2.0.1",
-    "@noble/hashes": "^2.0.1"
+    "@noble/hashes": "^2.0.1",
+    "@noble/post-quantum": "^0.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.7"
   },
   "scripts": {
     "build": "tsup",
