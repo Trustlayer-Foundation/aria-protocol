@@ -1,0 +1,15 @@
+name: Bug
+description: Something in the SDK, the schemas or the vectors does not behave as documented
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened, and what you expected
+    validations: { required: true }
+  - type: input
+    attributes:
+      label: Version
+      placeholder: "@aria-registry/verify 1.1.0"
+  - type: textarea
+    attributes:
+      label: Smallest input that reproduces it

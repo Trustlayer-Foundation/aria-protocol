@@ -1,0 +1,8 @@
+# One approver for the whole tree: the CTO, with the foundation account as
+# backup. Code Owners without write access are ignored by GitHub, so both
+# handles must remain collaborators.
+#
+# When the Technical Steering Committee is seated (Q4 2026) this file passes to
+# its members and the approval rule goes to two. See GOVERNANCE.md.
+
+*    @ivvmoreno @trustlayer-foundationuser

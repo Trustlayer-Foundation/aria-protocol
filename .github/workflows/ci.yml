@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+permissions: {}
+
+jobs:
+  sdk-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: sdk/verify-ts/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/verify-ts
+      - run: pnpm test
+        working-directory: sdk/verify-ts
+
+  conformance:
+    # The harness conformance/run.mjs does not exist yet. This job runs but does
+    # not block, and is not in the ruleset's required checks. It arrives as the
+    # first pull request against dev: load both vector files and run them against
+    # the SDK's DID parser and canonicalisation, exporting them if they are
+    # internal today. When it lands, drop continue-on-error and add
+    # `ci / conformance` to the required checks.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          if [ -f conformance/run.mjs ]; then
+            node conformance/run.mjs
+          else
+            echo "::warning::conformance harness not present yet — see conformance/README.md"
+          fi
+
+  identity-guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: bash .github/scripts/identity-guard.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.sha }}"
+
+  neutrality:
+    # The Norm defines properties, never vendors or schemes. Retired spellings
+    # stay allowed in CHANGELOG, DEPRECATIONS and spec/legacy: recording what was
+    # said is the point of those three files.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa-p256|P-256" \
+              --include='*.md' --include='*.json' --include='*.ts' --include='*.yml' \
+              --exclude-dir=node_modules --exclude-dir=legacy \
+              --exclude=CHANGELOG.md --exclude=DEPRECATIONS.md .
+
+  branch-name:
+    # Branch naming is a convention, not an Enterprise metadata rule. Pull
+    # requests only; a push to dev or main has no head ref to check.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "${{ github.head_ref }}" | grep -qE '^(spec|sdk|docs|fix|chore)/[a-z0-9._-]+$' \
+            || { echo "::error::branch '${{ github.head_ref }}' must match (spec|sdk|docs|fix|chore)/<topic>"; exit 1; }

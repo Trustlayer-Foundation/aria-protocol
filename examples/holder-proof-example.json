@@ -1,0 +1,16 @@
+{
+  "_comment": "Example holder proof presented alongside an AID to demonstrate possession. The proof is the canonical-JSON-serialized payload below, signed with the agent's Ed25519 private key (delivered once at issuance). The signature is base64url-encoded. Verifiers extract the public key from credentialSubject.holderKey of the signed AID (NEVER from a database) and verify ed25519.verify(sig, canonicalJson(proof), pubkey).",
+
+  "proof": {
+    "did": "did:aria:aria.bar:u-cmDoHhM3:ordering-agent",
+    "iat": 1747130400,
+    "exp": 1747130700,
+    "aud": "https://merchant.example.com",
+    "ctx": {
+      "htm": "POST",
+      "htu": "https://merchant.example.com/v1/orders",
+      "nonce": "8c4b2f1a9d3e7f6b5a2c8e1d4f9b3a7c"
+    }
+  },
+  "signature": "kJ9c2-VFR8mP4xQ7yLkN3eRbWzAh6gJ_uF1dT8sBpKjY4eXcRnVtAhWqM2pE6gB7hT9mQ0dKzJ8nV3xLkPwY7Ag"
+}

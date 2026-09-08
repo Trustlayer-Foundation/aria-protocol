@@ -1,0 +1,107 @@
+{
+  "_comment": "ABNF conformance cases for the did:aria method-specific identifier, per spec §03.1. Every implementation that parses or validates a did:aria identifier MUST accept every case in `accept` and reject every case in `reject`, with the stated reason. Shared source of truth: implementations do not share code (Rust, TypeScript, Python, Go), they share this file.",
+  "_version": "1.0.0",
+  "_grammar": "did-aria = \"did:aria:\" method-specific-id; method-specific-id = agent-id / principal-id",
+
+  "accept": [
+    {
+      "did": "did:aria:example.com:ordering-agent",
+      "shape": "agent-domain-form",
+      "note": "principal has verified its own domain (L1+)"
+    },
+    {
+      "did": "did:aria:sub.example.co.uk:agent-1",
+      "shape": "agent-domain-form",
+      "note": "multi-label domain"
+    },
+    {
+      "did": "did:aria:aria.bar:u-cmDoHhM3:ordering-agent",
+      "shape": "agent-registry-form",
+      "note": "registry-namespaced fallback (L0, or L1+ pre-verification)"
+    },
+    {
+      "did": "did:aria:example.com:org",
+      "shape": "principal-domain-form",
+      "note": "organizational identity, verified domain"
+    },
+    {
+      "did": "did:aria:u-cmDoHhM3:org",
+      "shape": "principal-registry-form",
+      "note": "organizational identity without verified domain; no host prefix, so the identifier survives a registry migration"
+    },
+    {
+      "did": "did:aria:example.com:a",
+      "shape": "agent-domain-form",
+      "note": "minimum agent-slug length is 1"
+    },
+    {
+      "did": "did:aria:example.com:agent-with-many-hyphens-in-the-name",
+      "shape": "agent-domain-form",
+      "note": "hyphens are legal inside the slug"
+    },
+    {
+      "did": "did:aria:example.com:agent1",
+      "shape": "agent-domain-form",
+      "note": "digits are legal in the slug"
+    }
+  ],
+
+  "reject": [
+    {
+      "did": "did:aria:example.com:Ordering-Agent",
+      "reason": "agent-slug is lowercase-only; uppercase is not in the production alphabet"
+    },
+    {
+      "did": "did:aria:example.com:ordering-agent-",
+      "reason": "agent-slug MUST NOT end with a hyphen"
+    },
+    {
+      "did": "did:aria:example.com:-ordering-agent",
+      "reason": "agent-slug MUST start with lowercase or digit"
+    },
+    {
+      "did": "did:aria:example.com:ordering_agent",
+      "reason": "underscore is not in the agent-slug alphabet"
+    },
+    {
+      "did": "did:aria:example.com",
+      "reason": "bare domain is not a valid identifier; a principal must carry the :org suffix"
+    },
+    {
+      "did": "did:aria:aria.bar:cmDoHhM3:ordering-agent",
+      "reason": "registry-account MUST carry the u- prefix"
+    },
+    {
+      "did": "did:aria:aria.bar:u-abc:ordering-agent",
+      "reason": "registry-account MUST be exactly 8 characters after the u- prefix"
+    },
+    {
+      "did": "did:aria:aria.bar:u-cmDoHhM3x:ordering-agent",
+      "reason": "registry-account MUST be exactly 8 characters after the u- prefix"
+    },
+    {
+      "did": "did:aria:aria.bar:u-cmDoHhM3:org",
+      "reason": "the :org suffix is reserved for principals; an agent-slug MUST NOT equal 'org', and the principal registry form carries no host prefix"
+    },
+    {
+      "did": "did:aria:-example.com:agent",
+      "reason": "dns-label MUST NOT start with a hyphen (RFC 1035 §2.3.1)"
+    },
+    {
+      "did": "did:aria:example-.com:agent",
+      "reason": "dns-label MUST NOT end with a hyphen (RFC 1035 §2.3.1)"
+    },
+    {
+      "did": "did:web:example.com",
+      "reason": "wrong DID method"
+    },
+    {
+      "did": "did:aria:",
+      "reason": "empty method-specific identifier"
+    },
+    {
+      "did": "did:aria:example.com:agent:extra:parts",
+      "reason": "too many components for any defined shape"
+    }
+  ]
+}

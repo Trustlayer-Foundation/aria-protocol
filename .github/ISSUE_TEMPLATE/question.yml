@@ -1,0 +1,9 @@
+name: Question
+description: Ask about the specification, the schemas or the SDK
+labels: [question]
+body:
+  - type: textarea
+    attributes:
+      label: Your question
+      description: Link the section or the file if it is about a specific one.
+    validations: { required: true }

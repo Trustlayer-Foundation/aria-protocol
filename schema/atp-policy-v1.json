@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/atp-policy-v1.json",
+  "title": "ATP DNS Policy v1.0",
+  "description": "JSON Schema for the Agent Trust Protocol (ATP) DNS Policy, parsed from a DNS TXT record at _aria-policy.<domain>. Analogous to a DMARC record, it defines the admission policy a receiving system enforces when AI agents present their credentials.",
+  "type": "object",
+  "required": [
+    "v",
+    "min",
+    "enforce"
+  ],
+  "properties": {
+    "v": {
+      "type": "string",
+      "const": "ATP1",
+      "description": "Protocol version. Always 'ATP1' for v1.x."
+    },
+    "min": {
+      "type": "string",
+      "enum": ["L0", "L1", "L2", "L3"],
+      "description": "Minimum trust level required for agent admission. L0=Anchored, L1=Identified, L2=Certified, L3=Sovereign."
+    },
+    "enforce": {
+      "type": "string",
+      "enum": ["monitor", "warn", "strict"],
+      "description": "Enforcement mode. 'monitor' logs but admits all; 'warn' admits with warning headers; 'strict' rejects non-compliant agents."
+    },
+    "req": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.\\*)?$",
+        "description": "Required scope pattern. Supports wildcards: 'commerce.*' matches any scope beginning with 'commerce.'."
+      },
+      "uniqueItems": true,
+      "description": "Required scopes. Agent must carry all listed scopes (or matching wildcards) to be admitted."
+    },
+    "deny": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.\\*)?$",
+        "description": "Prohibited scope pattern. Agent carrying any listed scope is rejected or flagged."
+      },
+      "uniqueItems": true,
+      "description": "Prohibited scopes. Agent carrying any listed scope is rejected (strict) or flagged (monitor/warn)."
+    },
+    "intent": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "purpose",
+          "target_resource",
+          "principal_ref",
+          "action_requested",
+          "context",
+          "dataUsage",
+          "retention",
+          "constraints",
+          "session_id"
+        ],
+        "description": "Intent Declaration field name that must be present in the agent's intent payload."
+      },
+      "uniqueItems": true,
+      "description": "Required intent fields. The agent's Intent Declaration must include all listed fields."
+    },
+    "depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "default": 4,
+      "description": "Maximum delegation chain depth. Agents with a delegation depth exceeding this value are rejected."
+    },
+    "rate": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*/(hr|min)$",
+      "description": "Per-agent rate limit. Format: N/hr or N/min. E.g., '100/hr', '10/min'."
+    },
+    "qualify": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^.+>.+$",
+        "description": "Conditional requirement in format 'condition>requirement'. E.g., 'sector:finance>sox'."
+      },
+      "uniqueItems": true,
+      "description": "Conditional requirements. Format: condition>requirement. E.g., 'sector:healthcare>iso27001' means healthcare-sector agents must carry ISO 27001 attestation."
+    },
+    "rua": {
+      "type": "string",
+      "format": "uri",
+      "description": "Aggregate report URI. HTTPS endpoint where ATP sends periodic compliance reports, modeled on DMARC rua."
+    },
+    "ttl": {
+      "type": "integer",
+      "minimum": 60,
+      "default": 3600,
+      "description": "Policy cache TTL in seconds. How long agents should cache this policy before re-fetching."
+    }
+  },
+  "additionalProperties": false
+}

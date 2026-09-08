@@ -1,0 +1,132 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "aria": "https://aria.bar/ns/v1#",
+    "schema": "https://schema.org/",
+    "sec": "https://w3id.org/security#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "ARIAIdentityDocument": "aria:ARIAIdentityDocument",
+    "AgentIdentityDocument": "aria:AgentIdentityDocument",
+    "trustLevel": {
+      "@id": "aria:trustLevel",
+      "@type": "xsd:string"
+    },
+    "domain": {
+      "@id": "aria:domain",
+      "@type": "xsd:string"
+    },
+    "agentName": {
+      "@id": "aria:agentName",
+      "@type": "xsd:string"
+    },
+    "agentDescription": {
+      "@id": "aria:agentDescription",
+      "@type": "xsd:string"
+    },
+    "specVersion": {
+      "@id": "aria:specVersion",
+      "@type": "xsd:string"
+    },
+    "principal": {
+      "@id": "aria:principal",
+      "@type": "@id"
+    },
+    "legalName": {
+      "@id": "aria:legalName",
+      "@type": "xsd:string"
+    },
+    "jurisdiction": {
+      "@id": "aria:jurisdiction",
+      "@type": "xsd:string"
+    },
+    "registryRef": {
+      "@id": "aria:registryRef",
+      "@type": "xsd:string"
+    },
+    "scope": {
+      "@id": "aria:scope",
+      "@container": "@set"
+    },
+    "capabilities": {
+      "@id": "aria:capabilities",
+      "@container": "@set"
+    },
+    "delegationChain": {
+      "@id": "aria:delegationChain",
+      "@container": "@list"
+    },
+    "delegatedBy": {
+      "@id": "aria:delegatedBy",
+      "@type": "@id"
+    },
+    "delegationDepth": {
+      "@id": "aria:delegationDepth",
+      "@type": "xsd:integer"
+    },
+    "maxDepth": {
+      "@id": "aria:maxDepth",
+      "@type": "xsd:integer"
+    },
+    "intent": {
+      "@id": "aria:intent",
+      "@type": "@id"
+    },
+    "purpose": {
+      "@id": "aria:purpose",
+      "@type": "xsd:string"
+    },
+    "actionRequested": {
+      "@id": "aria:actionRequested",
+      "@type": "xsd:string"
+    },
+    "principalRef": {
+      "@id": "aria:principalRef",
+      "@type": "@id"
+    },
+    "dataUsage": {
+      "@id": "aria:dataUsage",
+      "@container": "@set"
+    },
+    "retention": {
+      "@id": "aria:retention",
+      "@type": "xsd:duration"
+    },
+    "constraints": {
+      "@id": "aria:constraints",
+      "@container": "@set"
+    },
+    "hitl": {
+      "@id": "aria:hitl",
+      "@type": "@id"
+    },
+    "humanApprovalTriggers": {
+      "@id": "aria:humanApprovalTriggers",
+      "@container": "@set"
+    },
+    "cryptosuite": {
+      "@id": "sec:cryptosuite",
+      "@type": "xsd:string"
+    },
+    "mldsa65Ed255192026": "aria:mldsa65-ed25519-2026",
+    "dnsAnchor": {
+      "@id": "aria:dnsAnchor",
+      "@type": "xsd:string"
+    },
+    "dnssecVerified": {
+      "@id": "aria:dnssecVerified",
+      "@type": "xsd:boolean"
+    },
+    "statusPurpose": {
+      "@id": "aria:statusPurpose",
+      "@type": "xsd:string"
+    },
+    "statusListIndex": {
+      "@id": "aria:statusListIndex",
+      "@type": "xsd:string"
+    },
+    "statusListCredential": {
+      "@id": "aria:statusListCredential",
+      "@type": "@id"
+    }
+  }
+}

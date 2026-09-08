@@ -1,0 +1,56 @@
+{
+  "name": "@aria-registry/verify",
+  "version": "1.1.0",
+  "description": "Verify AI agent identity offline. ARIA Protocol SDK.",
+  "license": "Apache-2.0",
+  "author": "TrustLayer Foundation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trustlayer-foundation/aria-verify"
+  },
+  "homepage": "https://aria.bar",
+  "bugs": {
+    "url": "https://github.com/trustlayer-foundation/aria-verify/issues"
+  },
+  "funding": {
+    "type": "foundation",
+    "url": "https://trustlayer.foundation"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "LICENSE", "README.md"],
+  "sideEffects": false,
+  "keywords": [
+    "aria", "agent-identity", "ai-agent", "did", "verifiable-credentials",
+    "post-quantum", "ml-dsa", "ed25519", "offline-verification", "w3c-vc",
+    "trust", "atp", "ariaprotocol"
+  ],
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@noble/post-quantum": "^0.5.4",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate-fixtures": "tsx scripts/generate-fixtures.ts",
+    "prepublishOnly": "npm run build && npm run test"
+  }
+}

@@ -1,0 +1,14 @@
+name: Conformance vector
+description: Report a missing vector, or a case where implementations could diverge
+labels: [conformance]
+body:
+  - type: textarea
+    attributes:
+      label: The case
+      description: The input, and what a conforming implementation must produce.
+    validations: { required: true }
+  - type: input
+    attributes:
+      label: Which vector file
+      placeholder: "conformance/vectors/canonical-json.json"
+    validations: { required: true }

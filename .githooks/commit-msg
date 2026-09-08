@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Enable with: git config core.hooksPath .githooks
+if grep -qiE '^(Co-Authored-By|Generated-By|Assisted-By):' "$1"; then
+  echo "aria-protocol: tool trailers are not accepted; contributors are people" >&2
+  exit 1
+fi
+grep -qE "^Signed-off-by: .+ <.+@.+>" "$1" || {
+  echo "aria-protocol: add a DCO sign-off (git commit -s)" >&2
+  exit 1
+}

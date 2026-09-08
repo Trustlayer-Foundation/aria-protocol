@@ -1,0 +1,49 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://aria.bar/ns/v1"
+  ],
+  "type": ["VerifiableCredential", "ARIAIdentityDocument"],
+  "id": "https://api.aria.bar/v1/credentials/01906b8f-7c8a-7d12-8e3f-2a91b4c8f019",
+  "issuer": "did:aria:registry.aria.bar",
+  "validFrom": "2026-04-01T00:00:00Z",
+  "validUntil": "2027-04-01T00:00:00Z",
+  "credentialSubject": {
+    "id": "did:aria:aria.bar:u-cmDoHhM3:ordering-agent",
+    "previousCredentialId": "https://api.aria.bar/v1/credentials/01905f23-3a1b-7c95-9d6e-b8e72f5104a3",
+    "agentName": "ordering-agent",
+    "version": "1.2.0",
+    "trustLevel": "L0",
+    "scope": [
+      "commerce:catalog:read",
+      "commerce:order:create"
+    ],
+    "hitlRequired": [
+      "commerce:order:create"
+    ],
+    "delegationDepth": 0,
+    "maxDelegationDepth": 4,
+    "spec_version": "1.1",
+    "principal": {
+      "did": "did:aria:aria.bar:u-cmDoHhM3:org",
+      "legalName": "Acme Corporation",
+      "jurisdiction": "US",
+      "verificationStatus": "self-declared"
+    }
+  },
+  "credentialStatus": {
+    "id": "https://api.aria.bar/v1/status/1#42",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "42",
+    "statusListCredential": "https://api.aria.bar/v1/status/1"
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "mldsa65-ed25519-2026",
+    "created": "2026-04-01T00:00:00Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:aria:registry.aria.bar#key-1",
+    "proofValue": "z4FzFe4XGnJBGcYt3bKv7YVojUxFMCAVfq9NHuXZJKkGpVrYdNbeJJ6uvN7m95ePzKoTsAxqGhfY9LKZ8sDRv4rEXAmpLeSiGnAtUrEbase64UrlEncodedCompositeMLDSA65Ed25519SignatureValueThatWouldBeApproximately4900BytesInProductionButIsTruncatedHereForReadability"
+  }
+}

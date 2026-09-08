@@ -1,0 +1,35 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://aria.bar/ns/v1"
+  ],
+  "id": "did:aria:example.com:incomplete-agent",
+  "type": [
+    "VerifiableCredential",
+    "AgentIdentityDocument"
+  ],
+  "issuer": "did:aria:registry",
+  "validFrom": "2026-04-28T21:09:35.781Z",
+  "validUntil": "2027-04-28T21:09:35.781Z",
+  "credentialSubject": {
+    "id": "did:aria:example.com:incomplete-agent",
+    "version": "1.0.0",
+    "principal": {
+      "name": "Example Corp",
+      "domain": "example.com",
+      "jurisdiction": "US",
+      "type": "organization"
+    },
+    "trustLevel": "L2",
+    "scope": [
+      "data:general:read"
+    ],
+    "hitlRequired": null
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "mldsa65-ed25519-2026",
+    "proofValuePq": "deadbeef",
+    "proofValueClassical": "deadbeef"
+  }
+}

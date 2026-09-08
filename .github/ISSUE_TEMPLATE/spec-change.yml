@@ -1,0 +1,23 @@
+name: Specification change
+description: Propose a change to the normative text or to a Verification Requirement
+labels: [spec]
+body:
+  - type: textarea
+    attributes:
+      label: What is wrong or missing today
+      description: Describe the behaviour or the gap, not the fix.
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: What you propose
+    validations: { required: true }
+  - type: input
+    attributes:
+      label: Section, requirement or invariant it touches
+      placeholder: "spec §5.1 · COM-05 · invariant 3"
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: Effect on credentials already issued
+      description: Issued credentials cannot be re-signed. Say what happens to them.
+    validations: { required: true }

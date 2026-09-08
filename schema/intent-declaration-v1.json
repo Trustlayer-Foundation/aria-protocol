@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/intent-declaration-v1.json",
+  "title": "ATP Intent Declaration v1.0",
+  "description": "JSON Schema for the Agent Trust Protocol (ATP) Intent Declaration. The intent declaration is a structured, machine-readable statement of WHY an agent is accessing a system and WHAT it intends to do. It MUST be cryptographically signed within the ML-DSA signature envelope alongside the AID to ensure non-repudiation.",
+  "type": "object",
+  "required": [
+    "purpose",
+    "principal_ref",
+    "action_requested"
+  ],
+  "properties": {
+    "purpose": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 500,
+      "description": "Human-readable statement of operational purpose. E.g., 'Accounts payable reconciliation for Q2 2026.'"
+    },
+    "target_resource": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Specific resource or endpoint the agent intends to access. E.g., 'invoice:4471' or 'api/v2/customers'."
+    },
+    "principal_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the principal (legal entity or person) on whose behalf the agent acts. DID or LEI."
+    },
+    "action_requested": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+      "description": "The action the agent intends to perform. MUST use ARIA Scope Registry namespace format. E.g., 'commerce.read' or 'invoice.fetch'."
+    },
+    "context": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Operational context, authorization framework, or session reference. E.g., 'PO framework PO-2026-Q2'."
+    },
+    "dataUsage": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(dpv:|custom:).+$",
+        "description": "W3C Data Privacy Vocabulary (DPV) purpose category or custom purpose with 'custom:' prefix."
+      },
+      "uniqueItems": true,
+      "description": "W3C DPV purpose categories describing how accessed data will be used. Valid values include 'dpv:CommercialResearch', 'dpv:ServiceProvision', 'dpv:TransactionManagement', etc. Custom purposes use 'custom:' prefix."
+    },
+    "retention": {
+      "type": "string",
+      "pattern": "^P(?:\\d+Y)?(?:\\d+M)?(?:\\d+W)?(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?$",
+      "description": "Maximum duration the agent will retain any data accessed during this interaction. ISO 8601 duration format. E.g., 'P90D' (90 days), 'P1Y' (1 year)."
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 256
+      },
+      "uniqueItems": true,
+      "description": "Self-declared operational constraints. E.g., ['MXN transactions only', 'domestic suppliers']."
+    },
+    "session_id": {
+      "type": "string",
+      "maxLength": 256,
+      "description": "Unique session identifier for correlating multiple interactions within one logical operation."
+    }
+  },
+  "additionalProperties": false
+}

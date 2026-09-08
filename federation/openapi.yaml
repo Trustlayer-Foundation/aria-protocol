@@ -1,0 +1,402 @@
+openapi: 3.1.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STATUS: draft, staged for trustlayer-foundation/aria-protocol.
+#
+# This is the contract between a Registration Authority and the ARIA authority.
+# It is published because federation is impossible without it: a prospective RA
+# cannot evaluate a contract it is not allowed to read. Publishing it reveals what
+# the authority asks for, not how it signs.
+#
+# The contract outlives the code on both sides. Both implementations are
+# replaceable; this file is not.
+# ─────────────────────────────────────────────────────────────────────────────
+
+info:
+  title: ARIA Authority Contract
+  version: 1.0.0-draft
+  summary: What a Registration Authority may ask of the ARIA authority, and what it must assert.
+  description: |
+    ARIA follows the Certificate Authority / Registration Authority model.
+
+    The **authority** validates the contract and signs. It never sees personally
+    identifiable information: no KYC documents, no customer records, no identity
+    evidence beyond public registry references.
+
+    The **Registration Authority** performs identity vetting appropriate to the
+    trust level it requests, and **attests** to having done so under signature.
+    The authority signs on the strength of that attestation, exactly as an X.509
+    CA signs on the strength of its RA's vetting. Responsibility for the vetting
+    stays with the RA, contractually and provably.
+
+    Two consequences shape this API:
+
+    1. Every mint carries a **signed RA attestation**. It is recorded, and it is
+       what makes the RA accountable for what it claimed.
+    2. An RA may only assert up to the trust level it is **accredited** for.
+       Accreditation is queryable, so a verifier can apply its own policy per RA.
+  license:
+    name: CC-BY-4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+
+servers:
+  - url: https://core.aria.bar/v1/authority
+    description: Production authority
+
+security:
+  - mutualTLS: []
+  - signedRequest: []
+
+tags:
+  - name: namespace
+    description: Reserving and checking DID availability
+  - name: issuance
+    description: Minting and revoking credentials
+  - name: resolution
+    description: Public reads — resolution, status, key set
+  - name: accreditation
+    description: Registration Authority standing
+
+paths:
+
+  /reserve:
+    post:
+      tags: [namespace]
+      operationId: reserveDid
+      summary: Reserve a DID in the namespace
+      description: |
+        First half of the two-phase mint. Reservation exists to make uniqueness
+        safe under concurrency: without it, two Registration Authorities can mint
+        the same DID simultaneously, which is exactly the guarantee this authority
+        exists to provide.
+
+        A reservation is held for the RA that requested it and expires if unused.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [did]
+              properties:
+                did:
+                  type: string
+                  description: Must satisfy the ABNF in spec §03.1.
+                  example: did:aria:example.com:ordering-agent
+      responses:
+        '201':
+          description: Reserved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [did, reservation_token, expires_at]
+                properties:
+                  did: { type: string }
+                  reservation_token: { type: string }
+                  expires_at: { type: string, format: date-time }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /availability/{did}:
+    get:
+      tags: [namespace]
+      operationId: checkAvailability
+      summary: Is this DID available
+      parameters:
+        - { name: did, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Availability
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [available]
+                properties:
+                  available: { type: boolean }
+                  reason:
+                    type: string
+                    enum: [issued, reserved, malformed, reserved_suffix]
+
+  /mint:
+    post:
+      tags: [issuance]
+      operationId: mint
+      summary: Sign an AID
+      description: |
+        Second half of the two-phase mint.
+
+        The authority revalidates everything it can validate without PII, in order:
+        the manifest against the schema, the DID against the ABNF, that the
+        reservation belongs to this RA, the agent's self-signature under both
+        halves of its composite key, the identity commitment recomputed over
+        canonical JSON, the RA attestation signature against the RA's registered
+        key, and that `trust_level_requested` does not exceed the RA's accredited
+        ceiling.
+
+        The RA's own pre-validation does not exempt any of these. A client-side
+        validator is never authority.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reservation_token, manifest, ra_attestation]
+              properties:
+                reservation_token: { type: string }
+                manifest:
+                  type: object
+                  description: Self-signed enrollment manifest, per schema/enrollment-manifest-v1.json
+                ra_attestation: { $ref: '#/components/schemas/RaAttestation' }
+      responses:
+        '201':
+          description: Signed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [credential_id, vc_jsonld, status_list_index]
+                properties:
+                  credential_id: { type: string, format: uuid }
+                  vc_jsonld: { type: object }
+                  status_list_index: { type: integer }
+        '403':
+          description: |
+            The RA is not accredited for the requested trust level, is suspended,
+            or the reservation belongs to another RA.
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /revoke:
+    post:
+      tags: [issuance]
+      operationId: revoke
+      summary: Revoke a credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential_id, reason_code]
+              properties:
+                credential_id: { type: string, format: uuid }
+                reason_code:
+                  type: string
+                  enum: [key_compromise, superseded, cessation_of_operation, privilege_withdrawn, ra_request]
+      responses:
+        '202': { description: Accepted; propagates to the status list within 60s }
+        '403': { description: The credential was not issued through this RA }
+
+  /resolve/{did}:
+    get:
+      tags: [resolution]
+      operationId: resolve
+      summary: Resolve a DID to its current credential
+      parameters:
+        - { name: did, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: The current AID
+          content:
+            application/ld+json:
+              schema: { type: object }
+        '404': { description: Not issued }
+
+  /status/{did}:
+    get:
+      tags: [resolution]
+      operationId: status
+      summary: Current validity
+      parameters:
+        - { name: did, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [active, suspended, revoked] }
+                  checked_at: { type: string, format: date-time }
+
+  /keyset:
+    get:
+      tags: [resolution]
+      operationId: keyset
+      summary: The authority's public keys, including retired ones
+      description: |
+        **Append-only, with validity windows.** Every key that has ever signed must
+        continue to be served, because credentials are never re-signed — retiring a
+        key from this response invalidates every credential it signed.
+
+        Each entry carries a signature from the previous key, forming a chain a
+        verifier can walk from an anchor it already trusts. This is what makes
+        rotation an assertion rather than a change of content at a URL: without it,
+        the security of the root reduces to whoever controls the hosting.
+      responses:
+        '200':
+          description: Key set
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [keys]
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      required: [key_id, suite, public_key_mldsa65, public_key_ed25519, active_from]
+                      properties:
+                        key_id: { type: string }
+                        suite: { type: string, example: mldsa65-ed25519-2026 }
+                        public_key_mldsa65: { type: string }
+                        public_key_ed25519: { type: string }
+                        active_from: { type: string, format: date-time }
+                        active_until:
+                          type: [string, 'null']
+                          format: date-time
+                          description: Null while active. Set on retirement — the key is still served.
+                        introduced_by:
+                          type: object
+                          description: Signature from the preceding key introducing this one.
+                          properties:
+                            key_id: { type: string }
+                            signature: { type: string }
+
+  /scopes:
+    get:
+      tags: [resolution]
+      operationId: scopes
+      summary: The normative scope catalogue
+      responses:
+        '200':
+          description: Scopes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scopes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        scope: { type: string, example: 'commerce:catalog:read@v0.2' }
+                        deprecated_at: { type: [string, 'null'], format: date-time }
+
+  /ra/{ra_id}:
+    get:
+      tags: [accreditation]
+      operationId: raStanding
+      summary: A Registration Authority's standing
+      description: |
+        Public, because per-RA verifier policy is impossible without it — a verifier
+        that wants to accept L2 from one RA and not another needs to see standing.
+        This is the analogue of a certificate transparency distrust list.
+      parameters:
+        - { name: ra_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Standing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ra_id, status, max_trust_level]
+                properties:
+                  ra_id: { type: string }
+                  legal_name: { type: string }
+                  status: { type: string, enum: [active, suspended, withdrawn] }
+                  max_trust_level:
+                    type: string
+                    enum: [L0, L1, L2, L3]
+                    description: The ceiling this RA may assert.
+                  accredited_from: { type: string, format: date-time }
+                  distrust_after:
+                    type: [string, 'null']
+                    format: date-time
+                    description: |
+                      Assertions made after this instant are not honoured at their
+                      stated level. Distrust is **forward-only by default** —
+                      credentials issued before it keep their level, following the
+                      graduated model the browser root programs used for Symantec
+                      and WoSign rather than mass revocation.
+
+                      Cascade revocation of already-issued credentials happens only
+                      on proven compromise, requires explicit human authorisation at
+                      the authority, and is recorded in the audit chain.
+        '404': { description: Not an accredited RA }
+
+components:
+
+  securitySchemes:
+    mutualTLS:
+      type: mutualTLS
+      description: Client certificate issued to the RA.
+    signedRequest:
+      type: apiKey
+      in: header
+      name: X-ARIA-RA-Signature
+      description: |
+        Request signed with the RA's registered key. Non-repudiation is a hard
+        requirement, not a convenience: the authority must be able to prove which
+        RA asked for what. Without it, the authority carries liability for
+        decisions it did not make, and federation is not viable.
+
+  schemas:
+
+    RaAttestation:
+      type: object
+      description: |
+        The RA's signed claim about the vetting it performed. This is the load-bearing
+        object of the whole model: the authority signs on the strength of it and never
+        sees the evidence behind it.
+      required: [ra_id, trust_level_requested, vetting, terms_version, privacy_version, signature]
+      properties:
+        ra_id: { type: string }
+        trust_level_requested:
+          type: string
+          enum: [L0, L1, L2, L3]
+        vetting:
+          type: object
+          description: |
+            References, never documents. `registry_ref` is public commercial-registry
+            data and already appears in the credential; nothing here is a KYC file.
+          properties:
+            kyc_performed: { type: boolean }
+            kyc_method:
+              type: string
+              enum: [none, registry_lookup, document_review, government_credential]
+            domain_proof_verified: { type: boolean }
+            dnssec_verified: { type: boolean }
+            registry_ref: { type: string, example: 'EIN:12-3456789' }
+            vetted_at: { type: string, format: date-time }
+        terms_version: { type: string }
+        privacy_version: { type: string }
+        signature:
+          type: string
+          description: Over the canonical JSON of this object minus `signature`.
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        request_id: { type: string }
+
+  responses:
+    Conflict:
+      description: Already issued or reserved
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: Failed validation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

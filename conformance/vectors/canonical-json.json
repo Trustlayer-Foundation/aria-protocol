@@ -1,0 +1,74 @@
+{
+  "_comment": "Golden vectors shared verbatim between @aria-registry/enroll-sdk-node and @aria-registry/enroll-sdk-web. Both packages MUST produce identical canonical_json + identity_commitment outputs for the same input. The test/golden-vectors.test.ts file asserts this. Bump _version when adding/changing vectors; both packages must update in lockstep. The expected_identity_commitment of each vector is SHA-256 of that vector's expected_canonical_json, computed rather than transcribed. The values recorded before August 2026 were neither, and the Go suite had been failing against them unnoticed; a fifth implementation joining the contract is what surfaced it.",
+  "_version": "1.0.0",
+  "vectors": [
+    {
+      "name": "minimal-l0-no-external-did",
+      "input": {
+        "spec_version": "1.0",
+        "enrollment_session_id": "01HZX8K2P4M6N9R3T5V7W1Y2Z6",
+        "enrollment_token_hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "principal_did": "did:aria:aria.bar:u-cmDoHhM3:org",
+        "agent_name": "ordering-agent",
+        "trust_level": "L0",
+        "selected_scopes": [
+          "commerce:catalog:read"
+        ],
+        "holder_public_key": {
+          "suite": "mldsa65-ed25519-2026",
+          "ed25519_multibase": "z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH",
+          "mldsa65_multibase": "z2MUExampleBase58btcEncodedMLDSA65PublicKeyTruncated"
+        },
+        "sdk_attestation": {
+          "name": "@aria-registry/enroll-sdk-node",
+          "version": "1.2.0",
+          "platform": "node"
+        },
+        "environment": {
+          "runtime": "node",
+          "runtime_version": "v22.16.0"
+        },
+        "created_at": "2026-05-12T23:54:01.118Z"
+      },
+      "expected_canonical_json": "{\"agent_name\":\"ordering-agent\",\"created_at\":\"2026-05-12T23:54:01.118Z\",\"enrollment_session_id\":\"01HZX8K2P4M6N9R3T5V7W1Y2Z6\",\"enrollment_token_hash\":\"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\",\"environment\":{\"runtime\":\"node\",\"runtime_version\":\"v22.16.0\"},\"holder_public_key\":{\"ed25519_multibase\":\"z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH\",\"mldsa65_multibase\":\"z2MUExampleBase58btcEncodedMLDSA65PublicKeyTruncated\",\"suite\":\"mldsa65-ed25519-2026\"},\"principal_did\":\"did:aria:aria.bar:u-cmDoHhM3:org\",\"sdk_attestation\":{\"name\":\"@aria-registry/enroll-sdk-node\",\"platform\":\"node\",\"version\":\"1.2.0\"},\"selected_scopes\":[\"commerce:catalog:read\"],\"spec_version\":\"1.0\",\"trust_level\":\"L0\"}",
+      "expected_identity_commitment": "97b5736007378170e7587971e76e677135ac9cc06272016c7bcc5e1ea0603022"
+    },
+    {
+      "name": "l1-with-target-domain-and-region",
+      "input": {
+        "spec_version": "1.0",
+        "enrollment_session_id": "01HZX9KQRP4M6N9R3T5V7W1Y2Z6",
+        "enrollment_token_hash": "abc123def456789012345678901234567890abcdef1234567890abcdef123456",
+        "principal_did": "did:aria:acme.example:org",
+        "agent_name": "support-bot",
+        "trust_level": "L1",
+        "target_domain": "support.acme.example",
+        "selected_scopes": [
+          "support:tickets:read",
+          "support:tickets:create"
+        ],
+        "hitl_required": [
+          "support:tickets:create"
+        ],
+        "holder_public_key": {
+          "suite": "mldsa65-ed25519-2026",
+          "ed25519_multibase": "z6MkExampleEd25519PubKeyForGoldenVector2",
+          "mldsa65_multibase": "z2MUExamplePostQuantumPubKey2Truncated"
+        },
+        "sdk_attestation": {
+          "name": "@aria-registry/enroll-sdk-web",
+          "version": "1.2.0",
+          "platform": "browser"
+        },
+        "environment": {
+          "runtime": "browser",
+          "runtime_version": "Chrome/124.0.0.0",
+          "region_hint": "aws:eu-west-1"
+        },
+        "created_at": "2026-05-15T10:30:00.000Z"
+      },
+      "expected_canonical_json": "{\"agent_name\":\"support-bot\",\"created_at\":\"2026-05-15T10:30:00.000Z\",\"enrollment_session_id\":\"01HZX9KQRP4M6N9R3T5V7W1Y2Z6\",\"enrollment_token_hash\":\"abc123def456789012345678901234567890abcdef1234567890abcdef123456\",\"environment\":{\"region_hint\":\"aws:eu-west-1\",\"runtime\":\"browser\",\"runtime_version\":\"Chrome/124.0.0.0\"},\"hitl_required\":[\"support:tickets:create\"],\"holder_public_key\":{\"ed25519_multibase\":\"z6MkExampleEd25519PubKeyForGoldenVector2\",\"mldsa65_multibase\":\"z2MUExamplePostQuantumPubKey2Truncated\",\"suite\":\"mldsa65-ed25519-2026\"},\"principal_did\":\"did:aria:acme.example:org\",\"sdk_attestation\":{\"name\":\"@aria-registry/enroll-sdk-web\",\"platform\":\"browser\",\"version\":\"1.2.0\"},\"selected_scopes\":[\"support:tickets:read\",\"support:tickets:create\"],\"spec_version\":\"1.0\",\"target_domain\":\"support.acme.example\",\"trust_level\":\"L1\"}",
+      "expected_identity_commitment": "3a71f25e6a583fe6513aeef842d2ea5afda6dbf6b19111339dccdf499970d7e9"
+    }
+  ]
+}

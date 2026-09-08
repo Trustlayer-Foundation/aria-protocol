@@ -1,0 +1,8 @@
+
+# Local agent context — not part of the normative source
+CLAUDE.md
+
+# Build output
+dist/
+node_modules/
+*.tsbuildinfo

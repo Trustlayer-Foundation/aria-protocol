@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/enrollment-manifest-v1.json",
+  "title": "ARIA Enrollment Manifest v1",
+  "description": "Self-signed manifest constructed by an ARIA SDK during the enrollment flow defined in ARIA Spec v1.2 §Enrollment. The SDK generates a composite keypair (Ed25519 + ML-DSA-65) locally on the agent's machine, builds this manifest, self-signs it with both halves, and submits it to POST /v1/enrollment/submit authenticated by the magic token issued at POST /v1/enrollment/request. The registry MUST validate, in order: (1) magic token (constant-time SHA-256 comparison against stored hash), (2) enrollment_token_hash matches recomputed SHA-256 of the auth header token, (3) enrollment_session_id and principal_did match the session bound to the token, (4) self_signature verifies under holder_public_key (BOTH halves), (5) identity_commitment recomputes correctly over JCS-canonicalized manifest minus identity_commitment and self_signature, (6) selected_scopes is a non-empty subset of the scopes returned by GET /v1/enrollment/scopes, (7) DNS proof at _aria-enroll.{target_domain} for trust_level L1+, (8) DNSSEC SECURE status for trust_level L2+, (9) external_did_proof verifies if external_did present, (10) created_at is within [now - ENROLLMENT_TOKEN_TTL, now + 5min]. Only after all ten checks pass does the enrollment advance to AWAITING_ADMIN_2FA. This schema is independent of aid-v1.2.json — the manifest is consumed at enrollment time and archived in the audit log, but is NOT embedded in the issued AID.",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "enrollment_session_id",
+    "enrollment_token_hash",
+    "principal_did",
+    "agent_name",
+    "trust_level",
+    "selected_scopes",
+    "holder_public_key",
+    "sdk_attestation",
+    "environment",
+    "created_at",
+    "identity_commitment",
+    "self_signature"
+  ],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Version of the enrollment-manifest schema. Independent of the AID spec_version. Bumped only on breaking changes to manifest structure."
+    },
+    "enrollment_session_id": {
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "ULID returned by GET /v1/enrollment/scopes. Binds this manifest to a specific enrollment session opened by the admin at POST /v1/enrollment/request. Registry rejects manifests whose session_id does not match the session derived from the magic token."
+    },
+    "enrollment_token_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Lowercase-hex SHA-256 of the plaintext magic token the SDK is using to authenticate. Registry recomputes SHA-256 of the token presented in the Authorization header and rejects on mismatch with constant-time comparison. Defense-in-depth against token-confusion attacks where an attacker rebinds a different session's token to this manifest."
+    },
+    "principal_did": {
+      "type": "string",
+      "pattern": "^did:aria:.+$",
+      "description": "The principal's DID as returned by GET /v1/enrollment/scopes. Registry validates that this matches the principal that owns the enrollment session."
+    },
+    "agent_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$",
+      "description": "Human-readable agent name. Must match the value the admin provided at POST /v1/enrollment/request; registry rejects on mismatch. The SDK echoes this from the response of GET /v1/enrollment/scopes."
+    },
+    "trust_level": {
+      "type": "string",
+      "enum": ["L0", "L1", "L2", "L3"],
+      "description": "Trust level the admin requested at POST /v1/enrollment/request. Manifest must echo this verbatim; registry rejects on mismatch."
+    },
+    "target_domain": {
+      "type": "string",
+      "format": "hostname",
+      "maxLength": 253,
+      "description": "Fully-qualified domain name bound to this agent. Required for trust_level in {L1, L2, L3}; absent for L0. Registry validates a TXT record at _aria-enroll.{target_domain} containing the magic token's hash and a recent timestamp. DNSSEC SECURE status (per @relaycorp/dnssec) is enforced for trust_level L2+; INSECURE and BOGUS responses are rejected."
+    },
+    "external_did": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^did:[a-z0-9]+:.+$",
+      "description": "Optional. An external DID (any method) the agent claims as an alternative identifier. If present, external_did_proof is required. Registry validates DID syntactic well-formedness and verifies proof-of-control. In v1.2 the validated DID is stored in the issued AID's credentialSubject.alsoKnownAs but is DORMANT for trust decisions — verifiers MUST NOT treat it as authoritative. Maximum 1 external DID in v1.2; v1.3 may expand."
+    },
+    "external_did_proof": {
+      "type": "object",
+      "required": ["type", "challenge", "signature"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Ed25519Signature2020", "JsonWebSignature2020"],
+          "description": "Proof type. v1.2 ships a minimal allow-list of proof types whose verification can be expressed without invoking method-specific resolvers. Any other type is rejected with reason 'external_did_proof_unsupported'. The allow-list expands in v1.3 as the DID-method allow-list activates."
+        },
+        "challenge": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Lowercase-hex SHA-256 of the bytes (enrollment_session_id || ':' || external_did) — the exact string whose UTF-8 encoding the external DID's key signed. Registry recomputes from session_id and external_did and rejects on mismatch."
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Detached signature over the challenge, encoded per the proof type. For Ed25519Signature2020: base58btc-multibase ('z' prefix). For JsonWebSignature2020: compact JWS (detached payload, header + signature only)."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Required if and only if external_did is present. Demonstrates control over the external DID at enrollment time by signing a session-bound challenge from the external DID's verification key. The challenge derivation includes the session_id, so a proof captured from one enrollment cannot be replayed into another."
+    },
+    "selected_scopes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*(:[a-z][a-z0-9_]*)*$"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "Scopes the AGENT autonomously selects from the scopes_available list returned by GET /v1/enrollment/scopes. The set MUST be a non-empty subset of scopes_available; registry rejects on superset. By design, the admin does not pre-select scopes at POST /v1/enrollment/request — the agent declares the scopes it intends to operate under, and the admin reviews this list at the FASE C confirmation screen before signing. This separation surfaces scope-creep attempts to the human reviewer."
+    },
+    "hitl_required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "maxItems": 32,
+      "description": "Optional. Subset of selected_scopes that the agent declares require human-in-the-loop approval at runtime. Must be ⊆ selected_scopes; registry rejects on superset."
+    },
+    "holder_public_key": {
+      "type": "object",
+      "required": ["suite", "ed25519_multibase", "mldsa65_multibase"],
+      "properties": {
+        "suite": {
+          "type": "string",
+          "const": "mldsa65-ed25519-2026",
+          "description": "Composite cryptosuite identifier. Matches the proof.cryptosuite used by the registry to sign the eventual AID — the agent's holder key is composite for forward compatibility, even though only the Ed25519 half is embedded in the issued AID's credentialSubject.holderKey in v1.2."
+        },
+        "ed25519_multibase": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$",
+          "description": "Multibase-encoded ('z' prefix + base58btc) raw Ed25519 public key (32 bytes). The classical half of the composite holder key. After successful enrollment, this exact byte string populates credentialSubject.holderKey.publicKeyMultibase in the issued AID."
+        },
+        "mldsa65_multibase": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$",
+          "description": "Multibase-encoded ('z' prefix + base58btc) raw ML-DSA-65 public key (1952 bytes). The post-quantum half of the composite holder key. NOT embedded in the issued AID in v1.2 due to size constraints, but archived alongside the manifest in the audit log so the manifest's self_signature remains independently verifiable after issuance."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Composite holder public key. The corresponding private halves are generated by the SDK on the agent's machine and never transmitted to the registry. After enrollment, the SDK persists the private material per environment.runtime: node SDK writes a PEM to a configurable filesystem path; web SDK stores in IndexedDB with WebAuthn-PRF derived encryption when available, or falls back to one-time download."
+      },
+    "sdk_attestation": {
+      "type": "object",
+      "required": ["name", "version", "platform"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["@aria-registry/sdk-node", "@aria-registry/web-keygen"],
+          "description": "Identifier of the SDK package that constructed and signed this manifest. v1.2 ships exactly two first-party SDKs. Third-party SDKs may register additional names through the v1.3 SDK allow-list governance process."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+          "description": "Semantic version of the SDK package. Registry MAY warn (not reject) when the version is older than a known-vulnerable threshold; concrete enforcement is deferred to v1.3."
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["node", "browser"],
+          "description": "Runtime category. Browser implies sdk_attestation.name === '@aria-registry/web-keygen' and environment.runtime === 'browser'."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Identifies which SDK signed this manifest. Surfaced verbatim to the admin on the FASE C review screen so unexpected SDKs (different package, suspicious version) can be visually detected before authorization."
+    },
+    "environment": {
+      "type": "object",
+      "required": ["runtime", "runtime_version"],
+      "properties": {
+        "runtime": {
+          "type": "string",
+          "enum": ["node", "bun", "deno", "browser"],
+          "description": "Runtime category. browser is valid only when sdk_attestation.platform === 'browser'."
+        },
+        "runtime_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Free-form version string as reported by the runtime (e.g., 'v22.16.0', 'Chrome/124.0.6367.78'). Informational; registry does not validate format."
+        },
+        "region_hint": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Optional. Agent-declared cloud region hint (e.g., 'aws:us-east-1', 'gcp:europe-west4'). Not verified by the registry; surfaced to the admin at confirmation as informational only."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Environmental metadata declared by the SDK. Surfaced to the admin at confirmation. The registry MUST NOT make trust decisions based on these values — they are self-reported and unverifiable. Their purpose is to give the admin a fingerprint of the agent's runtime so unexpected combinations (e.g., a browser SDK claiming an AWS region) are visually detectable."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the SDK constructed this manifest. Registry rejects manifests where created_at is older than ENROLLMENT_TOKEN_TTL_MIN (60 minutes default) or more than 5 minutes in the future (clock-skew tolerance per RFC 7519 §4.1.4 conventions)."
+    },
+    "identity_commitment": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Lowercase-hex SHA-256 over JCS-canonicalized (RFC 8785) JSON of the manifest with the identity_commitment and self_signature fields REMOVED. Binds every other field together into a single hash that the self_signature signs. Registry recomputes and rejects on mismatch. Because identity_commitment is computed AFTER all other fields are finalized, including enrollment_session_id and enrollment_token_hash, every signed commitment is bound to exactly one enrollment session."
+    },
+    "self_signature": {
+      "type": "object",
+      "required": ["suite", "ed25519", "mldsa65"],
+      "properties": {
+        "suite": {
+          "type": "string",
+          "const": "mldsa65-ed25519-2026",
+          "description": "Must match holder_public_key.suite."
+        },
+        "ed25519": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "minLength": 86,
+          "maxLength": 88,
+          "description": "Base64url-encoded (no padding) Ed25519 signature over the UTF-8 bytes of identity_commitment (the lowercase-hex string itself, not its decoded bytes). 64 raw bytes → 86 base64url characters. Verified with holder_public_key.ed25519_multibase."
+        },
+        "mldsa65": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "minLength": 4380,
+          "maxLength": 4400,
+          "description": "Base64url-encoded (no padding) ML-DSA-65 signature over the UTF-8 bytes of identity_commitment. ~3293 raw bytes → ~4392 base64url characters. Verified with holder_public_key.mldsa65_multibase."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Composite self-signature: BOTH halves MUST verify. Registry rejects with reason 'self_signature_invalid' on either failure. The signature payload is identity_commitment (a hex string), not the full canonical manifest — the commitment already binds every field via its computation. This indirection lets the registry recompute and re-sign equivalent commitments without needing JCS at verification time."
+    }
+  },
+  "additionalProperties": false
+}

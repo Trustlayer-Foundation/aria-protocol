@@ -1,0 +1,49 @@
+; =============================================================================
+; Agent Trust Protocol (ATP) DNS Policy — Example
+; ARIA Protocol v1.0
+; =============================================================================
+;
+; The ATP policy is a DNS TXT record published at _aria-policy.<domain>.
+; It defines the admission policy a receiving system enforces when AI agents
+; present their ARIA credentials. Analogous to DMARC (RFC 7489) for email.
+;
+; Receiving systems evaluate incoming agent credentials against this policy
+; using a three-phase handshake: Declare, Evaluate, Admit.
+;
+; =============================================================================
+
+; --- Example 1: Strict financial institution ---
+;
+; This bank requires L2 trust, enforces strictly, requires commerce and invoice
+; scopes, prohibits agents that claim to represent humans, requires intent
+; fields (purpose and principal_ref), limits delegation depth to 3, rate-limits
+; to 100 requests/hr, and receives aggregate compliance reports.
+
+_aria-policy.bank.com. IN TXT "v=ATP1; min=L2; enforce=strict; req=commerce.*,invoice.*; deny=identity.represent.human; intent=purpose,principal_ref; depth=3; rate=100/hr; rua=https://bank.com/atp-reports"
+
+
+; --- Example 2: E-commerce platform in monitor mode ---
+;
+; This platform is starting ATP adoption. Monitor mode logs all agent
+; interactions without blocking anyone. Useful for visibility before
+; committing to enforcement.
+
+_aria-policy.shop.example.com. IN TXT "v=ATP1; min=L0; enforce=monitor; rua=https://shop.example.com/aria/reports"
+
+
+; --- Example 3: Healthcare API with qualifier conditions ---
+;
+; This healthcare API requires L2 trust and strict enforcement. Any agent
+; with a healthcare-sector scope must also carry an ISO 27001 attestation.
+; Intent must declare purpose, principal, and data retention.
+
+_aria-policy.health-api.example.com. IN TXT "v=ATP1; min=L2; enforce=strict; req=health.*; deny=identity.represent.human; intent=purpose,principal_ref,retention; depth=2; rate=50/hr; qualify=sector:healthcare>iso27001; rua=https://health-api.example.com/atp-reports; ttl=1800"
+
+
+; --- Example 4: Open API with warn mode ---
+;
+; This public data API uses warn mode as a transitional step. Non-compliant
+; agents receive an X-ATP-Warning header but are still admitted. The API may
+; apply reduced permissions to warned agents.
+
+_aria-policy.data.example.org. IN TXT "v=ATP1; min=L1; enforce=warn; req=data.read; intent=purpose; rate=500/hr"
