@@ -1,8 +1,10 @@
 # @aria-registry/verify
 
-**Verify AI agent identity offline. Post-quantum cryptography. Zero dependencies beyond Noble crypto.**
+**Verify an agent's credential offline. Post-quantum cryptography. No dependencies beyond the Noble libraries.**
 
-[ARIA](https://aria.bar) (Agent Registry for Identity & Authorization) gives every AI agent a verifiable, cryptographically-signed identity document (AID). This SDK lets any system verify an AID locally — no internet required.
+[ARIA](https://aria.bar) (Agent Registry for Identity & Authorization) gives every AI agent a verifiable, cryptographically signed identity document (AID). This SDK verifies an AID locally, with no network call.
+
+**What it verifies, and what it does not.** It checks the composite signature — ML-DSA-65 and Ed25519, **both** halves must pass — the validity window, the trust level and the provenance of the principal's name. It does **not** check revocation: `revocationStatus` comes back `'unknown'` and the credential passes. Revocation is a separate, networked call (`checkRevocation`), enforced only under a policy that requires it. And it is a credential verifier, not a DID resolver: parsing the identifier, following the DNS pointer, pinning the document against its hash and deriving the DID Document are [specified](https://aria.bar/spec#3-5-2) and not implemented here.
 
 Part of the [ARIA Protocol](https://aria.bar) by [TrustLayer Foundation](https://trustlayer.foundation).
 
@@ -24,6 +26,8 @@ import { verifyAgent } from '@aria-registry/verify';
 const result = await verifyAgent(credential);
 
 if (result.valid) {
+  // `valid` means the signature, the validity window and the schema check out.
+  // It says nothing about revocation — see "Check Revocation Online" below.
   console.log(result.did);                          // "did:aria:example.com:my-agent"
   console.log(result.trustLevel);                   // "L1"
   console.log(result.scopes);                       // ["data:general:read", ...]
@@ -33,18 +37,18 @@ if (result.valid) {
 }
 ```
 
-### What's surfaced from AID schema v1.1
+### What is surfaced from the AID
 
-Every verification result includes the v1.1 machine-readable fields so a verifier can act
+Every verification result includes the machine-readable fields so a verifier can act
 on identity provenance without re-parsing the raw VC:
 
 | Field | Meaning |
 |---|---|
 | `credentialId` | Unique credential-instance URL — equivalent to a TLS certificate serial number. New on every reissuance. |
 | `previousCredentialId` | URL of the credential this one supersedes, enabling explicit chain-of-issuance walks. `null` on first issuance. |
-| `principal.verificationStatus` | Machine-readable provenance of the legal name: `self-declared` (L0/L1), `registry-confirmed` (L2), or `legal-verified` (L3). `null` for pre-v1.1 credentials. |
+| `principal.verificationStatus` | Machine-readable provenance of the legal name: `self-declared` (L0/L1), `registry-confirmed` (L2), or `legal-verified` (L3). `null` on credentials issued before the field existed. |
 
-Pre-v1.1 credentials continue to verify; the v1.1 fields are surfaced as `null`.
+Older credentials continue to verify; fields they predate are surfaced as `null`.
 
 ## Verify with Policy
 
@@ -72,7 +76,9 @@ an Authoritative Source (the company register of the jurisdiction of incorporati
 import { verifyAgent } from '@aria-registry/verify';
 
 const result = await verifyAgent(credential, {
-  policy: { maxOfflineAge: null, requirePrincipalVerified: true },
+  // Bound the age of status evidence. `null` means "any age", which lets a
+  // revoked credential keep passing from cache; the protocol floor is 60 s.
+  policy: { maxOfflineAge: 60 * 60 * 1000, requirePrincipalVerified: true, requireRevocationCheck: true },
 });
 
 if (result.policyResult?.passed) {
@@ -81,9 +87,9 @@ if (result.policyResult?.passed) {
 // Otherwise result.policyResult.reason starts with "PRINCIPAL_NOT_VERIFIED:"
 ```
 
-This closes the L1 brand-impersonation gap: an attacker registering a self-declared
-organization name (e.g. "Goldman Sachs" on a look-alike domain) is rejected before
-the `legalName` is treated as authoritative.
+This closes the L1 brand-impersonation gap: an attacker who registers a well-known
+company's name as a self-declared principal, on a look-alike domain, is rejected
+before `legalName` is treated as authoritative.
 
 ## Parse without Verification
 
@@ -105,6 +111,12 @@ if (parsed) {
 ## Check Revocation Online
 
 The **only function** that requires internet access:
+
+This is a **per-DID** call to `/v1/verify/{did}`, not a read of the aggregate Bitstring
+Status List the credential points at. It therefore tells the registry which agent you
+are asking about. Moving the reference SDK to the aggregate list is
+[planned](https://aria.bar/planned); until then both mechanisms are supported and
+`INVARIANTS.md` §12 records why.
 
 ```typescript
 import { checkRevocation } from '@aria-registry/verify';
@@ -128,13 +140,23 @@ const status = await checkRevocation(did, {
 
 ## Policy Presets
 
-| Preset | Max Offline Age | Min Trust Level | Revocation Check | Based On |
-|--------|----------------|-----------------|-------------------|----------|
-| `COMMERCE` | Unlimited | L0 | No | — |
-| `FINANCIAL` | 24 hours | L1 | No | NIST SP 800-63-4 / PCI-DSS |
-| `HEALTHCARE` | 1 hour | L1 | No | HIPAA §164.312 |
-| `GOVERNMENT` | 1 hour | L1 | No | Aligned to NIST SP 800-63A-4 |
-| `SOVEREIGN` | 15 minutes | L2 | **Yes** | Aligned to NIST SP 800-63A-4 |
+| Preset | Max offline age | Min trust level | Revocation check | What it asks for |
+|--------|----------------|-----------------|-------------------|------------------|
+| `COMMERCE` | unlimited | L0 | no | nothing beyond a valid credential |
+| `FINANCIAL` | 24 hours | **L2** | no | a confirmed legal entity behind the agent |
+| `HEALTHCARE` | 1 hour | L1 | no | a verified person, checked recently |
+| `GOVERNMENT` | 1 hour | **L2** | no | a confirmed legal entity, no self-declared principal |
+| `SOVEREIGN` | 15 minutes | **L3** | **yes** | a person with power to bind the entity, hardware-held keys |
+
+The presets are convenience defaults, not conformance claims. ARIA maps to selected
+frameworks in [Appendix B](https://aria.bar/spec#appendix-b) of the specification and
+asserts equivalence to none of them. Only `SOVEREIGN` requires a revocation check; under
+every other preset you supply `lastRevocationCheck` yourself or revocation is not
+considered.
+
+Only **L0** is issued today. A preset asking for L1 or above will reject every credential
+that currently exists — correct as policy, surprising as a first run. See
+[what is planned](https://aria.bar/planned#l1-l3).
 
 ## Custom Policy
 
@@ -158,19 +180,26 @@ const result = await verifyAgent(credential, { policy: myPolicy });
 | Level | Name | Description |
 |-------|------|-------------|
 | L0 | Anchored | Cryptographic existence of the agent. Every declared name is self-declared. |
-| L1 | Identified | A verified natural person answers for the agent, which controls its domain. Not automatic. |
-| L2 | Certified | Entity confirmed against its Authoritative Source; person linked; sanctions screened. |
-| L3 | Sovereign | Binding Officer, keys in certified hardware (MUST), signed accountability. |
+| L1 | Identified | A verified natural person answers for the agent, which controls its domain. Not automatic. `[PLANNED]` |
+| L2 | Certified | Entity confirmed against its Authoritative Source; person linked; sanctions screened. `[PLANNED]` |
+| L3 | Sovereign | Binding Officer, keys in certified hardware (MUST), signed accountability. `[PLANNED]` |
+
+L1 to L3 are specified and not yet issued: no registry has been evaluated for them.
 
 ## How It Works
 
-The SDK verifies ARIA Agent Identity Documents (AIDs) entirely offline. Aligned with ARIA Protocol v1.0 (filed with NIST, March 2026).
+The SDK verifies ARIA Agent Identity Documents (AIDs) offline. Aligned with ARIA 1.0
+(September 7, 2026); the protocol was filed with NIST in March 2026 under docket
+2025-0035.
 
-1. **Parse** the W3C Verifiable Credential and extract agent metadata
+1. **Parse** the W3C Verifiable Credential and extract the agent metadata
 2. **Check expiration** against the credential's `validUntil` timestamp
-3. **Verify ML-DSA-65** (FIPS 204) — the post-quantum primary signature
-4. **Verify Ed25519** (RFC 8032) — the classical transition signature
+3. **Verify ML-DSA-65** (FIPS 204) — the post-quantum signature
+4. **Verify Ed25519** (RFC 8032) — the classical half of the composite
 5. **Evaluate policy** constraints (trust level, scopes, offline age)
+
+Both halves must verify; failing either one fails the credential, and there is no
+degraded mode that accepts one. What is *not* in that list is revocation.
 
 Both signatures are verified against the ARIA Registry's public keys, which are embedded in the SDK package. No network calls are made during verification.
 
@@ -184,7 +213,8 @@ import { verifyAgent, AriaVerifyError, RevocationCheckError } from '@aria-regist
 const result = await verifyAgent(input);
 if (!result.valid) {
   // result.reason contains a machine-readable code + description
-  // e.g. "SIGNATURE_INVALID: ML-DSA-65 and Ed25519 signature verification failed."
+  // e.g. "SIGNATURE_INVALID: ML-DSA-65 signature verification failed." — the message
+  //      names the half that failed, so tampering can be told from a version mismatch
   // e.g. "EXPIRED: credential has expired"
   // e.g. "MISSING_FIELDS: required fields are missing from credentialSubject."
 }

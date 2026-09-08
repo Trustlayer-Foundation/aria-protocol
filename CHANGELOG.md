@@ -49,6 +49,23 @@ All notable changes to the ARIA Protocol specification.
   schema is re-cut at the cutover, when credentials begin to declare `spec_version: "1.0"`.
 
 ### Documentation
+- **Every document in the repository read against the published site.** The SDK README,
+  which is the npm front page, claimed the wrong minimum trust level for two policy
+  presets (FINANCIAL is L2 and SOVEREIGN is L3, not L1 and L2), presented the presets as
+  based on named regulatory standards, showed `maxOfflineAge: null` — the setting that
+  lets a revoked credential keep passing — as an example, named a real company as the
+  impersonation example, and said nothing about revocation on the page where a reader
+  decides whether to trust `valid`. All corrected, and the levels now carry `[PLANNED]`
+  because only L0 is issued.
+- **`conformance/README.md` described files that do not exist** (`manifest-validation.json`,
+  a `harness/` directory) and claimed the case set "already keeps four independent SDK
+  implementations producing byte-identical canonical JSON". There is one published SDK.
+  The missing vectors are now listed as missing, including the composite-signature case.
+- `spec/README.md` said 27 sections and pointed at §02 and §05; the specification has 12
+  normative sections and 5 appendices, and ATP is §8. `DEPRECATIONS.md` pointed Trust
+  Seals at §26, retired in the restructure; it is Appendix C. `SECURITY.md` said the
+  Technical Steering Committee ratifies emergency fixes; it is not seated until Q4 2026,
+  so it says who does today.
 - README says "verify a credential", not "verify an agent", and states what the SDK does
   not do: it never checks revocation (`revocationStatus` comes back `unknown` and the
   credential passes) and it does not resolve DIDs.

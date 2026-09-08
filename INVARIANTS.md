@@ -79,8 +79,10 @@ and on floating-point numbers. The invariant is what the vectors say, because
 credentials already signed cannot be re-signed against a different rule. JCS is a
 candidate for a successor suite, not a description of this one.
 
-Byte-identical output across implementations is the cross-implementation contract,
-and the vectors are how a second implementation proves it has it.
+Byte-identical output across implementations is the cross-implementation contract, and
+the vectors are how a second implementation proves it has it. Today there is one
+published SDK; the contract exists so that the second one can be checked against it
+rather than negotiated with.
 
 **Breaks if:** any serialisation detail varies — key ordering, number formatting,
 string escaping, whitespace.
