@@ -81,3 +81,56 @@ describe('production-form credential', () => {
     expect(verifyAgent(prod()).revocationStatus).toBe('unknown');
   });
 });
+
+// ── Multibase, suite 1.0 ──────────────────────────────────
+// The VC v2 context types proofValue as sec:multibase, so suite 1.0 emits the
+// same bytes with the multibase base64url prefix "u". Credentials issued before
+// the cutover have no prefix and must keep verifying. These check that both are
+// accepted and that the composite AND still holds on the prefixed branch.
+describe('proofValue encodings — multibase and bare', () => {
+  const multibase = () => load('valid-aid-multibase-form.json');
+
+  it('verifies the multibase form suite 1.0 emits', async () => {
+    const aid = multibase();
+    expect(aid.proof.proofValue.startsWith('u')).toBe(true);
+    const result = await verifyAgent(aid, { checkRevocation: false, checkDNS: false });
+    expect(result.valid).toBe(true);
+  });
+
+  it('verifies the same bytes with the prefix removed', async () => {
+    const aid = multibase();
+    aid.proof.proofValue = aid.proof.proofValue.slice(1);
+    const result = await verifyAgent(aid, { checkRevocation: false, checkDNS: false });
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects a multibase proof whose post-quantum half was altered', async () => {
+    const aid = multibase();
+    const bytes = Buffer.from(aid.proof.proofValue.slice(1), 'base64url');
+    bytes[100] ^= 0xff;
+    aid.proof.proofValue = `u${bytes.toString('base64url')}`;
+    const result = await verifyAgent(aid, { checkRevocation: false, checkDNS: false });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects a multibase proof whose classical half was altered', async () => {
+    const aid = multibase();
+    const bytes = Buffer.from(aid.proof.proofValue.slice(1), 'base64url');
+    bytes[bytes.length - 10] ^= 0xff;
+    aid.proof.proofValue = `u${bytes.toString('base64url')}`;
+    const result = await verifyAgent(aid, { checkRevocation: false, checkDNS: false });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects a prefix over bytes the length header does not describe', async () => {
+    const aid = multibase();
+    const bytes = Buffer.from(aid.proof.proofValue.slice(1), 'base64url');
+    aid.proof.proofValue = `u${bytes.subarray(0, bytes.length - 8).toString('base64url')}`;
+    const result = await verifyAgent(aid, { checkRevocation: false, checkDNS: false });
+    expect(result.valid).toBe(false);
+  });
+
+  it('the bare form of this suite always begins AAAM, so the prefix is unambiguous', () => {
+    expect(load('valid-aid-production-form.json').proof.proofValue.startsWith('AAAM')).toBe(true);
+  });
+});

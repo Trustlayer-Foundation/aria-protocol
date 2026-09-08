@@ -68,36 +68,74 @@ function base64urlToBytes(b64: string): Uint8Array {
 }
 
 // ── Composite Proof Decoding ──────────────────────────────
-// The ARIA Registry encodes both signatures into a single
-// base64url proofValue:
+// Both signatures travel in one proofValue:
 //   [4 bytes: PQ sig length (big-endian uint32)]
 //   [PQ signature bytes]
 //   [Classical signature bytes]
+//
+// Two encodings of those bytes are in circulation. Suite 1.0 emits multibase
+// base64url -- a leading "u" per the multibase table -- because the VC v2
+// context types proofValue as sec:multibase, and a bare base64 string claiming
+// that datatype is not one. Credentials issued before the cutover carry the
+// same bytes with no prefix. Verifiers accept both.
+//
+// For this suite the two cannot be confused: the header is always 0x00000CED,
+// the ML-DSA-65 signature length, so a bare proofValue always begins "AAAM" and
+// never "u". The decoder still checks the header rather than trusting the first
+// character, so a suite whose header encodes differently stays decidable.
+
+/** ML-DSA-65 signature length in bytes (FIPS 204). */
+const ML_DSA_65_SIGNATURE_SIZE = 3309;
+
+/** Ed25519 signature length in bytes (RFC 8032). */
+const ED25519_SIGNATURE_SIZE = 64;
+
+/**
+ * Decode one reading of a proofValue, rejecting it unless the length header
+ * accounts for every byte. This is what makes the multibase prefix detectable
+ * rather than guessed: a bare base64url string that happens to begin with "u"
+ * decodes to a header that does not describe its own length.
+ */
+function decodeCandidate(
+  base64url: string,
+): { pqSignature: Uint8Array; classicalSignature: Uint8Array } | null {
+  try {
+    const combined = base64urlToBytes(base64url);
+    if (combined.length !== COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE + ED25519_SIGNATURE_SIZE) {
+      return null;
+    }
+
+    const view = new DataView(combined.buffer, combined.byteOffset, combined.byteLength);
+    if (view.getUint32(0, false) !== ML_DSA_65_SIGNATURE_SIZE) return null; // big-endian
+
+    return {
+      pqSignature: combined.slice(COMPOSITE_PROOF_HEADER_SIZE, COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE),
+      classicalSignature: combined.slice(COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE),
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Decode a composite proofValue into its PQ and classical components.
+ *
+ * Accepts both the multibase form suite 1.0 emits (`u` + base64url) and the
+ * bare base64url form issued before the cutover.
+ *
  * @internal
  */
 function decodeCompositeProof(
   proofValue: string,
 ): { pqSignature: Uint8Array; classicalSignature: Uint8Array } | null {
-  try {
-    const combined = base64urlToBytes(proofValue);
-    if (combined.length < COMPOSITE_PROOF_HEADER_SIZE) return null;
-
-    const view = new DataView(combined.buffer, combined.byteOffset, combined.byteLength);
-    const pqLength = view.getUint32(0, false); // big-endian
-
-    if (COMPOSITE_PROOF_HEADER_SIZE + pqLength > combined.length) return null;
-
-    const pqSignature = combined.slice(COMPOSITE_PROOF_HEADER_SIZE, COMPOSITE_PROOF_HEADER_SIZE + pqLength);
-    const classicalSignature = combined.slice(COMPOSITE_PROOF_HEADER_SIZE + pqLength);
-
-    if (classicalSignature.length === 0) return null;
-    return { pqSignature, classicalSignature };
-  } catch {
-    return null;
+  // Read as multibase first when prefixed; fall back to reading the whole
+  // string, so the header decides rather than the first character.
+  const readings = proofValue.startsWith('u') ? [proofValue.slice(1), proofValue] : [proofValue];
+  for (const reading of readings) {
+    const decoded = decodeCandidate(reading);
+    if (decoded) return decoded;
   }
+  return null;
 }
 
 // ── Result Helpers ────────────────────────────────────────

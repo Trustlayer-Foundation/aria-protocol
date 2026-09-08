@@ -225,6 +225,20 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
   composite.set(prodEd, 4 + prodPq.length);
   const toBase64Url = (b: Uint8Array) =>
     Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // Suite 1.0: the same bytes, multibase base64url. proofValue is typed
+  // sec:multibase by the VC v2 context, so the prefix is not decoration.
+  const multibaseVc = {
+    ...validVc,
+    credentialSubject: { ...productionVc.credentialSubject, spec_version: '1.0' },
+  };
+  const mbPayload = new TextEncoder().encode(canonicalJson(multibaseVc));
+  const mbPq = ml_dsa65.sign(mbPayload, pqKeys.secretKey);
+  const mbEd = ed25519.sign(mbPayload, edPriv);
+  const mbComposite = new Uint8Array(4 + mbPq.length + mbEd.length);
+  new DataView(mbComposite.buffer).setUint32(0, mbPq.length, false);
+  mbComposite.set(mbPq, 4);
+  mbComposite.set(mbEd, 4 + mbPq.length);
+
   writeFileSync(
     join(FIXTURES_DIR, 'valid-aid-production-form.json'),
     JSON.stringify({
@@ -240,6 +254,22 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
     }, null, 2),
   );
   console.log('Saved valid-aid-production-form.json');
+
+  writeFileSync(
+    join(FIXTURES_DIR, 'valid-aid-multibase-form.json'),
+    JSON.stringify({
+      ...multibaseVc,
+      proof: {
+        type: 'DataIntegrityProof',
+        created: now.toISOString(),
+        proofValue: `u${toBase64Url(mbComposite)}`,
+        cryptosuite: 'mldsa65-ed25519-2026',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:aria:registry#key-1',
+      },
+    }, null, 2),
+  );
+  console.log('Saved valid-aid-multibase-form.json');
 
   // Create expired AID
   const yesterday = new Date(now);
