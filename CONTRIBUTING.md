@@ -12,9 +12,33 @@ see [GOVERNANCE.md](GOVERNANCE.md) for who approves today and when that changes.
 | `dev` | Integration. Every change lands here first, by pull request, reviewed. |
 | `spec/…` `sdk/…` `docs/…` `fix/…` `chore/…` | Your work. Branch from `dev`, pull request back to `dev`. |
 
-Branch names must match `(spec|sdk|docs|fix|chore)/<topic>`; continuous
+Branch names must match `(spec|sdk|docs|fix|chore|release)/<topic>`; continuous
 integration checks it. External contributors fork and open the pull request the
 same way.
+
+### Releasing: why `dev` cannot be merged into `main` directly
+
+`main` accepts squash merges only, and only through a pull request. Squashing
+collapses a branch into one new commit, so after a release `main` holds a commit
+whose contents `dev` has and whose identity it does not. The two histories
+diverge by construction, and every later attempt to merge `dev` into `main`
+conflicts over changes that are already there.
+
+A release is therefore a branch off `main` carrying `dev`'s tree, not a merge of
+`dev`:
+
+```bash
+git fetch origin
+git checkout -B release/<topic> origin/main
+git read-tree -u --reset origin/dev     # main's history, dev's exact tree
+git commit -s -S -m "release: <what is being published>"
+gh pr create --base main --head release/<topic>
+```
+
+After it merges, open a second pull request to bring the squashed release commit
+back into `dev`, so the next release starts from an identity the two branches
+share. Rebase-and-merge would avoid the divergence and is not used: it rewrites
+commits, which drops their signatures.
 
 ## Every commit
 

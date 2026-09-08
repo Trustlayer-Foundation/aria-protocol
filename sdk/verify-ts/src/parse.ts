@@ -126,7 +126,9 @@ export function parseCredential(input: unknown): ParsedCredential | null {
       },
       trustLevel,
       scopes: scopes as string[],
-      hitlRequired: (subject.hitlRequired as Record<string, unknown>) ?? null,
+      hitlRequired: Array.isArray(subject.hitlRequired)
+        ? subject.hitlRequired.filter((s): s is string => typeof s === 'string')
+        : null,
       issuedAt: validFrom,
       expiresAt: validUntil,
       expired,
