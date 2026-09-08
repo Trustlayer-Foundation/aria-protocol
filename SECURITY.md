@@ -32,4 +32,4 @@ TrustLayer Foundation plans to co-finance an audit of @noble/post-quantum's ML-D
 
 We follow coordinated disclosure. Please do not open public issues for security vulnerabilities. Use the email above.
 
-Emergency security fixes are applied immediately, with a 30-day retroactive public comment period. The TSC ratifies all emergency fixes.
+Emergency security fixes are applied immediately, with a 30-day retroactive public comment period. They are ratified by the repository's Code Owner (see [GOVERNANCE.md](GOVERNANCE.md)); once the Technical Steering Committee is seated in Q4 2026, ratification passes to it.

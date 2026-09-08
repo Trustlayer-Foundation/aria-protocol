@@ -67,7 +67,7 @@ export const PolicyLevel: Record<string, PolicyConfig> = {
     requireRevocationCheck: false,
   },
 
-  /** Government — max 1h offline, requires L2 minimum (NIST SP 800-63-4 IAL2). */
+  /** Government — max 1h offline, requires L2: a confirmed legal entity. */
   GOVERNMENT: {
     maxOfflineAge: ONE_HOUR_MS,
     minTrustLevel: 'L2' as const,
