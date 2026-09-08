@@ -57,8 +57,13 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - run: bash .github/scripts/identity-guard.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.sha }}"
+        with:
+          fetch-depth: 0
+          # Check the commits the author wrote, not the ephemeral merge commit
+          # GitHub builds for the pull request: that one carries no sign-off and
+          # nobody authored it.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: bash .github/scripts/identity-guard.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}"
 
   neutrality:
     # The Norm defines properties, never vendors or schemes. Retired spellings
