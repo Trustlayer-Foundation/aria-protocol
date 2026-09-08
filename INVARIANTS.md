@@ -28,37 +28,39 @@ and what production issues, while the schema itself had never drifted.
 
 ## 1 · The AID credential shape
 
-`schema/aid-v1.1.json` and `aid-v1.2.json` define the shape for credentials declaring
-that `spec_version`; both belong to the preview line and both describe credentials that
-exist. `schema/aid-v1.3.json` is a **draft that was never issued against**: it was
-prepared when the next schema was expected to be numbered 1.3, before the stable line
-was numbered 1.0. It is kept for reference and nothing validates against it.
+`schema/aid-1.0.json` defines the shape of an ARIA 1.0 credential: `spec_version: "1.0"`,
+a required `credentialSubject.holderKey`, and `principal.legalName` as an organization
+name that MUST NOT be populated for a natural-person principal (`COM-09`, `L0-03`).
+Every issued credential validates against the schema for the `spec_version` it declares
+and is never reissued when a later schema lands. Two schema files are therefore
+published, and both are load-bearing:
 
-Every issued credential validates against the schema for its own version, and none is
-reissued when a later one lands.
+| File | Validates | Published until |
+|---|---|---|
+| `schema/aid-1.0.json` | credentials declaring `spec_version: "1.0"` (ARIA 1.0 issuance) | — |
+| `schema/aid-v1.2.json` | credentials declaring `spec_version: "1.2"`, issued before the cutover; the path is cited from the W3C DID Method Registry | the last such credential expires or is revoked |
 
-**ARIA 1.0 (September 7, 2026) adopts the v1.2 shape unchanged**, with one rule added
-on top: `principal.legalName` is an organization name and MUST NOT be populated for a
-natural-person principal (`COM-09`, `L0-03`). Everything issued to date declares
-`spec_version` 1.1 or 1.2 — the preview line.
-
-**`aid-1.0.json` does not exist yet.** The stable line is re-cut at the issuance
-cutover, when credentials begin to declare `spec_version: "1.0"` and TrustLayer
-Foundation becomes the issuer; see `DEPRECATIONS.md`. Until that day, no file in
-`schema/` describes a credential anyone has been issued under ARIA 1.0, because none
-has been.
+A schema is not history: it is the validation authority for what is in circulation, and
+it stays at its path for as long as anything declares it.
 
 Published, registered with INDAUTOR, and referenced from the `did:aria` entry filed
 with the W3C DID Method Registry.
+
+**`aid-1.0.json` is a draft until the issuance cutover, and says so in the file.** Nothing
+declares `spec_version: "1.0"` yet; the Verification Requirements it serves are still
+v1.3-draft with ten decisions open at TrustLayer Foundation; and fields already planned,
+a designated successor principal among them, have no place in it. Since
+`credentialSubject` declares `additionalProperties: false`, admitting one of them later
+means a new file and a new `spec_version`. It is published so implementers can build
+against it, and it freezes the day the first credential declares 1.0 — not before.
 
 **Breaks if:** a required field is changed, renamed, or removed.
 
 **Versioning:** additive change is impossible within a version, because
 `credentialSubject` and `enrollmentAttestation` both declare
-`additionalProperties: false`. A new field therefore means a new schema file. For the
-stable line that file is `aid-1.0.json`, re-cut at the issuance cutover — not `v1.3`,
-which was drafted under the earlier numbering. Credentials issued under an earlier
-version remain valid against their own schema and are not reissued.
+`additionalProperties: false`. A new field therefore means a new schema file and a new
+`spec_version`. Credentials issued under an earlier version remain valid against their
+own schema and are not reissued.
 
 ## 2 · Signature suite `mldsa65-ed25519-2026`
 
@@ -154,33 +156,31 @@ The status list credential URL and the entry identifier, present in the
 **Breaks if:** the route shape changes — revocation checking fails for every
 existing AID, which is a silent security failure rather than a visible error.
 
-## 11 · `did:aria:registry.aria.bar` as the `issuer` string
+## 11 · The `issuer` string
 
-Present in every issued credential, together with `#key-1` as the
-`verificationMethod`.
+Every issued credential names its issuer DID together with `#key-1` as the
+`verificationMethod`. Today that issuer is `did:aria:registry.aria.bar`.
 
-**Note on what this actually requires.** The reference verify SDK never
-dereferences this identifier — it is a label, not a pointer. A third-party verifier
-implementing DID resolution per the specification *would* resolve it, so it must
-resolve; but reference verification does not depend on it.
+**Note on what this actually requires.** The reference verify SDK never dereferences
+this identifier — it is a label, not a pointer. A third-party verifier implementing DID
+resolution per the specification *would* resolve it, so it must resolve; but reference
+verification does not depend on it.
 
-**What the issuer is, going forward.** The issuer of a conformant credential is the
-one named in the accreditation list TrustLayer Foundation signs — not a fixed string.
-Today that is `did:aria:registry.aria.bar`; from the issuance cutover it is TLF, and
-once a second Registration Authority exists the first one's domain must not appear as
-the issuer of its credentials. See spec §5.2 (trust bootstrap) and `AUD-02`
-(withdrawal of an accreditation is forward-only: it does not invalidate credentials
-issued while the accreditation stood).
+**What the issuer is.** The issuer of a conformant credential is the one named in the
+accreditation list TrustLayer Foundation signs — not a fixed string. Today that is the
+operating registry; from the issuance cutover it is TLF, and once a second Registration
+Authority exists the first one's domain must not appear as the issuer of its
+credentials. See spec §5.2 (trust bootstrap) and `AUD-02` (withdrawal of an
+accreditation is forward-only: it does not invalidate credentials issued while the
+accreditation stood).
 
-**The regime is determined by the issuer DID**, as listed in the accreditation list
-TrustLayer Foundation signs. `spec_version` does not encode it: stable-line credentials
-carry `"1.0"`, numerically *below* the preview line's `"1.2"`, so any rule of the form
-"version ≥ N means the stable regime" classifies stable credentials as previews. There
-was such a rule here and it was wrong.
+**The regime is determined by the issuer DID, never by `spec_version`.** Credentials
+issued before the cutover carry an earlier `spec_version` than `"1.0"`, so any rule of
+the form "version ≥ N" misclassifies them. The only valid rule:
 
 ```
-issuer did:aria:registry.aria.bar   →  preview line (spec_version 1.1, 1.2)
-issuer the TLF DID                  →  stable line (spec_version 1.0 onward)
+issuer did:aria:registry.aria.bar   →  issued before the cutover
+issuer the TLF DID                  →  ARIA 1.0 issuance
 ```
 
 Every issuer that has ever been listed must remain resolvable indefinitely. Key

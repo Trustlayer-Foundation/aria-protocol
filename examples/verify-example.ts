@@ -74,7 +74,7 @@ async function policyEvaluation(): Promise<void> {
     v: 'ATP1',
     min: PolicyLevel.L1,
     enforce: 'strict',
-    req: ['commerce.*'],
+    req: ['commerce:order:*'],
     deny: ['identity.represent.human'],
     intent: ['purpose', 'principal_ref'],
     depth: 3,

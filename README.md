@@ -15,24 +15,18 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 
 ---
 
-## Versions
+## Version
 
 **ARIA 1.0 — first stable release — September 7, 2026.** Verification Requirements
-(80 citable requirements) as the normative basis, four levels redefined and derived
-from evidence, ATP/1, issuer = TrustLayer Foundation. The canonical text is
-[aria.bar/spec](https://aria.bar/spec). Tagged `v1.0.0`. The schema files
-keep their preview names until the issuance cutover re-cuts them for the stable
-line; see [DEPRECATIONS.md](DEPRECATIONS.md).
+(80 citable requirements) as the normative basis, four levels derived from evidence,
+ATP/1, issuer = TrustLayer Foundation. The canonical text is
+[aria.bar/spec](https://aria.bar/spec). Tagged `v1.0.0`. What 1.0 retires and why:
+[DEPRECATIONS.md](DEPRECATIONS.md). Development history before 1.0 is archived
+off-repository and summarized in [CHANGELOG.md](CHANGELOG.md).
 
-**Public previews (no production adoption):** April 1, 2026 (labeled 1.0) · April 28
-(1.1) · May (1.2). Their texts are kept under [`spec/legacy/`](spec/legacy/). Preview
-credentials are distinguished by issuer DID and are sunset at cutover. External
-references to 1.1/1.2 — the W3C CG thread, the FIDES submission, npm
-`@aria-registry/verify` 1.x — refer to the preview line.
-
-**[PLANNED] Issuance cutover.** Credentials under ARIA 1.0 will carry
-`spec_version: "1.0"` and be issued by TrustLayer Foundation (issuer DID TBD). Until
-then, preview credentials remain resolvable and are distinguished by their issuer.
+**[PLANNED] Issuance cutover.** Credentials under ARIA 1.0 carry `spec_version: "1.0"`
+and are issued by TrustLayer Foundation (issuer DID TBD). Credentials issued before the
+cutover remain resolvable and are distinguished by their issuer DID, never by version.
 
 ## What is ARIA?
 
@@ -119,13 +113,22 @@ Full definitions and requirement IDs: [aria.bar/spec#trust](https://aria.bar/spe
 Each AID is a W3C Verifiable Credential signed with the composite cryptosuite
 (`mldsa65-ed25519-2026`).
 
-**Schema versions in this repo:**
+**Schema:** [`schema/aid-1.0.json`](schema/aid-1.0.json) — **a draft until the issuance
+cutover**, and the file says so: nothing declares `spec_version: "1.0"` yet, the
+Verification Requirements it serves are still v1.3-draft, and planned fields have no
+place in it. Build against it; it freezes the day the first credential declares 1.0.
+Example: [`examples/aid-example.json`](examples/aid-example.json) (illustrative; its proof
+value is not verifiable) · holder proof:
+[`examples/holder-proof-example.json`](examples/holder-proof-example.json).
+`credentialSubject.holderKey` is required: a per-agent Ed25519 keypair for
+proof-of-possession that eliminates the bearer-credential vulnerability. The controller
+generates the keypair on its own machine and only the public half is submitted; the
+registry never holds it (spec §3.5.1).
 
-| Version | File | Status | Adds |
-|---|---|---|---|
-| **1.2** | [`schema/aid-v1.2.json`](schema/aid-v1.2.json) · [`examples/aid-example-v1.2.json`](examples/aid-example-v1.2.json) | **Preview line — current file shape.** ARIA 1.0 adopts this shape with `legalName` deprecated for natural persons (see DEPRECATIONS.md); the file is re-cut as `aid-1.0.json` at cutover. | `credentialSubject.holderKey` (required) — per-agent Ed25519 keypair for proof-of-possession. Eliminates the bearer-credential vulnerability of v1.x. The controller generates the keypair on its own machine and only the public half is submitted; the registry never holds it (spec §3.5.1). See also [`examples/holder-proof-example.json`](examples/holder-proof-example.json). |
-| 1.1 | [`schema/aid-v1.1.json`](schema/aid-v1.1.json) · [`examples/aid-example-v1.1.json`](examples/aid-example-v1.1.json) | Preview line — superseded | `principal.verificationStatus`, top-level `id` as credential-instance URL (per W3C VC 2.0 §4.4), `credentialSubject.previousCredentialId`. |
-| 1.3 | [`schema/aid-v1.3.json`](schema/aid-v1.3.json) | **Draft, never issued against.** Prepared when the next schema was expected to be numbered 1.3, before the stable line was numbered 1.0. Kept for reference; nothing validates against it. The stable file is `aid-1.0.json`, re-cut at the issuance cutover. | — |
+Credentials issued before the cutover declare `spec_version: "1.2"` and validate against
+[`schema/aid-v1.2.json`](schema/aid-v1.2.json), which stays published at that path (it is
+cited from the W3C DID Method Registry) for as long as one such credential is in
+circulation. It is not the 1.0 schema.
 
 Notable fields:
 
@@ -133,8 +136,8 @@ Notable fields:
 |---|---|
 | `id` (top-level) | Unique credential-instance URL — `https://api.aria.bar/v1/credentials/{uuidv7}`. New on every issuance. Equivalent to a TLS certificate serial number. Per W3C VC 2.0 §4.4. |
 | `credentialSubject.id` | The agent DID (`did:aria:…`). Stable across reissuances. |
-| `credentialSubject.spec_version` | `"1.2"` on preview-line credentials issued today; `"1.0"` on ARIA 1.0 credentials after the [PLANNED] cutover. Verifiers distinguish the regime by issuer DID, not by this number. |
-| `credentialSubject.holderKey` | **Required (v1.2).** Ed25519 public key (multibase) bound to this AID. Verifiers MUST check a holder proof signed with the corresponding private key (the challenge endpoint is `[PLANNED]`, so this cannot be done yet). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
+| `credentialSubject.spec_version` | `"1.0"` under ARIA 1.0; `"1.2"` on credentials issued before the cutover. Verifiers distinguish the issuance regime by issuer DID, never by this value. |
+| `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Verifiers MUST check a holder proof signed with the corresponding private key (the challenge endpoint is `[PLANNED]`, so this cannot be done yet). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
 | `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability. |
 | `credentialSubject.principal.verificationStatus` | Machine-readable provenance of `principal.legalName`. Enum: `self-declared` (L0, L1), `registry-confirmed` (L2 — confirmed against the Authoritative Source), `legal-verified` (L3 — primary register + Binding Officer). Verifiers MUST consult this before treating `legalName` as authoritative. `legalName` is an **organization** name: natural-person principals MUST NOT populate it (COM-09, L0-03). |
 | `credentialSubject.trustLevel` | `L0`–`L3`. |
@@ -214,6 +217,6 @@ trailers: contributors are people with names. Releases on `main` and every `v*`
 tag are signed by the Foundation account. How a change gets approved, and when
 that stops being one person, is in [GOVERNANCE.md](GOVERNANCE.md).
 
-The public preview line (April–August 2026) was consolidated into a single
-baseline commit; its history is archived off-repository. Commit identifiers from
-that line no longer resolve on `main`.
+The development history before 1.0 was consolidated into a single signed baseline
+commit and is archived off-repository. Earlier commit identifiers do not resolve on
+`main`.

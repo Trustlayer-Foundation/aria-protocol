@@ -6,7 +6,8 @@ repository holds the machine-readable artefacts that text refers to:
 
 | Artefact | Where |
 |---|---|
-| AID schema (preview-line shape adopted by 1.0; `legalName` deprecated for natural persons) | [`../schema/aid-v1.2.json`](../schema/aid-v1.2.json) |
+| AID schema (`legalName` is an organization name; natural persons never populate it) | [`../schema/aid-1.0.json`](../schema/aid-1.0.json) |
+| AID schema for credentials issued before the cutover (`spec_version` 1.2); stays published while any is in circulation | [`../schema/aid-v1.2.json`](../schema/aid-v1.2.json) |
 | ATP policy, intent declaration and enrollment manifest schemas | [`../schema/`](../schema/) |
 | JSON-LD context | [`../context/v1.jsonld`](../context/v1.jsonld) |
 | Conformance vectors (ABNF cases, canonical JSON) | [`../conformance/`](../conformance/) |
@@ -17,8 +18,3 @@ repository holds the machine-readable artefacts that text refers to:
 The normative basis for the trust levels is the **Verification Requirements** (80
 citable requirements, arbitrated August 31, 2026) and the **ATP/1** specification, both
 summarized at aria.bar/spec §2 and §8. Their full texts are published there.
-
-## Legacy
-
-[`legacy/`](legacy/) keeps the preview-line prose (architecture and ATP as labeled v1.1)
-verbatim, for verifiers of preview credentials. It is superseded and not maintained.

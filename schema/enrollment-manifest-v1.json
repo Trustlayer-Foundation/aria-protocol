@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/enrollment-manifest-v1.json",
   "title": "ARIA Enrollment Manifest v1",
-  "description": "Self-signed manifest constructed by an ARIA SDK during the enrollment flow defined in ARIA Spec v1.2 §Enrollment. The SDK generates a composite keypair (Ed25519 + ML-DSA-65) locally on the agent's machine, builds this manifest, self-signs it with both halves, and submits it to POST /v1/enrollment/submit authenticated by the magic token issued at POST /v1/enrollment/request. The registry MUST validate, in order: (1) magic token (constant-time SHA-256 comparison against stored hash), (2) enrollment_token_hash matches recomputed SHA-256 of the auth header token, (3) enrollment_session_id and principal_did match the session bound to the token, (4) self_signature verifies under holder_public_key (BOTH halves), (5) identity_commitment recomputes correctly over JCS-canonicalized manifest minus identity_commitment and self_signature, (6) selected_scopes is a non-empty subset of the scopes returned by GET /v1/enrollment/scopes, (7) DNS proof at _aria-enroll.{target_domain} for trust_level L1+, (8) DNSSEC SECURE status for trust_level L2+, (9) external_did_proof verifies if external_did present, (10) created_at is within [now - ENROLLMENT_TOKEN_TTL, now + 5min]. Only after all ten checks pass does the enrollment advance to AWAITING_ADMIN_2FA. This schema is independent of aid-v1.2.json — the manifest is consumed at enrollment time and archived in the audit log, but is NOT embedded in the issued AID.",
+  "description": "Self-signed manifest constructed by an ARIA SDK during the enrollment flow defined in ARIA 1.0, spec §3.5.1 (Create). The SDK generates a composite keypair (Ed25519 + ML-DSA-65) locally on the agent's machine, builds this manifest, self-signs it with both halves, and submits it to POST /v1/enrollment/submit authenticated by the magic token issued at POST /v1/enrollment/request. The registry MUST validate, in order: (1) magic token (constant-time SHA-256 comparison against stored hash), (2) enrollment_token_hash matches recomputed SHA-256 of the auth header token, (3) enrollment_session_id and principal_did match the session bound to the token, (4) self_signature verifies under holder_public_key (BOTH halves), (5) identity_commitment recomputes correctly over manifest canonicalized per the ARIA canonical JSON (conformance/vectors/canonical-json.json) minus identity_commitment and self_signature, (6) selected_scopes is a non-empty subset of the scopes returned by GET /v1/enrollment/scopes, (7) DNS proof at _aria-enroll.{target_domain} for trust_level L1+, (8) DNSSEC SECURE status for trust_level L2+, (9) external_did_proof verifies if external_did present, (10) created_at is within [now - ENROLLMENT_TOKEN_TTL, now + 5min]. Only after all ten checks pass does the enrollment advance to AWAITING_ADMIN_2FA. This schema is independent of aid-1.0.json — the manifest is consumed at enrollment time and archived in the audit log, but is NOT embedded in the issued AID.",
   "type": "object",
   "required": [
     "spec_version",
@@ -62,7 +62,7 @@
       "type": "string",
       "format": "uri",
       "pattern": "^did:[a-z0-9]+:.+$",
-      "description": "Optional. An external DID (any method) the agent claims as an alternative identifier. If present, external_did_proof is required. Registry validates DID syntactic well-formedness and verifies proof-of-control. In v1.2 the validated DID is stored in the issued AID's credentialSubject.alsoKnownAs but is DORMANT for trust decisions — verifiers MUST NOT treat it as authoritative. Maximum 1 external DID in v1.2; v1.3 may expand."
+      "description": "Optional. An external DID (any method) the agent claims as an alternative identifier. If present, external_did_proof is required. Registry validates DID syntactic well-formedness and verifies proof-of-control. In ARIA 1.0 the validated DID is stored in the issued AID's credentialSubject.alsoKnownAs but is DORMANT for trust decisions — verifiers MUST NOT treat it as authoritative. Maximum 1 external DID; a later revision may expand."
     },
     "external_did_proof": {
       "type": "object",
@@ -71,7 +71,7 @@
         "type": {
           "type": "string",
           "enum": ["Ed25519Signature2020", "JsonWebSignature2020"],
-          "description": "Proof type. v1.2 ships a minimal allow-list of proof types whose verification can be expressed without invoking method-specific resolvers. Any other type is rejected with reason 'external_did_proof_unsupported'. The allow-list expands in v1.3 as the DID-method allow-list activates."
+          "description": "Proof type. ARIA 1.0 ships a minimal allow-list of proof types whose verification can be expressed without invoking method-specific resolvers. Any other type is rejected with reason 'external_did_proof_unsupported'. A later revision may expand the allow-list."
         },
         "challenge": {
           "type": "string",
@@ -114,7 +114,7 @@
         "suite": {
           "type": "string",
           "const": "mldsa65-ed25519-2026",
-          "description": "Composite cryptosuite identifier. Matches the proof.cryptosuite used by the registry to sign the eventual AID — the agent's holder key is composite for forward compatibility, even though only the Ed25519 half is embedded in the issued AID's credentialSubject.holderKey in v1.2."
+          "description": "Composite cryptosuite identifier. Matches the proof.cryptosuite used by the registry to sign the eventual AID — the agent's holder key is composite for forward compatibility, even though only the Ed25519 half is embedded in the issued AID's credentialSubject.holderKey."
         },
         "ed25519_multibase": {
           "type": "string",
@@ -124,7 +124,7 @@
         "mldsa65_multibase": {
           "type": "string",
           "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$",
-          "description": "Multibase-encoded ('z' prefix + base58btc) raw ML-DSA-65 public key (1952 bytes). The post-quantum half of the composite holder key. NOT embedded in the issued AID in v1.2 due to size constraints, but archived alongside the manifest in the audit log so the manifest's self_signature remains independently verifiable after issuance."
+          "description": "Multibase-encoded ('z' prefix + base58btc) raw ML-DSA-65 public key (1952 bytes). The post-quantum half of the composite holder key. NOT embedded in the issued AID due to size constraints, but archived alongside the manifest in the audit log so the manifest's self_signature remains independently verifiable after issuance."
         }
       },
       "additionalProperties": false,
@@ -137,12 +137,12 @@
         "name": {
           "type": "string",
           "enum": ["@aria-registry/sdk-node", "@aria-registry/web-keygen"],
-          "description": "Identifier of the SDK package that constructed and signed this manifest. v1.2 ships exactly two first-party SDKs. Third-party SDKs may register additional names through the v1.3 SDK allow-list governance process."
+          "description": "Identifier of the SDK package that constructed and signed this manifest. ARIA 1.0 ships first-party SDKs only. Third-party SDKs may register additional names through a later allow-list governance process."
         },
         "version": {
           "type": "string",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
-          "description": "Semantic version of the SDK package. Registry MAY warn (not reject) when the version is older than a known-vulnerable threshold; concrete enforcement is deferred to v1.3."
+          "description": "Semantic version of the SDK package. Registry MAY warn (not reject) when the version is older than a known-vulnerable threshold; concrete enforcement is deferred to a later revision."
         },
         "platform": {
           "type": "string",

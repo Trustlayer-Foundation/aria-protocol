@@ -157,12 +157,12 @@ function evaluatePolicy(
     }
   }
 
-  // Principal-verification check (AID v1.1)
+  // Principal-verification check (ARIA 1.0)
   if (policy.requirePrincipalVerified) {
     if (verificationStatus === null) {
       return {
         passed: false,
-        reason: 'PRINCIPAL_NOT_VERIFIED: credential predates AID v1.1 and carries no '
+        reason: 'PRINCIPAL_NOT_VERIFIED: credential predates ARIA 1.0 and carries no '
           + 'principal.verificationStatus field',
       };
     }
