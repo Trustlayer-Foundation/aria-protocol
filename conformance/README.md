@@ -39,6 +39,14 @@ node run.mjs --sdk path/to/entry.mjs
 Without the processor the expansion check skips and says so. CI passes `--strict`,
 which turns that skip into a failure: a check that quietly skips proves nothing.
 
+`expand-live.mjs` is the same check with nothing pinned — it fetches a credential
+and the context over the network, exactly as published, and expands in safe mode.
+It is the version a reviewer runs to confirm the claim rather than take it:
+
+```bash
+node conformance/expand-live.mjs did:aria:<domain>:<agent>
+```
+
 **What is not here yet**, named so nobody assumes otherwise:
 
 ```
