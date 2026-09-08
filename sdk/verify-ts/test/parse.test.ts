@@ -69,18 +69,18 @@ describe('parseCredential', () => {
     expect(parsed).toBeNull();
   });
 
-  // ── v1.1 Tests ────────────────────────────────────────
+  // ── ARIA 1.0 field tests ────────────────────────────────────────
 
-  it('parses spec_version from v1.1 AID', () => {
+  it('parses spec_version from an issued AID', () => {
     const aid = loadFixture('valid-aid.json');
     const parsed = parseCredential(aid);
 
     expect(parsed).not.toBeNull();
-    expect(parsed!.specVersion).toBe('1.1');
+    expect(parsed!.specVersion).toBe('1.0');
   });
 
-  it('parses AID without spec_version (pre-v1.1)', () => {
-    const aid = loadFixture('valid-aid-v15-compat.json');
+  it('parses AID without spec_version (pre-cutover)', () => {
+    const aid = loadFixture('valid-aid-pre-cutover.json');
     const parsed = parseCredential(aid);
 
     expect(parsed).not.toBeNull();
@@ -94,10 +94,10 @@ describe('parseCredential', () => {
     expect(parsed).not.toBeNull();
     expect(parsed!.trustLevel).toBe('L0');
     expect(parsed!.agent).toBe('L0TestAgent');
-    expect(parsed!.specVersion).toBe('1.1');
+    expect(parsed!.specVersion).toBe('1.0');
   });
 
-  it('exposes credentialId, previousCredentialId, and verificationStatus on v1.1 AID', () => {
+  it('exposes credentialId, previousCredentialId, and verificationStatus on an issued AID', () => {
     const aid = loadFixture('valid-aid.json');
     const parsed = parseCredential(aid);
 
@@ -108,8 +108,8 @@ describe('parseCredential', () => {
     expect(parsed!.did).toBe('did:aria:example.com:test-agent');
   });
 
-  it('returns null credentialId/verificationStatus for pre-v1.1 credentials', () => {
-    const aid = loadFixture('valid-aid-v15-compat.json');
+  it('returns null credentialId/verificationStatus for pre-cutover credentials', () => {
+    const aid = loadFixture('valid-aid-pre-cutover.json');
     const parsed = parseCredential(aid);
 
     expect(parsed).not.toBeNull();

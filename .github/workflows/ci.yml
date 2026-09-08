@@ -67,19 +67,19 @@ jobs:
 
   neutrality:
     # The Norm defines properties, never vendors or schemes. Retired spellings
-    # stay allowed in CHANGELOG, DEPRECATIONS and spec/legacy: recording what was
-    # said is the point of those three files.
+    # stay allowed in CHANGELOG and DEPRECATIONS: recording what was retired is
+    # the point of those two files.
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
       - run: |
-          # .github holds this guard's own pattern; CHANGELOG, DEPRECATIONS and
-          # spec/legacy record what was retired. None of the four is normative text.
+          # .github holds this guard's own pattern; CHANGELOG and DEPRECATIONS
+          # record what was retired. None of the three is normative text.
           ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa|P-256" \
               --include='*.md' --include='*.json' --include='*.ts' \
-              --exclude-dir=node_modules --exclude-dir=legacy --exclude-dir=.github \
+              --exclude-dir=node_modules --exclude-dir=.github \
               --exclude=CHANGELOG.md --exclude=DEPRECATIONS.md .
 
   branch-name:
