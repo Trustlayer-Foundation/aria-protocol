@@ -28,9 +28,14 @@ and what production issues, while the schema itself had never drifted.
 
 ## 1 · The AID credential shape
 
-`schema/aid-v1.1.json`, `aid-v1.2.json` and `aid-v1.3.json` each define the shape for
-credentials declaring that `spec_version`. Every issued credential validates against
-the schema for its own version, and none of them is reissued when a later one lands.
+`schema/aid-v1.1.json` and `aid-v1.2.json` define the shape for credentials declaring
+that `spec_version`; both belong to the preview line and both describe credentials that
+exist. `schema/aid-v1.3.json` is a **draft that was never issued against**: it was
+prepared when the next schema was expected to be numbered 1.3, before the stable line
+was numbered 1.0. It is kept for reference and nothing validates against it.
+
+Every issued credential validates against the schema for its own version, and none is
+reissued when a later one lands.
 
 **ARIA 1.0 (September 7, 2026) adopts the v1.2 shape unchanged**, with one rule added
 on top: `principal.legalName` is an organization name and MUST NOT be populated for a
@@ -50,9 +55,10 @@ with the W3C DID Method Registry.
 
 **Versioning:** additive change is impossible within a version, because
 `credentialSubject` and `enrollmentAttestation` both declare
-`additionalProperties: false`. A new field therefore means a new schema file
-(v1.3), exactly as v1.2 was to v1.1. Credentials issued under an earlier version
-remain valid against their own schema and are not reissued.
+`additionalProperties: false`. A new field therefore means a new schema file. For the
+stable line that file is `aid-1.0.json`, re-cut at the issuance cutover — not `v1.3`,
+which was drafted under the earlier numbering. Credentials issued under an earlier
+version remain valid against their own schema and are not reissued.
 
 ## 2 · Signature suite `mldsa65-ed25519-2026`
 
@@ -73,8 +79,10 @@ and on floating-point numbers. The invariant is what the vectors say, because
 credentials already signed cannot be re-signed against a different rule. JCS is a
 candidate for a successor suite, not a description of this one.
 
-Byte-identical output across implementations is the cross-implementation contract,
-and the vectors are how a second implementation proves it has it.
+Byte-identical output across implementations is the cross-implementation contract, and
+the vectors are how a second implementation proves it has it. Today there is one
+published SDK; the contract exists so that the second one can be checked against it
+rather than negotiated with.
 
 **Breaks if:** any serialisation detail varies — key ordering, number formatting,
 string escaping, whitespace.
@@ -93,10 +101,10 @@ compiled key for as long as they keep the pin.
 pinned consumer can inject new keys at runtime. This turns *impossible* into
 *manual*, which is the difference between an incident and a migration note.
 
-**Design requirement for any future release:** see `ops/decisions/…` §20 — the key
-set must be append-only with validity windows, rotation must be a signed assertion
-chained from the compiled key (making it an *anchor* rather than *the* key), and key
-discovery must ship in the same release as any new package name, not after it.
+**Design requirement for any future release:** the key set must be append-only with
+validity windows; rotation must be a signed assertion chained from the compiled key,
+making that key an *anchor* rather than *the* key; and key discovery must ship in the
+same release as any new package name, not after it.
 
 ## 5 · `https://aria.bar/ns/v1`
 
@@ -164,15 +172,20 @@ the issuer of its credentials. See spec §5.2 (trust bootstrap) and `AUD-02`
 (withdrawal of an accreditation is forward-only: it does not invalidate credentials
 issued while the accreditation stood).
 
-The change is bound to the schema version, not to a date:
+**The regime is determined by the issuer DID**, as listed in the accreditation list
+TrustLayer Foundation signs. `spec_version` does not encode it: stable-line credentials
+carry `"1.0"`, numerically *below* the preview line's `"1.2"`, so any rule of the form
+"version ≥ N means the stable regime" classifies stable credentials as previews. There
+was such a rule here and it was wrong.
 
 ```
-spec_version ≤ 1.2  →  issuer: did:aria:registry.aria.bar
-spec_version ≥ 1.3  →  issuer: the TLF DID
+issuer did:aria:registry.aria.bar   →  preview line (spec_version 1.1, 1.2)
+issuer the TLF DID                  →  stable line (spec_version 1.0 onward)
 ```
 
-Both must remain resolvable indefinitely. Key discovery, which is what would let this
-be verified rather than compiled in, is `[PLANNED]` — see invariant 4.
+Every issuer that has ever been listed must remain resolvable indefinitely. Key
+discovery, which is what would let a verifier check this rather than trust a compiled
+constant, is `[PLANNED]` — see invariant 4.
 
 ## 12 · `https://api.aria.bar/v1/verify/{did}`
 
@@ -191,6 +204,13 @@ fails for every pinned SDK version.
 |---|---|
 | `credentialStatus` → Bitstring Status List at `/v1/status/1` | Third-party verifiers following W3C VC 2.0 |
 | `checkRevocation()` → `/v1/verify/{did}` | The reference verify SDK |
+
+**This is a debt, and naming it is part of the invariant.** The per-DID call is a
+phone-home: it tells the registry which agent a verifier is asking about, which is
+exactly what the aggregate list avoids and what spec §8 warns against. The specification
+describes the aggregate Status List as the mechanism; the reference SDK does not use it.
+Moving the SDK to the aggregate list is `[PLANNED]`. Until then, both endpoints must
+keep answering, because pinned versions depend on the per-DID one.
 
 ---
 

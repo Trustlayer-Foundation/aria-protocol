@@ -57,8 +57,13 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - run: bash .github/scripts/identity-guard.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.sha }}"
+        with:
+          fetch-depth: 0
+          # Check the commits the author wrote, not the ephemeral merge commit
+          # GitHub builds for the pull request: that one carries no sign-off and
+          # nobody authored it.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: bash .github/scripts/identity-guard.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}"
 
   neutrality:
     # The Norm defines properties, never vendors or schemes. Retired spellings
@@ -72,7 +77,7 @@ jobs:
       - run: |
           # .github holds this guard's own pattern; CHANGELOG, DEPRECATIONS and
           # spec/legacy record what was retired. None of the four is normative text.
-          ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa-p256|P-256" \
+          ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa|P-256" \
               --include='*.md' --include='*.json' --include='*.ts' \
               --exclude-dir=node_modules --exclude-dir=legacy --exclude-dir=.github \
               --exclude=CHANGELOG.md --exclude=DEPRECATIONS.md .

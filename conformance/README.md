@@ -1,6 +1,7 @@
 # ARIA Conformance
 
-> **Status:** draft, staged for `trustlayer-foundation/aria-protocol`.
+> **Status:** published. The vectors below exist; the harness does not yet — writing it
+> is the first change to land on `dev`.
 
 A package of **vectors and a harness**, not a CI job.
 
@@ -22,11 +23,22 @@ it, and presents the result. Nobody has to take anybody's word for it.
 
 ```
 vectors/
-  canonical-json.json        JCS output that every implementation must match, byte for byte
+  canonical-json.json        canonical serialisation every implementation must match, byte for byte
   abnf-cases.json            did:aria identifiers that must be accepted / rejected, with reasons
-  manifest-validation.json   enrollment manifests that must be accepted / rejected, with reasons
-harness/                     the runner each implementation embeds
 ```
+
+**What is not here yet**, and is named so nobody assumes otherwise:
+
+```
+vectors/manifest-validation.json   enrollment manifests, accepted / rejected with reasons
+vectors/composite-signature.json   a credential whose ML-DSA half is altered must fail,
+                                   whose Ed25519 half is altered must fail, intact must pass
+run.mjs                            the runner each implementation embeds
+```
+
+The composite-signature case has been run by hand against the published SDK and it
+behaves as specified; a check nobody can reproduce is not a conformance vector, so it
+belongs here as a file.
 
 ## The rule that makes this work
 
@@ -39,15 +51,16 @@ breaks.
 
 There is no bridge between the two implementations, and building one would be worse
 than the problem. What is shared is the **case set**: for every input, whether it is
-accepted or rejected and for what reason. Both sides test against it. This is the
-same pattern that already keeps four independent SDK implementations producing
-byte-identical canonical JSON.
+accepted or rejected and for what reason. Both sides test against it.
+
+Today there is exactly one published SDK, in TypeScript. The case set is what will make
+the second one possible, which is the whole reason it exists before it is needed.
 
 ## The checks
 
 | # | Check | Who runs it | What it protects |
 |---|---|---|---|
-| 1 | Canonical JSON matches the vectors byte for byte | every implementation | the cross-implementation contract |
+| 1 | Canonical serialisation matches the vectors byte for byte | every implementation | the cross-implementation contract |
 | 2 | A freshly issued AID verifies against the **published, unmodified** verify SDK | the authority | that the protocol did not change by accident |
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
@@ -68,6 +81,6 @@ environment variable, from outside the repository.
 
 ## Running it
 
-Each implementation embeds the harness for its language and points it at
-`vectors/`. Exit non-zero on any failure. See the language-specific README under
-`harness/`.
+Each implementation embeds the harness for its language and points it at `vectors/`,
+exiting non-zero on any failure. The harness does not exist yet — see the top of this
+file.
