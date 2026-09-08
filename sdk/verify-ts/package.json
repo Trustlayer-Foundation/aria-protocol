@@ -35,7 +35,7 @@
   ],
   "engines": { "node": ">=18" },
   "dependencies": {
-    "@noble/post-quantum": "^0.5.4",
+    "@noble/post-quantum": "^0.7.1",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1"
   },
