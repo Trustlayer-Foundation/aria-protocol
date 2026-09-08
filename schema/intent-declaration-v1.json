@@ -24,12 +24,13 @@
     "principal_ref": {
       "type": "string",
       "minLength": 1,
-      "description": "Reference to the principal (legal entity or person) on whose behalf the agent acts. DID or LEI."
+      "description": "DID of the principal on whose behalf the agent acts (did:aria:…:org). MUST NOT be a name (ATP-13, COM-09).",
+      "pattern": "^did:[a-z0-9]+:.+$"
     },
     "action_requested": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
-      "description": "The action the agent intends to perform. MUST use ARIA Scope Registry namespace format. E.g., 'commerce.read' or 'invoice.fetch'."
+      "description": "ARIA scope requested for this interaction: three colon-separated segments namespace:resource:action (e.g. commerce:order:read)."
     },
     "context": {
       "type": "string",

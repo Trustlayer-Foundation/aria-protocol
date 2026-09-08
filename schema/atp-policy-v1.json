@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/atp-policy-v1.json",
   "title": "ATP DNS Policy v1.0",
-  "description": "JSON Schema for the Agent Trust Protocol (ATP) DNS Policy, parsed from a DNS TXT record at _aria-policy.<domain>. Analogous to a DMARC record, it defines the admission policy a receiving system enforces when AI agents present their credentials.",
+  "description": "JSON Schema for the Agent Trust Protocol (ATP/1) policy record, parsed from a DNS TXT record at _aria-policy.<host> (looked up host first, then apex). The record informs agents; the receiver's configured policy decides and MUST match it. Parameter classes: normative (v, min, req, deny, intent, depth, fresh, enforce), informative (rua, rate). qualify is reserved and never evaluated in ATP/1; unknown parameters are ignored unless prefixed with ! (critical). Normative reference: https://aria.bar/spec#atp. Unknown parameters are permitted and ignored, per ATP/1 §3: a processor ignores what it does not understand unless the name is written with a leading '!' (critical), in which case it MUST treat the policy as unsatisfiable. This schema therefore validates the known set and never rejects a record for carrying a name it has not heard of.",
   "type": "object",
   "required": [
     "v",
@@ -17,23 +17,32 @@
     },
     "min": {
       "type": "string",
-      "enum": ["L0", "L1", "L2", "L3"],
+      "enum": [
+        "L0",
+        "L1",
+        "L2",
+        "L3"
+      ],
       "description": "Minimum trust level required for agent admission. L0=Anchored, L1=Identified, L2=Certified, L3=Sovereign."
     },
     "enforce": {
       "type": "string",
-      "enum": ["monitor", "warn", "strict"],
-      "description": "Enforcement mode. 'monitor' logs but admits all; 'warn' admits with warning headers; 'strict' rejects non-compliant agents."
+      "enum": [
+        "monitor",
+        "warn",
+        "strict"
+      ],
+      "description": "Enforcement mode: monitor (evaluate, log, admit all) · warn (admit, add warning) · strict (deny). Mandatory in a published record; absent in configuration = strict."
     },
     "req": {
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*(\\.\\*)?$",
-        "description": "Required scope pattern. Supports wildcards: 'commerce.*' matches any scope beginning with 'commerce.'."
+        "description": "Required scope pattern. Supports wildcards: 'commerce:order:*' matches any scope beginning with 'commerce.'."
       },
       "uniqueItems": true,
-      "description": "Required scopes. Agent must carry all listed scopes (or matching wildcards) to be admitted."
+      "description": "Required scopes, AND semantics. Comma-separated list of ARIA scopes: three colon-separated segments namespace:resource:action, wildcard only as the whole last segment (commerce:order:*)."
     },
     "deny": {
       "type": "array",
@@ -43,7 +52,7 @@
         "description": "Prohibited scope pattern. Agent carrying any listed scope is rejected or flagged."
       },
       "uniqueItems": true,
-      "description": "Prohibited scopes. Agent carrying any listed scope is rejected (strict) or flagged (monitor/warn)."
+      "description": "Prohibited scopes, same grammar as req. Any intersection with the agent's effective scope set denies (ATP-406/SCOPE-DENIED)."
     },
     "intent": {
       "type": "array",
@@ -63,41 +72,35 @@
         "description": "Intent Declaration field name that must be present in the agent's intent payload."
       },
       "uniqueItems": true,
-      "description": "Required intent fields. The agent's Intent Declaration must include all listed fields."
+      "description": "Additional Intent Declaration fields required on top of the protocol minimum (purpose, action_requested, principal_ref). principal_ref is always a DID, never a name (ATP-13, COM-09)."
     },
     "depth": {
       "type": "integer",
       "minimum": 0,
       "maximum": 4,
       "default": 4,
-      "description": "Maximum delegation chain depth. Agents with a delegation depth exceeding this value are rejected."
+      "description": "Maximum delegation depth: credentialSubject.delegationDepth of the AID (signed by the issuer) must be ≤ this value (ATP-462)."
     },
     "rate": {
       "type": "string",
       "pattern": "^[1-9][0-9]*/(hr|min)$",
-      "description": "Per-agent rate limit. Format: N/hr or N/min. E.g., '100/hr', '10/min'."
-    },
-    "qualify": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^.+>.+$",
-        "description": "Conditional requirement in format 'condition>requirement'. E.g., 'sector:finance>sox'."
-      },
-      "uniqueItems": true,
-      "description": "Conditional requirements. Format: condition>requirement. E.g., 'sector:healthcare>iso27001' means healthcare-sector agents must carry ISO 27001 attestation."
+      "description": "Declared call limit (informative). Not evaluated by the admission algorithm; rate enforcement is receiver infrastructure. ATP-429 is emitted outside the algorithm."
     },
     "rua": {
       "type": "string",
       "format": "uri",
-      "description": "Aggregate report URI. HTTPS endpoint where ATP sends periodic compliance reports, modeled on DMARC rua."
+      "description": "URI for aggregate evaluation reports (informative; DMARC rua= pattern). Does not affect admission."
     },
-    "ttl": {
-      "type": "integer",
-      "minimum": 60,
-      "default": 3600,
-      "description": "Policy cache TTL in seconds. How long agents should cache this policy before re-fetching."
+    "fresh": {
+      "type": "string",
+      "pattern": "^[0-9]+(s|m|h)$",
+      "default": "3600s",
+      "description": "Maximum age of the AID status evidence at decision time and during the session. Default 3600s. Floor 60s (COM-05): lower values are a configuration error. Stale evidence that cannot be renewed denies (ATP-412)."
+    },
+    "qualify": {
+      "type": "string",
+      "description": "Reserved in ATP/1 and never evaluated: it depends on Trust Seals (spec Appendix C), which are not implemented. Declared here so the reserved name is visible; a processor treats it by the unknown-parameter rule below."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": true
 }

@@ -55,7 +55,7 @@ will be asked for one.
 - `sdk-tests` — the SDK test suite.
 - `identity-guard` — sign-off present, no tool trailers.
 - `neutrality` — the Norm defines properties, never vendors or schemes. No
-  commercial scheme or laboratory names outside `CHANGELOG.md` and `spec/legacy/`.
+  commercial scheme or laboratory names outside `CHANGELOG.md` and `DEPRECATIONS.md`.
 - `conformance` — the vector harness. Advisory until the harness lands, then required.
 - `branch-name` — the convention above.
 

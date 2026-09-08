@@ -9,7 +9,7 @@ body:
   - type: input
     attributes:
       label: Version
-      placeholder: "@aria-registry/verify 1.1.0"
+      placeholder: "@aria-registry/verify <package version>"
   - type: textarea
     attributes:
       label: Smallest input that reproduces it

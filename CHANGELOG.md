@@ -2,20 +2,16 @@
 
 All notable changes to the ARIA Protocol specification.
 
-> **Versioning note.** **ARIA 1.0 (September 7, 2026) is the first stable release.**
-> The labels shipped between April and August 2026 — `1.0` (April 1), `1.1` (April 28),
-> `1.2` (May/June) — are reclassified as **public previews with no production adoption**.
-> Their entries are kept below unchanged. Pre-launch entries (`[1.3.0]` through
-> `[1.6.0]`) use the internal working numbering of that period. Preview credentials are
-> distinguished by issuer DID and are sunset at cutover.
+> **ARIA 1.0 (September 7, 2026) is the first stable release.** Everything before it
+> was pre-release; see "Before 1.0" at the end of this file.
 
 ## [1.0.0] — September 7, 2026 — first stable release
 
 ### Repository
-- **History consolidated.** The public preview line (April–August 2026) was replaced by a
+- **History consolidated.** The development history before 1.0 was replaced by a
   single signed baseline commit; its history is archived off-repository. Commit
-  identifiers from that line no longer resolve on `main`. The `v1.0` tag and its April
-  release were retired: keeping them would have kept the whole preview history reachable,
+  identifiers from that line no longer resolve on `main`. The earlier `v1.0` tag and its April
+  release were retired: keeping them would have kept the pre-release history reachable,
   which is what the consolidation set out to end.
 - **Branch model.** `main` is what is published, reached only by a release pull request
   from `dev`. Everything lands on `dev` first, by reviewed pull request. Both branches are
@@ -26,6 +22,21 @@ All notable changes to the ARIA Protocol specification.
 - **Contribution.** Anyone may contribute, with their own identity and a sign-off; tool
   trailers are refused. Approval is concentrated in one Code Owner until the Technical
   Steering Committee is seated — declared in `GOVERNANCE.md` rather than left implicit.
+
+### Repository hygiene for 1.0
+- **One version, one primary schema.** `schema/aid-1.0.json` (`spec_version` const `"1.0"`,
+  `legalName` rule) is the ARIA 1.0 schema; `examples/aid-example.json` its example.
+  `schema/aid-v1.2.json` stays published for the credentials in circulation that declare
+  it (see INVARIANTS §1); the never-issued draft schema and the earlier example are
+  removed; `spec/legacy/` prose is archived off-repository.
+- **SDK fixtures regenerated** with `spec_version: "1.0"` and the test keys; the
+  compatibility fixture is named for what it is (`valid-aid-pre-cutover.json`).
+- **Composite AND proven by test.** `test/vector11.test.ts` (ATP/1 conformance vector 11):
+  a credential with one tampered signature half is rejected in both directions. 45 tests.
+- **ATP artefacts aligned with ATP/1.** `schema/atp-policy-v1.json` drops `qualify`/`ttl`,
+  adds `fresh`, requires `enforce`, three-segment scopes; `examples/atp-policy-example.txt`
+  rewritten; `intent-declaration-v1.json` fixes `principal_ref` to a DID;
+  `enrollment-manifest-v1.json` describes the ARIA canonical JSON, not JCS.
 
 ### Fixed
 - **Scheme names removed from the SDK and the schemas.** A policy preset comment claimed an
@@ -115,6 +126,13 @@ All notable changes to the ARIA Protocol specification.
 - Issuance cutover to `spec_version: "1.0"` under a TLF issuer DID.
 - CAEP push revocation, ML-KEM-768, SLH-DSA, Shamir key recovery, Agent Interaction Log,
   Python and Rust verifier SDKs.
+
+## Before 1.0 (pre-release)
+
+Everything below predates the first stable release. The labels `1.0`–`1.2` shipped
+between April and August 2026 were public previews with no production adoption;
+`[1.3.0]`–`[1.6.0]` were pre-launch internal iterations. Kept as the record of what
+happened; none of it is the current version.
 
 ## [1.2.0] — June 2026 — public preview
 

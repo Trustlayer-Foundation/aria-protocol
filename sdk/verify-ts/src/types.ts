@@ -53,7 +53,7 @@ export interface VerifyResult {
      * - `"registry-confirmed"` — confirmed against the Authoritative Source of the
      *   jurisdiction of incorporation (L2)
      * - `"legal-verified"` — backed by government-issued legal documents and admin review (L3)
-     * - `null` — pre-v1.1 credential without this field
+     * - `null` — pre-cutover credential (issued before ARIA 1.0) without this field
      *
      * Verifiers requiring a verified organizational identity should require
      * `verificationStatus !== "self-declared"` (or use the
@@ -76,7 +76,7 @@ export interface VerifyResult {
    * serial number; new on every reissuance.
    *
    * Format: `https://api.aria.bar/v1/credentials/{uuidv7}`. `null` for
-   * pre-v1.1 credentials whose top-level id was the agent DID.
+   * pre-cutover credentials (issued before ARIA 1.0) whose top-level id was the agent DID.
    *
    * @since 1.1.0
    */
@@ -85,7 +85,7 @@ export interface VerifyResult {
   /**
    * URL of the credential instance this AID supersedes. Set on every
    * reissuance after the first one. `null` for the very first AID issued
-   * for a given agent and for pre-v1.1 credentials.
+   * for a given agent and for pre-cutover credentials (issued before ARIA 1.0).
    *
    * @since 1.1.0
    */
@@ -110,7 +110,7 @@ export interface VerifyResult {
   expired: boolean;
 
   /**
-   * ARIA spec version declared in the credential (`"1.1"`, etc.).
+   * ARIA spec version declared in the credential (`"1.0"` for ARIA 1.0; earlier values on pre-cutover credentials).
    * `null` for credentials issued before this field was required.
    */
   specVersion: string | null;
@@ -233,7 +233,7 @@ export interface PolicyConfig {
    * When `true`, the policy fails for credentials whose
    * `principal.verificationStatus` is `"self-declared"` or `null`. Use this
    * to reject AIDs whose legal name was asserted by the registrant without
-   * an external check (L0 and L1, plus pre-v1.1 credentials that have no
+   * an external check (L0 and L1, plus pre-cutover credentials (issued before ARIA 1.0) that have no
    * provenance field).
    *
    * @default false
@@ -256,7 +256,7 @@ export interface PolicyConfig {
 export interface ParsedCredential {
   /**
    * Decentralized Identifier of the agent (e.g. `"did:aria:example.com:my-agent"`).
-   * Stable across reissuances. For v1.1 credentials this is taken from
+   * Stable across reissuances. For ARIA 1.0 credentials this is taken from
    * `credentialSubject.id`; for v1.0 credentials it falls back to the
    * top-level `id` field, which carried the DID in that schema version.
    */
@@ -281,7 +281,7 @@ export interface ParsedCredential {
     /**
      * Machine-readable provenance of `principal.name`.
      * Enum: `"self-declared"` (L0/L1) | `"registry-confirmed"` (L2) |
-     * `"legal-verified"` (L3). `null` for pre-v1.1 credentials.
+     * `"legal-verified"` (L3). `null` for pre-cutover credentials (issued before ARIA 1.0).
      *
      * @since 1.1.0
      */
@@ -307,7 +307,7 @@ export interface ParsedCredential {
   expired: boolean;
 
   /**
-   * ARIA spec version declared in the credential (`"1.1"`, etc.).
+   * ARIA spec version declared in the credential (`"1.0"` for ARIA 1.0; earlier values on pre-cutover credentials).
    * `null` for credentials issued before this field was required.
    * @since 0.1.0
    */
@@ -315,7 +315,7 @@ export interface ParsedCredential {
 
   /**
    * Unique credential-instance URL per W3C VC 2.0 §4.4 — the value of the
-   * top-level `id` field. `null` for pre-v1.1 credentials whose top-level id
+   * top-level `id` field. `null` for pre-cutover credentials (issued before ARIA 1.0) whose top-level id
    * was the agent DID.
    *
    * @since 1.1.0
@@ -324,7 +324,7 @@ export interface ParsedCredential {
 
   /**
    * URL of the credential this AID supersedes (set on reissue), or `null`
-   * for the first credential in the chain or pre-v1.1 credentials.
+   * for the first credential in the chain or pre-cutover credentials (issued before ARIA 1.0).
    *
    * @since 1.1.0
    */
