@@ -28,14 +28,13 @@ jobs:
         working-directory: sdk/verify-ts
 
   conformance:
-    # The harness conformance/run.mjs does not exist yet. This job runs but does
-    # not block, and is not in the ruleset's required checks. It arrives as the
-    # first pull request against dev: load both vector files and run them against
-    # the SDK's DID parser and canonicalisation, exporting them if they are
-    # internal today. When it lands, drop continue-on-error and add
-    # `ci / conformance` to the required checks.
+    # The vectors are the contract between implementations, so they run on every
+    # change. The harness needs the SDK built, since it tests the published entry
+    # point rather than the source, and a JSON-LD processor, because the expansion
+    # check has to be run by something that implements the specification. --strict
+    # turns a missing processor into a failure: a check that quietly skips proves
+    # nothing.
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -43,13 +42,18 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: |
-          if [ -f conformance/run.mjs ]; then
-            node conformance/run.mjs
-          else
-            echo "::warning::conformance harness not present yet — see conformance/README.md"
-          fi
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: sdk/verify-ts/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/verify-ts
+      - run: pnpm build
+        working-directory: sdk/verify-ts
+      - run: npm install --no-audit --no-fund
+        working-directory: conformance
+      - run: node run.mjs --strict
+        working-directory: conformance
 
   identity-guard:
     runs-on: ubuntu-latest
