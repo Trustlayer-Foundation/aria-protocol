@@ -1,6 +1,7 @@
 {
   "@context": {
     "@version": 1.1,
+    "@protected": true,
     "aria": "https://aria.bar/ns/v1#",
     "schema": "https://schema.org/",
     "sec": "https://w3id.org/security#",
@@ -126,6 +127,94 @@
     },
     "statusListCredential": {
       "@id": "aria:statusListCredential",
+      "@type": "@id"
+    },
+    "spec_version": {
+      "@id": "aria:specVersion",
+      "@type": "xsd:string"
+    },
+    "version": {
+      "@id": "aria:version",
+      "@type": "xsd:string"
+    },
+    "holderKey": {
+      "@id": "aria:holderKey",
+      "@type": "@id"
+    },
+    "publicKeyMultibase": {
+      "@id": "sec:publicKeyMultibase"
+    },
+    "verificationStatus": {
+      "@id": "aria:verificationStatus",
+      "@type": "xsd:string"
+    },
+    "hitlRequired": {
+      "@id": "aria:hitlRequired",
+      "@container": "@set"
+    },
+    "maxDelegationDepth": {
+      "@id": "aria:maxDelegationDepth",
+      "@type": "xsd:integer"
+    },
+    "previousCredentialId": {
+      "@id": "aria:previousCredentialId",
+      "@type": "@id"
+    },
+    "alsoKnownAs": {
+      "@id": "https://www.w3.org/ns/did#alsoKnownAs",
+      "@type": "@id"
+    },
+    "enrollmentAttestation": {
+      "@id": "aria:enrollmentAttestation",
+      "@type": "@id"
+    },
+    "attestedAt": {
+      "@id": "aria:attestedAt",
+      "@type": "xsd:dateTime"
+    },
+    "termsVersion": {
+      "@id": "aria:termsVersion",
+      "@type": "xsd:string"
+    },
+    "privacyVersion": {
+      "@id": "aria:privacyVersion",
+      "@type": "xsd:string"
+    },
+    "userAgentAgreement": {
+      "@id": "aria:userAgentAgreement",
+      "@type": "xsd:boolean"
+    },
+    "created": {
+      "@id": "sec:created",
+      "@type": "xsd:dateTime"
+    },
+    "proofPurpose": {
+      "@id": "sec:proofPurpose",
+      "@type": "@vocab"
+    },
+    "verificationMethod": {
+      "@id": "sec:verificationMethod",
+      "@type": "@id"
+    },
+    "proofValue": {
+      "@id": "sec:proofValue"
+    },
+    "proofValuePq": {
+      "@id": "aria:proofValuePq"
+    },
+    "proofValueClassical": {
+      "@id": "aria:proofValueClassical"
+    },
+    "contentHash": {
+      "@id": "aria:contentHash",
+      "@type": "xsd:string"
+    },
+    "DataIntegrityProof": "sec:DataIntegrityProof",
+    "Ed25519VerificationKey2020": "sec:Ed25519VerificationKey2020",
+    "Multikey": "sec:Multikey",
+    "BitstringStatusListEntry": "sec:BitstringStatusListEntry",
+    "did": {
+      "@id": "aria:did",
       "@type": "@id"
     }
   }

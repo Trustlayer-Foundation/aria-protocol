@@ -1,7 +1,6 @@
 # ARIA Conformance
 
-> **Status:** published. The vectors below exist; the harness does not yet — writing it
-> is the first change to land on `dev`.
+> **Status:** published, and running. `run.mjs` executes on every pull request.
 
 A package of **vectors and a harness**, not a CI job.
 
@@ -22,23 +21,29 @@ it, and presents the result. Nobody has to take anybody's word for it.
 ## What is in here
 
 ```
+run.mjs                          the runner each implementation embeds
 vectors/
-  canonical-json.json        canonical serialisation every implementation must match, byte for byte
-  abnf-cases.json            did:aria identifiers that must be accepted / rejected, with reasons
+  canonical-json.json            canonical serialisation and identity commitment, byte for byte
+  abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
+  context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
 ```
 
-**What is not here yet**, and is named so nobody assumes otherwise:
+Run it against an implementation:
+
+```bash
+node conformance/run.mjs --sdk path/to/entry.mjs
+```
+
+**What is not here yet**, named so nobody assumes otherwise:
 
 ```
 vectors/manifest-validation.json   enrollment manifests, accepted / rejected with reasons
-vectors/composite-signature.json   a credential whose ML-DSA half is altered must fail,
-                                   whose Ed25519 half is altered must fail, intact must pass
-run.mjs                            the runner each implementation embeds
 ```
 
-The composite-signature case has been run by hand against the published SDK and it
-behaves as specified; a check nobody can reproduce is not a conformance vector, so it
-belongs here as a file.
+The composite AND — a credential with one half of the signature altered must fail —
+lives in the SDK suite as `test/vector11.test.ts` rather than here, because it needs
+signing keys to build the tampered cases. Moving it to a vector file, so a second
+implementation can run it without the SDK, is the next thing this directory needs.
 
 ## The rule that makes this work
 
@@ -60,7 +65,8 @@ the second one possible, which is the whole reason it exists before it is needed
 
 | # | Check | Who runs it | What it protects |
 |---|---|---|---|
-| 1 | Canonical serialisation matches the vectors byte for byte | every implementation | the cross-implementation contract |
+| 1 | Canonical serialisation and identity commitment match the vectors byte for byte | every implementation | the cross-implementation contract |
+| 1b | Every property of the example credential has a term definition | every implementation | that expansion drops nothing — a credential whose `holderKey` or `proofValue` disappears is not a Verifiable Credential |
 | 2 | A freshly issued AID verifies against the **published, unmodified** verify SDK | the authority | that the protocol did not change by accident |
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
@@ -82,5 +88,6 @@ environment variable, from outside the repository.
 ## Running it
 
 Each implementation embeds the harness for its language and points it at `vectors/`,
-exiting non-zero on any failure. The harness does not exist yet — see the top of this
-file.
+exiting non-zero on any failure. `run.mjs` is the JavaScript one; it prints `PASS`,
+`FAIL` or `SKIP` per check, and skips rather than passes what it cannot test — today
+the `did:aria` cases, because no implementation exports a parser to run them against.
