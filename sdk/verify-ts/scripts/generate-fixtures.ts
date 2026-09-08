@@ -124,7 +124,7 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
       'https://www.w3.org/ns/credentials/v2',
       'https://aria.bar/ns/v1',
     ],
-    // AID v1.1: top-level id is the credential-instance URL (W3C VC 2.0 §4.4),
+    // ARIA 1.0: top-level id is the credential-instance URL (W3C VC 2.0 §4.4),
     // not the agent DID. The DID lives in credentialSubject.id below.
     id: 'https://api.aria.bar/v1/credentials/01906b8f-7c8a-7d12-8e3f-2a91b4c8f019',
     type: ['VerifiableCredential', 'AgentIdentityDocument'],
@@ -134,7 +134,7 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
     credentialSubject: {
       id: 'did:aria:example.com:test-agent',
       previousCredentialId: 'https://api.aria.bar/v1/credentials/01905f23-3a1b-7c95-9d6e-b8e72f5104a3',
-      spec_version: '1.1',
+      spec_version: '1.0',
       agentName: 'TestAgent',
       version: '1.0.0',
       principal: {
@@ -195,6 +195,40 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
     JSON.stringify(signedVc, null, 2),
   );
   console.log('Saved valid-aid.json');
+
+  // The shape the registry actually issues: one composite `proofValue`,
+  // u32be(pq length) then the ML-DSA-65 signature then the Ed25519 one,
+  // base64url, and the spec_version production declares until the cutover.
+  // Everything above uses the separate-field form, which no issuer emits;
+  // without this fixture the suite never exercises the branch that matters.
+  const productionVc = {
+    ...validVc,
+    credentialSubject: { ...validVc.credentialSubject, spec_version: '1.2' },
+  };
+  const prodPayload = new TextEncoder().encode(canonicalJson(productionVc));
+  const prodPq = ml_dsa65.sign(prodPayload, pqKeys.secretKey);
+  const prodEd = ed25519.sign(prodPayload, edPriv);
+  const composite = new Uint8Array(4 + prodPq.length + prodEd.length);
+  new DataView(composite.buffer).setUint32(0, prodPq.length, false);
+  composite.set(prodPq, 4);
+  composite.set(prodEd, 4 + prodPq.length);
+  const toBase64Url = (b: Uint8Array) =>
+    Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  writeFileSync(
+    join(FIXTURES_DIR, 'valid-aid-production-form.json'),
+    JSON.stringify({
+      ...productionVc,
+      proof: {
+        type: 'DataIntegrityProof',
+        created: now.toISOString(),
+        proofValue: toBase64Url(composite),
+        cryptosuite: 'mldsa65-ed25519-2026',
+        proofPurpose: 'assertionMethod',
+        verificationMethod: 'did:aria:registry#key-1',
+      },
+    }, null, 2),
+  );
+  console.log('Saved valid-aid-production-form.json');
 
   // Create expired AID
   const yesterday = new Date(now);
@@ -298,10 +332,10 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
   );
   console.log('Saved missing-fields.json');
 
-  // Create L0 AID without dnsAnchor (spec v1.1: L0 has no DNS)
+  // Create L0 AID without dnsAnchor (L0 has no DNS anchor)
   const l0Vc: Record<string, unknown> = {
     '@context': ['https://www.w3.org/ns/credentials/v2', 'https://aria.bar/ns/v1'],
-    // AID v1.1: top-level id is the credential-instance URL.
+    // ARIA 1.0: top-level id is the credential-instance URL.
     id: 'https://api.aria.bar/v1/credentials/01906f12-3b4c-7d56-8e9f-1a2b3c4d5e6f',
     type: ['VerifiableCredential', 'AgentIdentityDocument'],
     issuer: 'did:aria:registry',
@@ -309,7 +343,7 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
     validUntil: oneYearLater.toISOString(),
     credentialSubject: {
       id: 'did:aria:aria.bar:u-test:l0-agent',
-      spec_version: '1.1',
+      spec_version: '1.0',
       agentName: 'L0TestAgent',
       version: '1.0.0',
       principal: { name: 'Test Individual', jurisdiction: 'US', type: 'individual', verificationStatus: 'self-declared' },
@@ -350,17 +384,17 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
   writeFileSync(join(FIXTURES_DIR, 'valid-aid-l0-no-dns.json'), JSON.stringify(l0Signed, null, 2));
   console.log('Saved valid-aid-l0-no-dns.json');
 
-  // Backward-compat fixture — pre-v1.1 format (no spec_version, no principal.verificationStatus)
+  // Backward-compat fixture — pre-cutover format (no spec_version, no principal.verificationStatus)
   const v15Vc: Record<string, unknown> = {
     '@context': ['https://www.w3.org/ns/credentials/v2', 'https://aria.bar/ns/v1'],
-    id: 'did:aria:example.com:legacy-agent',
+    id: 'did:aria:example.com:pre-cutover-agent',
     type: ['VerifiableCredential', 'AgentIdentityDocument'],
     issuer: 'did:aria:registry',
     validFrom: now.toISOString(),
     validUntil: oneYearLater.toISOString(),
     credentialSubject: {
-      id: 'did:aria:example.com:legacy-agent',
-      // No spec_version, no principal.verificationStatus — pre-v1.1 format
+      id: 'did:aria:example.com:pre-cutover-agent',
+      // No spec_version, no principal.verificationStatus — pre-cutover format
       agentName: 'LegacyAgent',
       version: '1.0.0',
       principal: { name: 'Legacy Corp', domain: 'example.com', jurisdiction: 'US', type: 'organization' },
@@ -397,8 +431,8 @@ export function setRegistryKeys(pqPublicKey: Uint8Array, classicalPublicKey: Uin
     },
   };
 
-  writeFileSync(join(FIXTURES_DIR, 'valid-aid-v15-compat.json'), JSON.stringify(v15Signed, null, 2));
-  console.log('Saved valid-aid-v15-compat.json');
+  writeFileSync(join(FIXTURES_DIR, 'valid-aid-pre-cutover.json'), JSON.stringify(v15Signed, null, 2));
+  console.log('Saved valid-aid-pre-cutover.json');
 
   console.log('\nAll fixtures generated successfully!');
 }

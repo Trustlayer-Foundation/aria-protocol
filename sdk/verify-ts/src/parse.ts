@@ -55,9 +55,9 @@ export function parseCredential(input: unknown): ParsedCredential | null {
 
     // ── Structural validation ─────────────────────────────
     // A valid ARIA AID must have a top-level `id` and a `credentialSubject`
-    // with agent-specific fields. In v1.1 the top-level `id` is a unique
+    // with agent-specific fields. In ARIA 1.0 the top-level `id` is a unique
     // credential-instance URL (W3C VC 2.0 §4.4) and the agent DID lives in
-    // `credentialSubject.id`. Pre-v1.1 credentials reused the DID at the
+    // `credentialSubject.id`. Pre-cutover credentials reused the DID at the
     // top level — both shapes are accepted.
 
     if (typeof vc.id !== 'string') return null;
@@ -84,7 +84,7 @@ export function parseCredential(input: unknown): ParsedCredential | null {
     if (typeof validUntil !== 'string') return null;
 
     // ── DID + credential-instance URL split ───────────────
-    // v1.1: top-level id is an HTTPS URL (credential instance), DID is in
+    // ARIA 1.0: top-level id is an HTTPS URL (credential instance), DID is in
     //       credentialSubject.id.
     // v1.0: top-level id is the DID (no credential URL exists).
 
@@ -98,7 +98,7 @@ export function parseCredential(input: unknown): ParsedCredential | null {
       : null;
 
     // ── Principal verification status ─────────────────────
-    // AID schema v1.1+ — machine-readable provenance of principal.name.
+    // ARIA 1.0 AID — machine-readable provenance of principal.name.
 
     const rawVerificationStatus = principal.verificationStatus;
     const verificationStatus =

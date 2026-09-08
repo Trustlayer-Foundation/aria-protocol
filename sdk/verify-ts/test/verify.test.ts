@@ -139,14 +139,14 @@ describe('verifyAgent', () => {
     expect(result.policyResult?.reason).toContain('TRUST_LEVEL');
   });
 
-  // ── v1.1 Compatibility Tests ──────────────────────────
+  // ── Pre-cutover compatibility tests ──────────────────────────
 
-  it('verifies a v1.1 AID with credential-instance URL and verificationStatus', () => {
+  it('verifies an issued AID with credential-instance URL and verificationStatus', () => {
     const aid = loadFixture('valid-aid.json');
     const result = verifyAgent(aid);
 
     expect(result.valid).toBe(true);
-    expect(result.specVersion).toBe('1.1');
+    expect(result.specVersion).toBe('1.0');
     expect(result.credentialId).toMatch(/^https:\/\/api\.aria\.bar\/v1\/credentials\//);
     expect(result.previousCredentialId).toMatch(/^https:\/\/api\.aria\.bar\/v1\/credentials\//);
     expect(result.principal.verificationStatus).toBe('registry-confirmed');
@@ -182,7 +182,7 @@ describe('verifyAgent', () => {
   });
 
   it('backward compatible with v1.5 @context', () => {
-    const aid = loadFixture('valid-aid-v15-compat.json');
+    const aid = loadFixture('valid-aid-pre-cutover.json');
     const result = verifyAgent(aid);
 
     expect(result.valid).toBe(true);
