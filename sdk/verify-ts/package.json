@@ -60,7 +60,7 @@
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "scripts": {
     "build": "tsup",
