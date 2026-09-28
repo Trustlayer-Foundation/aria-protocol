@@ -5,6 +5,34 @@ All notable changes to the ARIA Protocol specification.
 > **ARIA 1.0 (September 7, 2026) is the first stable release.** Everything before it
 > was pre-release; see "Before 1.0" at the end of this file.
 
+## Unreleased
+
+### Fixed — a natural person's name no longer has to appear in a public AID
+
+The schemas required `principal.legalName` of every principal, while `COM-09` forbids a
+natural person's name in the public AID. Nothing in the document distinguished a person
+from an organization, so a person's credential could be schema-valid or conformant, not
+both. `aid-v1.2.json` even described the field as the name of *"the principal
+organization or person"*.
+
+- **`principal.type`** — schema.org `Person` or `Organization`. The context defines both
+  terms against their schema.org IRIs, so the value expands under a conforming JSON-LD
+  processor; a bare literal such as `individual` would be a relative `@type` and refused.
+- **`legalName` is conditional** in `aid-1.0.json` and `aid-v1.2.json`: required for an
+  `Organization` or when `type` is absent, refused for a `Person`.
+- **`aid-v1.2.json` is relaxed, not frozen.** The change only makes more documents valid:
+  checked against a live 1.2 credential, which validates before and after unchanged. No
+  credential in circulation stops validating.
+- **Conformance** gains check 1d, six cases per schema in both directions, run by `ajv`,
+  and check 1c now expands a `Person` principal.
+- **`@aria-registry/verify`** reads `Person`/`Organization` (and the older lowercase
+  literals) into `principal.type`, without the cast it used before, and documents that
+  `principal.name` is empty for an individual.
+
+Credentials already issued to natural persons are corrected by reissuance under the same
+`spec_version` — an Update, spec §3.5.3 — which the registry performs; see INVARIANTS §1
+on why that is not the schema-migration reissuance the invariant rules out.
+
 ## [1.0.0] — September 7, 2026 — first stable release
 
 ### Repository

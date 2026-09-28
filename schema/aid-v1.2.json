@@ -207,8 +207,13 @@
         },
         "principal": {
           "type": "object",
-          "required": ["did", "legalName", "jurisdiction", "verificationStatus"],
+          "required": ["did", "jurisdiction", "verificationStatus"],
           "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["Person", "Organization"],
+              "description": "Kind of principal, as a schema.org type: Person for a natural person, Organization for any legal entity. A Person principal carries no legalName, because the public AID never carries a natural person's name (COM-09). When absent — credentials issued before this field existed — legalName is required, as it always was."
+            },
             "did": {
               "type": "string",
               "description": "DID of the principal (legal entity or person) on whose behalf the agent operates."
@@ -217,7 +222,7 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256,
-              "description": "Legal name of the principal organization or person."
+              "description": "Legal name of the principal ORGANIZATION. Required when type is Organization or absent; MUST be absent when type is Person, because the public AID never carries a natural person's name (COM-09). This schema originally described the field as the name of an organization or person, which invited the very disclosure COM-09 forbids."
             },
             "jurisdiction": {
               "type": "string",
@@ -227,9 +232,12 @@
             "verificationStatus": {
               "type": "string",
               "enum": ["self-declared", "registry-confirmed", "legal-verified"],
-              "description": "Machine-readable provenance of legalName. self-declared: registrant-asserted, no external check (L0, L1). registry-confirmed: confirmed against the Authoritative Source of the jurisdiction of incorporation (L2). legal-verified: backed by government-issued legal documents and admin review (L3). Verifiers MUST consult this field before treating legalName as authoritative."
+              "description": "Machine-readable provenance of the principal's declared identity — of legalName, for an Organization. self-declared: registrant-asserted, no external check (L0, L1). registry-confirmed: confirmed against the Authoritative Source of the jurisdiction of incorporation (L2). legal-verified: backed by government-issued legal documents and admin review (L3). Verifiers MUST consult this field before treating legalName as authoritative."
             }
           },
+          "if": { "required": ["type"], "properties": { "type": { "const": "Person" } } },
+          "then": { "not": { "required": ["legalName"] } },
+          "else": { "required": ["legalName"] },
           "additionalProperties": false,
           "description": "The legal principal (organization or person) responsible for the agent."
         },
