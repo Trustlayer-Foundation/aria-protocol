@@ -118,3 +118,35 @@ describe('parseCredential', () => {
     expect(parsed!.principal.verificationStatus).toBeNull();
   });
 });
+
+// ── Principal kind ────────────────────────────────────────
+// The wire carries schema.org types. A Person principal has no legalName: the
+// public AID never carries a natural person's name (COM-09).
+describe('principal kind', () => {
+  const base = () => JSON.parse(readFileSync(join(import.meta.dirname, 'fixtures', 'valid-aid.json'), 'utf8'));
+
+  it('reads a Person principal as an individual with no name', () => {
+    const aid = base();
+    aid.credentialSubject.principal.type = 'Person';
+    delete aid.credentialSubject.principal.legalName;
+    delete aid.credentialSubject.principal.name;
+    const parsed = parseCredential(aid);
+    expect(parsed?.principal.type).toBe('individual');
+    expect(parsed?.principal.name).toBe('');
+  });
+
+  it('reads an Organization principal as an organization, with its name', () => {
+    const aid = base();
+    aid.credentialSubject.principal.type = 'Organization';
+    aid.credentialSubject.principal.legalName = 'Example Corp';
+    const parsed = parseCredential(aid);
+    expect(parsed?.principal.type).toBe('organization');
+    expect(parsed?.principal.name).toBe('Example Corp');
+  });
+
+  it('treats a principal with no type as an organization, as it was issued', () => {
+    const aid = base();
+    delete aid.credentialSubject.principal.type;
+    expect(parseCredential(aid)?.principal.type).toBe('organization');
+  });
+});

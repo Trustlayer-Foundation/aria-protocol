@@ -31,8 +31,15 @@ and what production issues, while the schema itself had never drifted.
 `schema/aid-1.0.json` defines the shape of an ARIA 1.0 credential: `spec_version: "1.0"`,
 a required `credentialSubject.holderKey`, and `principal.legalName` as an organization
 name that MUST NOT be populated for a natural-person principal (`COM-09`, `L0-03`).
+`principal.type` says which kind of principal it is — schema.org `Person` or
+`Organization` — and the schema enforces the rule from it: `legalName` is required for
+an `Organization` and refused for a `Person`. Before `type` existed the rule could only
+be stated, because nothing in the document distinguished one from the other.
 Every issued credential validates against the schema for the `spec_version` it declares
-and is never reissued when a later schema lands. Two schema files are therefore
+and is never reissued when a later schema lands. Reissuing a credential to correct what
+it discloses — a natural person's name in `legalName` — is a different act: it happens
+under the same `spec_version`, as an Update (spec §3.5.3), and the corrected credential
+validates against the same schema. Two schema files are therefore
 published, and both are load-bearing:
 
 | File | Validates | Published until |

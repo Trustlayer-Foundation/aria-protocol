@@ -105,7 +105,7 @@ function redefinitionCheck() {
 // network: both contexts are pinned in vectors/, so a run is deterministic and
 // offline. Install the processor with `npm install` inside conformance/.
 async function expansionCheck(strict) {
-  const name = 'the example and a production-shaped credential expand losslessly';
+  const name = 'the example, a production-shaped credential and a Person principal expand losslessly';
   let jsonld;
   try {
     jsonld = (await import('jsonld')).default;
@@ -130,15 +130,74 @@ async function expansionCheck(strict) {
   ].filter(existsSync);
   if (documents.length === 0) return skip(name, 'no credential documents found');
 
+  // Plus the example with a natural-person principal: `type` is JSON-LD's @type,
+  // so the value has to be a defined term. schema:Person expands; a bare literal
+  // such as "individual" is a relative @type and a conforming processor refuses it.
+  const person = JSON.parse(readFileSync(documents[0], 'utf8'));
+  person.credentialSubject.principal.type = 'Person';
+  delete person.credentialSubject.principal.legalName;
+  const inputs = [
+    ...documents.map((file) => [basename(file), JSON.parse(readFileSync(file, 'utf8'))]),
+    ['aid-example.json with a Person principal', person],
+  ];
+
   const failed = [];
-  for (const file of documents) {
+  for (const [label, doc] of inputs) {
     try {
-      await jsonld.expand(JSON.parse(readFileSync(file, 'utf8')), { documentLoader, safe: true });
+      await jsonld.expand(doc, { documentLoader, safe: true });
     } catch (err) {
-      failed.push(`${basename(file)}: ${err.details?.code ?? err.message}`);
+      failed.push(`${label}: ${err.details?.event?.code ?? err.details?.code ?? err.message}`);
     }
   }
-  report(name, failed.length === 0, failed.length ? failed.join(' · ') : `${documents.length}/${documents.length}`);
+  report(name, failed.length === 0, failed.length ? failed.join(' · ') : `${inputs.length}/${inputs.length}`);
+}
+
+// ── 5 · a natural person is never named, and the schemas say so ────────────────
+// COM-09: the public AID never carries a natural person's name. The schemas used
+// to require legalName of every principal and could not tell a person from an
+// organization, so a person's credential was either schema-valid and in breach, or
+// conformant and rejected. Each case below is built from a real document shape and
+// checked against the schema that governs it, in both directions: what must pass,
+// and what must now be refused.
+async function principalKindCheck(strict) {
+  const name = 'a Person principal carries no legalName, in every schema that is in force';
+  let Ajv2020, addFormats;
+  try {
+    Ajv2020 = (await import('ajv/dist/2020.js')).default;
+    addFormats = (await import('ajv-formats')).default;
+  } catch {
+    const why = 'ajv not installed — run `npm install` in conformance/';
+    return strict ? report(name, false, why) : skip(name, why);
+  }
+
+  const schema = (f) => JSON.parse(readFileSync(join(root, 'schema', f), 'utf8'));
+  const bases = [
+    ['aid-1.0.json', JSON.parse(readFileSync(join(root, 'examples', 'aid-example.json'), 'utf8'))],
+    ['aid-v1.2.json', load('aid-v1.2-shape.json').document],
+  ];
+  const cases = [
+    ['no type, with legalName — as issued before the field existed', () => {}, true],
+    ['Organization with legalName', (p) => { p.type = 'Organization'; }, true],
+    ['Person without legalName', (p) => { p.type = 'Person'; delete p.legalName; }, true],
+    ['Person WITH legalName', (p) => { p.type = 'Person'; }, false],
+    ['Organization WITHOUT legalName', (p) => { p.type = 'Organization'; delete p.legalName; }, false],
+    ['no type and no legalName', (p) => { delete p.legalName; }, false],
+  ];
+
+  const wrong = [];
+  let total = 0;
+  for (const [file, base] of bases) {
+    const ajv = new Ajv2020({ allErrors: true, strict: false });
+    addFormats(ajv);
+    const validate = ajv.compile(schema(file));
+    for (const [label, mutate, mustPass] of cases) {
+      const doc = structuredClone(base);
+      mutate(doc.credentialSubject.principal);
+      total += 1;
+      if (validate(doc) !== mustPass) wrong.push(`${file}: ${label} should ${mustPass ? 'pass' : 'be refused'}`);
+    }
+  }
+  report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
 }
 
 // ── run ───────────────────────────────────────────────────────────────────────
@@ -156,5 +215,6 @@ await canonicalJsonCheck(sdkEntry);
 await abnfCheck(sdkEntry);
 redefinitionCheck();
 await expansionCheck(process.argv.includes('--strict'));
+await principalKindCheck(process.argv.includes('--strict'));
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) failed.`}`);
 process.exit(failures === 0 ? 0 : 1);
