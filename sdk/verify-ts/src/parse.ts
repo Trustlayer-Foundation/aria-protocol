@@ -121,7 +121,11 @@ export function parseCredential(input: unknown): ParsedCredential | null {
         name: (principal.legalName as string) ?? (principal.name as string) ?? '',
         domain: (principal.domain as string) ?? null,
         jurisdiction: (principal.jurisdiction as string) ?? null,
-        type: (principal.type as 'organization' | 'individual') ?? 'organization',
+        // The wire carries schema.org types: Person for a natural person, Organization
+        // for a legal entity. Older fixtures used lowercase literals, still accepted.
+        // Absent means a credential issued before the field existed; those were all
+        // issued as organizations, whatever the principal actually was.
+        type: principal.type === 'Person' || principal.type === 'individual' ? 'individual' : 'organization',
         verificationStatus,
       },
       trustLevel,

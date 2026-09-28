@@ -181,6 +181,8 @@
     },
     "Ed25519VerificationKey2020": "sec:Ed25519VerificationKey2020",
     "Multikey": "sec:Multikey",
+    "Person": "schema:Person",
+    "Organization": "schema:Organization",
     "did": {
       "@id": "aria:did",
       "@type": "@id"

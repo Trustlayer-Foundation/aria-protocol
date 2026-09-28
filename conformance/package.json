@@ -2,11 +2,17 @@
   "name": "aria-conformance",
   "private": true,
   "type": "module",
-  "description": "Runner for the ARIA conformance vectors. The only dependency is a JSON-LD processor: the expansion check has to be run by something that implements the specification, not by us.",
+  "description": "Runner for the ARIA conformance vectors. Two dependencies, both reference implementations of what they check: a JSON-LD processor for the expansion check and a JSON Schema validator for the principal rules, because these have to be run by something that implements the specification, not by us.",
   "scripts": {
     "test": "node run.mjs --strict"
   },
   "devDependencies": {
-    "jsonld": "8.3.3"
+    "jsonld": "8.3.3",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   }
 }
