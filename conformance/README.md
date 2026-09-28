@@ -80,7 +80,8 @@ the second one possible, which is the whole reason it exists before it is needed
 |---|---|---|---|
 | 1 | Canonical serialisation and identity commitment match the vectors byte for byte | every implementation | the cross-implementation contract |
 | 1b | The ARIA context redefines no term the W3C VC v2 context defines | every implementation | that the two contexts compose. Ours is listed second and declares `@protected`: a term redefined here does not shadow the standard one, it makes a conforming processor reject the credential outright |
-| 1c | The example and a production-shaped credential expand losslessly | every implementation | that nothing is silently dropped. Run by `jsonld` in safe mode, which throws on a dropped property or a relative IRI — the only version of this claim a reviewer can reproduce |
+| 1c | The example, a production-shaped credential and a `Person` principal expand losslessly | every implementation | that nothing is silently dropped. Run by `jsonld` in safe mode, which throws on a dropped property or a relative IRI — the only version of this claim a reviewer can reproduce. The `Person` case is there because `type` is JSON-LD's `@type`: schema.org `Person` expands, a bare literal such as `individual` does not |
+| 1d | A `Person` principal carries no `legalName`, in every schema in force | every implementation | COM-09. Six cases per schema, both directions: what must pass — including every credential issued before `principal.type` existed — and what must now be refused. Run by `ajv` against `aid-1.0.json` and `aid-v1.2.json` |
 | 2 | A freshly issued AID verifies against the **published, unmodified** verify SDK | the authority | that the protocol did not change by accident |
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
@@ -96,7 +97,10 @@ Check 3 needs real credentials, and real credentials carry `principal.legalName`
 `registryRef`. **No production credential goes in this repository** — it is public,
 and git is forever.
 
-The vectors here are synthetic. The runner points at real credentials through an
+The vectors here are synthetic. `vectors/aid-v1.2-shape.json` is derived from the shape
+of a live 1.2 credential so that the schema checks run against what production actually
+issues, with the principal, every identifier, the holder key and the signature replaced;
+nothing in it identifies the credential it came from. The runner points at real credentials through an
 environment variable, from outside the repository.
 
 ## Running it

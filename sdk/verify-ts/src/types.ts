@@ -39,7 +39,10 @@ export interface VerifyResult {
 
   /** Principal (organization or individual) that controls this agent. */
   principal: {
-    /** Legal or display name of the principal. */
+    /**
+     * Legal name of an organization principal. Empty for an individual: the public
+     * AID never carries a natural person's name (COM-09).
+     */
     name: string;
     /** Domain associated with the principal, if domain-verified. */
     domain: string | null;
@@ -275,7 +278,7 @@ export interface ParsedCredential {
 
   /** Principal (organization or individual) that controls this agent. */
   principal: {
-    /** Legal or display name. */
+    /** Legal name of an organization principal; empty for an individual (COM-09). */
     name: string;
     /** Associated domain, if any. */
     domain: string | null;

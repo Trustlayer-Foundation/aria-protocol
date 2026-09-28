@@ -5,7 +5,7 @@ already issued: an issued credential carries its own `spec_version` and remains 
 
 | Item | Status in 1.0 | Why | Replacement |
 |---|---|---|---|
-| `principal.legalName` for natural-person principals | **Deprecated.** MUST NOT be populated. | The public AID never carries a natural person's name (`COM-09`, `L0-03`). | Organization name only. The person behind an L1+ credential is verified by the registry and recorded in its Case File, never in the AID. |
+| `principal.legalName` for natural-person principals | **Deprecated.** MUST NOT be populated. Enforced by the schema when `principal.type` is `Person`. | The public AID never carries a natural person's name (`COM-09`, `L0-03`). | Organization name only. The person behind an L1+ credential is verified by the registry and recorded in its Case File, never in the AID. |
 | `schema/aid-v1.2.json` and `examples/aid-example-v1.2.json` | **Kept, not the 1.0 schema.** | Credentials in circulation declare `spec_version: "1.2"` and validate against it; the path is cited from the W3C DID Method Registry. | Removed only when the last such credential expires or is revoked. |
 | ATP `qualify=` | **Reserved.** Never evaluated in ATP/1. | Depends on Trust Seals (spec Appendix C), not implemented. | Processors treat it by the unknown-parameter rule (§3). `ATP-460` reserved accordingly. |
 | ATP `ttl=` | **Removed from the normative set.** | Cache lifetime is not a policy statement. | `fresh=` bounds status-evidence age; DNS TTL governs record caching. |
