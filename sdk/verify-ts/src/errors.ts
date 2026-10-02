@@ -24,11 +24,12 @@ export class AriaVerifyError extends Error {
 }
 
 /**
- * Thrown when an online revocation check fails due to network issues,
- * timeouts, or an unexpected API response.
+ * Thrown when a revocation or status check cannot establish an answer: a
+ * network failure or timeout, an unexpected API response, or a status list
+ * that does not verify or has expired.
  *
- * This is the only error that indicates a network problem — all other
- * SDK operations are fully offline.
+ * Status checks are the only networked operations; all other SDK operations
+ * are fully offline.
  *
  * @example
  * ```typescript

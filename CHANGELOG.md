@@ -7,6 +7,29 @@ All notable changes to the ARIA Protocol specification.
 
 ## Unreleased
 
+### Added — `@aria-registry/verify` checks the presented credential's own status
+
+A DID can hold a succession of credentials once the registry renews them: a renewal
+issues a new credential and revokes the previous one as superseded. `checkRevocation(did)`
+asks by DID, so it answers for the newest credential, and it read every answer without a
+`status` field as `active`. No server had ever sent that field, so it reported every
+credential active, revoked ones included.
+
+- **`checkCredentialStatus(credential, options)`** establishes the status of the presented
+  credential. It returns `'active'`, `'revoked'` or `'superseded'`.
+  - **By default, the W3C Bitstring Status List.** It reads the list the credential names,
+    at the credential's own index. The list must verify under the registry keys, both
+    halves; come from the credential's issuer; and be within a `validUntil` it must state.
+  - **With `via: 'online'`, `/v1/verify/{did}`.** The answer counts only if its
+    `credentialId` is the presented credential's `id`; otherwise the credential was
+    superseded.
+  - **Failures throw.** Anything that cannot be established throws `RevocationCheckError`,
+    never reads as `active`.
+- **`checkRevocation(did)` is deprecated** and fails closed: an answer without a status of
+  `active` or `revoked` throws.
+- The composite-proof decoding moves to an internal module shared by credentials and
+  status lists; verification is unchanged.
+
 ### Fixed — a natural person's name no longer has to appear in a public AID
 
 The schemas required `principal.legalName` of every principal, while `COM-09` forbids a

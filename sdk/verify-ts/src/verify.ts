@@ -10,6 +10,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { canonicalJson } from './canonical-json';
 import { parseCredential } from './parse';
+import { verifyCompositeProof } from './proof';
 import {
   REGISTRY_PUBLIC_KEY_MLDSA65,
   REGISTRY_PUBLIC_KEY_ED25519,
@@ -21,9 +22,6 @@ import type { VerifyResult, VerifyOptions, PolicyConfig } from './types';
 
 /** Maximum credential size in bytes (100 KB). */
 const MAX_CREDENTIAL_SIZE = 100 * 1024;
-
-/** Minimum byte length for a composite proof (4-byte length prefix). */
-const COMPOSITE_PROOF_HEADER_SIZE = 4;
 
 /** Trust level ordering for policy comparison. */
 const TRUST_LEVEL_ORDER: Record<string, number> = {
@@ -48,94 +46,6 @@ function hexToBytes(hex: string): Uint8Array {
     bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
   }
   return bytes;
-}
-
-/**
- * Decode a base64url string (RFC 4648 §5, no padding) to raw bytes.
- * @internal
- */
-function base64urlToBytes(b64: string): Uint8Array {
-  let base64 = b64.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64.length % 4 !== 0) {
-    base64 += '=';
-  }
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-// ── Composite Proof Decoding ──────────────────────────────
-// Both signatures travel in one proofValue:
-//   [4 bytes: PQ sig length (big-endian uint32)]
-//   [PQ signature bytes]
-//   [Classical signature bytes]
-//
-// Two encodings of those bytes are in circulation. Suite 1.0 emits multibase
-// base64url -- a leading "u" per the multibase table -- because the VC v2
-// context types proofValue as sec:multibase, and a bare base64 string claiming
-// that datatype is not one. Credentials issued before the cutover carry the
-// same bytes with no prefix. Verifiers accept both.
-//
-// For this suite the two cannot be confused: the header is always 0x00000CED,
-// the ML-DSA-65 signature length, so a bare proofValue always begins "AAAM" and
-// never "u". The decoder still checks the header rather than trusting the first
-// character, so a suite whose header encodes differently stays decidable.
-
-/** ML-DSA-65 signature length in bytes (FIPS 204). */
-const ML_DSA_65_SIGNATURE_SIZE = 3309;
-
-/** Ed25519 signature length in bytes (RFC 8032). */
-const ED25519_SIGNATURE_SIZE = 64;
-
-/**
- * Decode one reading of a proofValue, rejecting it unless the length header
- * accounts for every byte. This is what makes the multibase prefix detectable
- * rather than guessed: a bare base64url string that happens to begin with "u"
- * decodes to a header that does not describe its own length.
- */
-function decodeCandidate(
-  base64url: string,
-): { pqSignature: Uint8Array; classicalSignature: Uint8Array } | null {
-  try {
-    const combined = base64urlToBytes(base64url);
-    if (combined.length !== COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE + ED25519_SIGNATURE_SIZE) {
-      return null;
-    }
-
-    const view = new DataView(combined.buffer, combined.byteOffset, combined.byteLength);
-    if (view.getUint32(0, false) !== ML_DSA_65_SIGNATURE_SIZE) return null; // big-endian
-
-    return {
-      pqSignature: combined.slice(COMPOSITE_PROOF_HEADER_SIZE, COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE),
-      classicalSignature: combined.slice(COMPOSITE_PROOF_HEADER_SIZE + ML_DSA_65_SIGNATURE_SIZE),
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Decode a composite proofValue into its PQ and classical components.
- *
- * Accepts both the multibase form suite 1.0 emits (`u` + base64url) and the
- * bare base64url form issued before the cutover.
- *
- * @internal
- */
-function decodeCompositeProof(
-  proofValue: string,
-): { pqSignature: Uint8Array; classicalSignature: Uint8Array } | null {
-  // Read as multibase first when prefixed; fall back to reading the whole
-  // string, so the header decides rather than the first character.
-  const readings = proofValue.startsWith('u') ? [proofValue.slice(1), proofValue] : [proofValue];
-  for (const reading of readings) {
-    const decoded = decodeCandidate(reading);
-    if (decoded) return decoded;
-  }
-  return null;
 }
 
 // ── Result Helpers ────────────────────────────────────────
@@ -449,19 +359,7 @@ export function verifyAgent(input: unknown, options?: VerifyOptions): VerifyResu
 
   if (compositeProofValue && typeof compositeProofValue === 'string' && !separatePq) {
     // Production format: decode composite proof
-    const decoded = decodeCompositeProof(compositeProofValue);
-    if (decoded) {
-      try {
-        pqValid = ml_dsa65.verify(decoded.pqSignature, payloadBytes, REGISTRY_PUBLIC_KEY_MLDSA65);
-      } catch {
-        pqValid = false;
-      }
-      try {
-        classicalValid = ed25519.verify(decoded.classicalSignature, payloadBytes, REGISTRY_PUBLIC_KEY_ED25519);
-      } catch {
-        classicalValid = false;
-      }
-    }
+    ({ pqValid, classicalValid } = verifyCompositeProof(compositeProofValue, payloadBytes));
   } else {
     // Test format: separate hex-encoded fields
     if (separatePq && typeof separatePq === 'string') {
