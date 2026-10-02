@@ -31,6 +31,22 @@ const CLOCK_SKEW_MS = 60_000;
 const MAX_LIST_BYTES = 2 * 1024 * 1024;
 
 /**
+ * The least: 131,072 entries, the W3C minimum, which the ARIA list uses. A
+ * smaller list would also shrink the group a verifier's fetch hides among.
+ */
+const MIN_LIST_BYTES = 131_072 / 8;
+
+/**
+ * The longest validity an ARIA status list may state: 24 hours, re-signed
+ * hourly (owner decision of 2026-10-02). It bounds how long a copy taken before
+ * a revocation can still read as current. An ARIA policy, not a W3C rule.
+ */
+const MAX_LIST_VALIDITY_MS = 24 * 3_600_000;
+
+/** An XML Schema dateTimeStamp, as VC 2.0 requires of validFrom and validUntil. */
+const DATE_TIME_STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
  * Check whether the presented credential is still in force.
  *
  * Verify the credential with {@link verifyAgent} first: this call establishes
@@ -160,19 +176,25 @@ async function fromStatusList(
     throw new RevocationCheckError('the status list signature does not verify');
   }
 
-  // Within its validity. A list without an end has no bounded age, so a copy
-  // taken before a revocation would read as current forever.
+  // Within a complete validity window of at most 24 hours. A list without an
+  // end, or with a long one, has no bounded age: a copy taken before a
+  // revocation would read as current for as long as it says.
+  const from = instant(list.validFrom);
+  const until = instant(list.validUntil);
+  if (from === null || until === null) {
+    throw new RevocationCheckError(
+      'the status list does not state a valid validFrom and validUntil, so its age is unbounded',
+    );
+  }
+  if (until <= from || until - from > MAX_LIST_VALIDITY_MS) {
+    throw new RevocationCheckError('the status list states a validity window longer than 24 hours, or none');
+  }
   const now = Date.now();
-  const from = typeof list.validFrom === 'string' ? Date.parse(list.validFrom) : NaN;
-  const until = typeof list.validUntil === 'string' ? Date.parse(list.validUntil) : NaN;
-  if (!Number.isFinite(until)) {
-    throw new RevocationCheckError('the status list states no validUntil, so its age is unbounded');
+  if (from > now + CLOCK_SKEW_MS) {
+    throw new RevocationCheckError('the status list is not valid yet');
   }
   if (until <= now) {
     throw new RevocationCheckError('the status list has expired');
-  }
-  if (Number.isFinite(from) && from > now + CLOCK_SKEW_MS) {
-    throw new RevocationCheckError('the status list is not valid yet');
   }
 
   const subject = list.credentialSubject as Record<string, unknown> | undefined;
@@ -192,12 +214,22 @@ async function fromStatusList(
     if (error instanceof RevocationCheckError) throw error;
     throw new RevocationCheckError('the status list does not decode');
   }
+  if (bits.length < MIN_LIST_BYTES) {
+    throw new RevocationCheckError('the status list is shorter than 131,072 entries');
+  }
   const byte = Math.floor(index / 8);
   if (byte >= bits.length) {
     throw new RevocationCheckError("the status list does not cover the credential's index");
   }
   // Most significant bit first (W3C Bitstring Status List §3.2).
   return (bits[byte] >> (7 - (index % 8))) & 1 ? 'revoked' : 'active';
+}
+
+/** A dateTimeStamp as milliseconds since the epoch, or `null`. */
+function instant(value: unknown): number | null {
+  if (typeof value !== 'string' || !DATE_TIME_STAMP.test(value)) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : null;
 }
 
 /** GZIP-decompress, refusing more than {@link MAX_LIST_BYTES}. */

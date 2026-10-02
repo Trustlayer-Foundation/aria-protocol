@@ -141,8 +141,11 @@ The status is established in one of two ways.
   names, at the credential's own index.
   - The list must be the one the credential names and come from the credential's issuer.
   - Its composite proof must verify, both halves.
-  - It must be within its `validFrom`–`validUntil` window. A list without `validUntil` is
-    refused, since its age would be unbounded.
+  - It must state a `validFrom` and a `validUntil` no more than 24 hours apart, and be
+    within them. A list without that window would have an unbounded age. The 24 hours are
+    the ARIA list's policy, not a W3C rule.
+  - It must hold at least 131,072 entries, the W3C minimum, which keeps a verifier's
+    fetch hidden among that many credentials.
 
   One fetch serves every credential, and it tells the registry nothing about which one
   you are checking.

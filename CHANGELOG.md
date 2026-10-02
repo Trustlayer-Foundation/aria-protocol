@@ -19,7 +19,8 @@ credential active, revoked ones included.
   credential. It returns `'active'`, `'revoked'` or `'superseded'`.
   - **By default, the W3C Bitstring Status List.** It reads the list the credential names,
     at the credential's own index. The list must verify under the registry keys, both
-    halves; come from the credential's issuer; and be within a `validUntil` it must state.
+    halves; come from the credential's issuer; state a `validFrom` and a `validUntil` at
+    most 24 hours apart and be within them; and hold at least 131,072 entries.
   - **With `via: 'online'`, `/v1/verify/{did}`.** The answer counts only if its
     `credentialId` is the presented credential's `id`; otherwise the credential was
     superseded.

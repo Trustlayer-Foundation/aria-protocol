@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { checkCredentialStatus } from '../src/status';
@@ -121,12 +121,19 @@ describe('checkCredentialStatus, from the signed status list', () => {
       list.proof.proofValue = value.slice(0, -10) + 'AAAAAAAAAA';
       return list;
     }],
-    ['a list that states no validUntil', /validUntil/, () => signedList({ edit: (l) => { delete l.validUntil; } })],
+    ['a list that states no validUntil', /valid validFrom and validUntil/, () => signedList({ edit: (l) => { delete l.validUntil; } })],
+    ['a list that states no validFrom', /valid validFrom and validUntil/, () => signedList({ edit: (l) => { delete l.validFrom; } })],
+    ['a list with a malformed validFrom', /valid validFrom and validUntil/, () => signedList({ edit: (l) => { l.validFrom = 'not a date'; } })],
+    ['a list with a malformed validUntil', /valid validFrom and validUntil/, () => signedList({ edit: (l) => { l.validUntil = '2026-10-02'; } })],
+    ['a list whose window ends before it starts', /validity window/, () => signedList({ edit: (l) => { l.validUntil = iso(-2 * HOUR); } })],
+    ['a list valid for a year', /validity window/, () => signedList({ edit: (l) => { l.validUntil = iso(365 * 24 * HOUR); } })],
+    ['a list valid for one second more than a day', /validity window/, () => signedList({ edit: (l) => { l.validUntil = iso(23 * HOUR + 1_000); } })],
     ['an expired list', /has expired/, () => signedList({ edit: (l) => { l.validUntil = iso(-60_000); } })],
     ['a list not yet valid', /not valid yet/, () => signedList({ edit: (l) => { l.validFrom = iso(HOUR); } })],
     ['another list', /not the one the credential names/, () => signedList({ edit: (l) => { l.id = `${LIST_URL}-other`; } })],
     ['a list by another issuer', /not the one the credential names/, () => signedList({ edit: (l) => { l.issuer = 'did:aria:other.example'; } })],
-    ['a list that does not cover the index', /does not cover/, () => signedList({ entries: 8 })],
+    ['a list one byte shorter than 131,072 entries', /shorter than 131,072 entries/, () => signedList({ entries: 131_064 })],
+    ['a list of six bytes', /shorter than 131,072 entries/, () => signedList({ entries: 48 })],
     ['a list that is unavailable', /HTTP 503/, () => ({}), 503],
   ];
   for (const [name, why, list, status] of refused) {
@@ -137,6 +144,22 @@ describe('checkCredentialStatus, from the signed status list', () => {
       await expect(check).rejects.toThrow(why);
     });
   }
+
+  it('accepts a window of exactly 24 hours and a list of exactly 131,072 entries', async () => {
+    const list = signedList();
+    expect(Date.parse(list.validUntil as string) - Date.parse(list.validFrom as string)).toBe(24 * HOUR);
+    const encoded = (list.credentialSubject as { encodedList: string }).encodedList;
+    expect(gunzipSync(Buffer.from(encoded.slice(1), 'base64url')).length).toBe(131_072 / 8);
+    answer(list);
+    expect((await checkCredentialStatus(credential)).status).toBe('active');
+  });
+
+  it('refuses an index the list does not cover', async () => {
+    const beyond = structuredClone(credential);
+    beyond.credentialStatus.statusListIndex = '200000';
+    answer(signedList());
+    await expect(checkCredentialStatus(beyond)).rejects.toThrow(/does not cover/);
+  });
 
   it('refuses a credential without an instance identifier', async () => {
     answer(signedList());
