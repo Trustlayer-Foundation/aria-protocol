@@ -37,13 +37,14 @@ export interface OperationDescriptor {
   readonly path: string;
   /** The one media type a body may have (`unsafe-body` only); another is refused before the operation is claimed. */
   readonly mediaType?: string;
-  /** Query parameters the operation accepts. */
+  /** Query parameters the operation accepts; a retrieval takes exactly `operation`. */
   readonly query?: readonly string[];
   /** Further headers that change meaning (e.g. `if-match`); signed and fingerprinted. */
   readonly semanticHeaders?: readonly string[];
-  /** The grant the operation needs, exactly. */
-  readonly scope: string;
-  readonly minLevel: TrustLevel;
+  /** The grant the operation needs, exactly. Required on every class but `retrieval`. */
+  readonly scope?: string;
+  /** Required on every class but `retrieval`. */
+  readonly minLevel?: TrustLevel;
   /** Approval policy when the credential lists `scope` in `hitlRequired`. */
   readonly onMissingApproval?: MissingApproval;
 }
@@ -55,30 +56,26 @@ export interface ReceiverSelf {
   readonly origin: string;
   /** Its own verified credential, from the credential verifier the instance was created with. */
   readonly credential: VerifiedCredential;
+  /** That credential's document, served in its identity statement; its canonical digest must be the credential's. */
+  readonly document: unknown;
+  /** Its holder key, whose `keyId` is the credential's `holderKey.id`. */
   readonly signer: Signer;
 }
 
 /** Single-use, short-lived challenges, stored by the adopter. `consume` must be atomic across its instances. */
 export interface ChallengeStore {
   issue(audience: Did, ttlSeconds: number): Promise<string>;
+  /** Whether `challenge` is live for `audience`, without consuming it. */
+  live(challenge: string, audience: Did): Promise<boolean>;
   /** True once for a live challenge issued to `audience`; false afterwards and for anything else. */
   consume(challenge: string, audience: Did): Promise<boolean>;
 }
 
-/** Why a request is not authenticated. These answers are unsigned: nothing is attributed to a DID that did not prove its key. */
-export type PresentationFailure =
-  | 'malformed'
-  | 'unsupported_class'
-  | 'operation_unknown'
-  | 'media_type'
-  | 'operation_id_missing'
-  | 'operation_id_unsigned'
-  | 'components'
-  | 'window'
-  | 'digest'
-  | 'challenge'
-  | 'credential'
-  | 'signature';
+/** Why a request is not well formed (400, `aria.request_invalid`). */
+export type RequestInvalidReason = 'method' | 'target' | 'operation_unknown' | 'body' | 'media_type' | 'query' | 'operation_id';
+
+/** Why a request is not authenticated (401, `aria.authentication_failed`, with this subtype). */
+export type AuthenticationReason = 'signature' | 'window' | 'digest' | 'challenge' | 'unsigned_operation' | 'credential';
 
 /**
  * A request whose signature verifies under the holder key of an exact verified
@@ -94,24 +91,27 @@ export interface VerifiedPresentation extends Produced<'presentation'> {
   readonly lookupOf: string | null;
   /** The receiver the request names in `aria-audience`, checked at admission. */
   readonly audience: string;
-  /** SHA-256 of the logical content (class, method, path, query, media type, semantic headers, content digest); excludes challenge, times, key and signature. */
-  readonly fingerprint: string;
+  /** SHA-256 of the logical content (class, method, path, query, media type, semantic headers, content digest); `null` for a retrieval. */
+  readonly fingerprint: string | null;
   /** SHA-256 of this attempt's RFC 9421 signature base. */
   readonly requestDigest: string;
 }
 
+/** Failures are unsigned: nothing is attributed to a DID that did not prove its key. */
 export type PresentationResult =
   | { readonly ok: true; readonly presentation: VerifiedPresentation }
-  | {
-      readonly ok: false;
-      readonly status: 400 | 401;
-      readonly reason: PresentationFailure;
-      /** A fresh challenge for the 401's retry. */
-      readonly challenge?: string;
-    };
+  | { readonly ok: false; readonly status: 400; readonly code: 'aria.request_invalid'; readonly reason: RequestInvalidReason }
+  | { readonly ok: false; readonly status: 401; readonly code: 'aria.authentication_failed'; readonly reason: AuthenticationReason };
 
 export interface PresentationContext {
-  readonly receiver: Omit<ReceiverSelf, 'signer'>;
+  readonly receiver: { readonly did: Did; readonly origin: string };
   readonly operations: readonly OperationDescriptor[];
   readonly challenges: ChallengeStore;
+  /**
+   * The document of the credential a request names by URL, from wherever the
+   * adopter keeps or fetches credentials (bounded: allowed origins, size, time);
+   * `null` when unknown. ARIA AP verifies it with its credential verifier and
+   * requires its exact URL and digest.
+   */
+  readonly resolveCredential: (url: string) => Promise<unknown>;
 }

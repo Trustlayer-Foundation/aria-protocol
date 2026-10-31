@@ -1,5 +1,5 @@
 import type { Produced, StatusEvidence } from '@aria-registry/sdk';
-import type { AttemptRefusal } from './operations';
+import type { AttemptRefusal, OperationKey } from './operations';
 import type { VerifiedPresentation } from './presentation';
 
 /**
@@ -71,3 +71,24 @@ export type Admission =
     });
 
 export type Admitted = Extract<Admission, { decision: 'allow' }>;
+
+export interface LookupInput {
+  /** A verified retrieval: the signed lookup of one operation. */
+  readonly presentation: VerifiedPresentation;
+  /** Status evidence of its exact credential, from the same credential verifier. */
+  readonly status: StatusEvidence;
+}
+
+/**
+ * Whether a retrieval may read an operation's receipts: a credential of the
+ * operation's sender DID that stands now (provisional, D4). A revoked, superseded
+ * or expired credential reads nothing; the refusal is an unsigned problem, since a
+ * retrieval gets no receipt of its own.
+ */
+export type LookupAdmission =
+  | (Produced<'lookup'> & { readonly decision: 'allow'; readonly key: OperationKey })
+  | {
+      readonly decision: 'deny';
+      readonly status: 403 | 503;
+      readonly code: 'aria.audience_mismatch' | 'aria.credential_expired' | 'aria.credential_revoked' | 'aria.credential_superseded' | 'aria.status_unavailable';
+    };

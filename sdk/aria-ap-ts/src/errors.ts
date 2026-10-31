@@ -1,11 +1,15 @@
-/** Raised by every entry point whose behavior a later increment implements. */
-export class NotYetImplemented extends Error {
-  constructor(readonly increment: 'AP2') {
-    super(`not implemented before ${increment}`);
-    this.name = 'NotYetImplemented';
+/** A claim this worker held was settled, released or taken by another: stop, and roll back whatever this worker started. */
+export class StaleClaim extends Error {
+  constructor() {
+    super('the operation is no longer claimed by this worker');
+    this.name = 'StaleClaim';
   }
 }
 
-export function pending(increment: 'AP2'): never {
-  throw new NotYetImplemented(increment);
+/** The adopter's record of an effect contradicts the operation's record: an effect and its outcome commit together, so one cannot exist without the other. */
+export class InvariantViolation extends Error {
+  constructor(detail: string) {
+    super(`operation record and effect disagree: ${detail}`);
+    this.name = 'InvariantViolation';
+  }
 }

@@ -1,0 +1,59 @@
+import { AriaUsageError, type Did, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import type { AttemptRefusal } from '../operations';
+import type { OperationDescriptor } from '../presentation';
+import { issue } from './provenance';
+import type { Holder } from './request';
+
+/** What an `Ap` instance keeps besides its methods, for the ledger and tracker built on it. */
+export interface Internals {
+  readonly credentials: Verifier;
+  readonly now: () => number;
+}
+
+const instances = new WeakMap<object, Internals>();
+
+export function register(ap: object, internals: Internals): void {
+  instances.set(ap, internals);
+}
+
+export function internalsOf(ap: unknown): Internals {
+  const found = typeof ap === 'object' && ap !== null ? instances.get(ap) : undefined;
+  if (!found) throw new AriaUsageError('not an ARIA AP instance from createAp');
+  return found;
+}
+
+/** What a verified presentation established, kept by the instance; the view callers get carries no authority. */
+export interface PresentationSnapshot {
+  readonly credential: VerifiedCredential;
+  readonly holder: Holder;
+  readonly descriptor: OperationDescriptor;
+  readonly operationId: string | null;
+  readonly lookupOf: string | null;
+  readonly audience: string;
+  readonly fingerprint: string | null;
+  readonly requestDigest: string;
+  /** The receiver that verified it. */
+  readonly receiverDid: Did;
+}
+
+export interface AdmissionSnapshot {
+  readonly decision: 'allow' | 'deny' | 'indeterminate';
+  readonly presentation: PresentationSnapshot;
+}
+
+export interface RefusalSnapshot {
+  readonly status: 403 | 409 | 503;
+  readonly code: string;
+  readonly operationId: string;
+  readonly requestDigest: string;
+  readonly sender: { readonly did: Did; readonly credential: string };
+  readonly receiverDid: Did;
+}
+
+export const newReceiptId = (): string => `urn:uuid:${globalThis.crypto.randomUUID()}`;
+
+/** An attempt refusal as callers see it; the snapshot stays with the instance that refused. */
+export function refusalOf(ap: object, s: RefusalSnapshot): AttemptRefusal {
+  const view = { status: s.status, code: s.code, operationId: s.operationId, requestDigest: s.requestDigest };
+  return issue(ap, 'refusal', view as unknown as AttemptRefusal, s);
+}

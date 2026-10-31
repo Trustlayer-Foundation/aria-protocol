@@ -1,11 +1,11 @@
 # ARIA AP 1.0 — API contract
 
-Status: S0 contract, amended for the two-package structure. Every entry point throws
-`NotYetImplemented('AP2')` until AP2; the admission rules exist internally and are tested.
-Package name provisional (`@aria-registry/ap`) until its owner is confirmed. Private, not
-published. The wire profile it will implement is provisional: its vectors
-([`conformance/ap`](../../conformance/ap/README.md)) encode the options recommended for
-decisions D3, D4, D5 and D8, none of which is taken.
+Status: implemented against a **provisional** wire profile. The vectors in
+[`conformance/ap`](../../conformance/ap/README.md) encode the options recommended for
+decisions D3 (transport), D4 (receipt), D5 (scopes) and D8 (human approval), none of
+which is taken; the identity statement below is provisional under D3 as well. Expect the
+wire format to change when they are decided. Package name provisional
+(`@aria-registry/ap`) until its owner is confirmed; private, not published.
 
 ## What it builds on
 
@@ -23,127 +23,147 @@ const ap = createAp({ credentials: verifier });
 
 - **One verifier, the application's.** `@aria-registry/sdk` is a peer dependency: the
   application installs it, and ARIA AP uses that copy. ARIA AP imports only its public
-  entry point and contains none of its code.
-- **Credential and status results are read through the verifier, never from their
-  fields.** Wherever ARIA AP receives a `VerifiedCredential` or `StatusEvidence` (a
-  receiver's own credential, the status given to `admit`, the credential behind a
-  presentation), it calls `verifier.facts(credential)` for the verified data and the
-  holder key, and `verifier.standing(credential, status)` for validity, status and
-  freshness judged now. Both throw for anything that verifier did not produce: a copy, a
-  cast, a hand-made object, another verifier's result. So a fabricated result cannot
-  become evidence because ARIA AP accepts its type.
-- **What the verifier judges, ARIA AP does not judge again.** Validity, status and
-  freshness come from `standing`; ARIA AP adds what is its own: possession bound to the
-  request, the receiver, audience, level and scope against the operation, delegation,
-  human approval, the application's resource decision, operations and receipts.
-- **ARIA AP's own results** (presentations, admissions, claims, outcomes, refusals,
-  receipt statements, verified receivers) are recorded by the `Ap` instance that produced
-  them and accepted only by it, the same way the verifier treats its own.
-- **A duplicated install fails closed.** A second copy of `@aria-registry/sdk` keeps its
-  own records: its verifier refuses the first copy's results and the reverse. Nothing
-  passes because two copies exist; it just stops working until there is one.
-- **Nothing is portable evidence.** Results live in one process. A credential, a request
-  or a receipt that crosses a process boundary is verified again where it arrives.
+  entry point and contains none of its code. Its own dependencies are `@noble/curves`
+  and `@noble/hashes`.
+- **Credentials are verified by the verifier, and read through it.** A presented
+  credential document goes to `verifier.verifyCredential`; the result is read with
+  `verifier.facts` (holder key, level, scopes) and judged with `verifier.standing`
+  (validity, status, freshness, now). Both refuse anything that verifier did not produce,
+  so a copied, hand-made or foreign result or status cannot become evidence.
+- **ARIA AP's own results** (presentations, admissions, lookups, refusals, claims,
+  outcomes, verified receivers, receipt statements) are recorded by the `Ap` instance
+  that produced them and accepted only by it.
+- **A duplicated install fails closed**, and **nothing is portable evidence**: results
+  live in one process, and what crosses a process boundary is verified again.
+
+## The exchange
+
+| Step | Agent | Receiver |
+|---|---|---|
+| 1. Who is the receiver | `GET /.well-known/aria/identity?nonce&audience`, then `verifyReceiverIdentity(response, pin, { nonce, audience })` → `VerifiedReceiver` with a challenge | `identify(self, { nonce, audience }, challenges)` |
+| 2. A signed attempt | `signRequest({ request, class, operationId, receiver, credential, signer })` → `{ request, sent, receiver }` | `verifyPresentation(request, context)` → `VerifiedPresentation`, or an unsigned 400/401 |
+| 3. Admission | — | `admit({ presentation, status, approval?, authorize })`; a refusal is signed with `buildAttemptRefusal` |
+| 4. Once per operation | — | `OperationLedger.begin` → `settle` in the effect's transaction, or `fail` |
+| 5. The answer | `OperationTracker.record(signed)` before sending, `observe(ap, receipt, { mode: 'decision', transportStatus })` | — |
+| 6. Recovery | a signed `retrieval`, then `observeLookup(ap, { history })` | `admitLookup`, `ledger.lookup` |
+
+Every request, a lookup included, uses a new challenge from a fresh step 1: a challenge
+is consumed by the request that uses it.
 
 ## Results, kept apart
 
 | Result | Says | Does not say |
 |---|---|---|
-| `VerifiedPresentation` (`verifyPresentation`) | The caller signed this request with the holder key of an exact verified credential, for this receiver, operation and content | That it may do it |
-| `Admission` (`admit`) | `allow`, `deny` or `indeterminate`, with a fixed reason | That the operation ran |
-| `ReceiptStatement` (`verifyReceipt`) | The expected receiver signed this statement about this attempt or operation | That the business effect is true outside the receiver; a valid receipt can say `rejected` |
+| `VerifiedReceiver` | The pinned DID at the pinned origin signed a fresh statement for this client, with a credential that stands now | Anything about the operation |
+| `VerifiedPresentation` | The caller signed this request with the holder key of an exact verified credential, for this receiver, operation and content | That it may do it |
+| `Admission` | `allow`, `deny` or `indeterminate`, with a fixed reason | That the operation ran |
+| `ReceiptStatement` | The expected receiver signed this statement about one kept attempt | That the effect is true outside the receiver; a valid receipt can say `rejected` |
 
-Only `allow` lets an operation be claimed and run. There is no mode in which a failed or
-missing check becomes `allow`: a receiver observing a policy (the old `monitor`/`warn`)
-logs the `deny`, and whatever it then runs is not admitted. The public `admit` always
-needs a presentation this instance produced; nothing reaches the rules without one.
+Only `allow` lets an operation be claimed. There is no mode in which a failed check
+becomes `allow`; a receiver observing a policy logs the `deny`, and what it then runs is
+not admitted.
 
-**Admission order.** Audience; the credential's standing (`not_valid_now` →
-`credential_expired`, `unknown` → `indeterminate`, `revoked`, `superseded`); level; scope;
-delegation; human approval, judged at the standing's time; then the application's
-resource decision.
+## Request profile (provisional, D3)
 
-## Operations, fingerprints and receipts
+RFC 9421 with one signature labelled `aria`, tag `aria-ap/1`, Ed25519, `keyid` the
+credential's holder key. Each class fixes its covered components exactly:
 
-An `OperationDescriptor` is the closed list of what may vary in an operation: its class,
-method, path, the **one** media type a body may have, its query parameters, and any
-further header that changes its meaning. Everything listed is signed and part of the
-operation's **fingerprint**: SHA-256 over the canonical
-`{class, method, path, query, mediaType, semanticHeaders, contentDigest}`, where
-`contentDigest` is the digest of empty content for `unsafe-empty` and absent for safe
-classes. The challenge, signing times, key and signature are not in it, so a retry with
-a fresh signature is the same operation; the same id with another body, query or media
-type is a conflict.
+| Class | Methods | Covered | Receipt |
+|---|---|---|---|
+| `unsafe-body` | POST, PUT, PATCH | `@method`, `@target-uri`, `content-type`, `content-digest`, `aria-operation`, `aria-credential`, `aria-audience` | yes |
+| `unsafe-empty` | DELETE, POST, PATCH | as above without `content-type`; digest of empty content | yes |
+| `safe-receiptable` | GET | `@method`, `@target-uri`, `aria-operation`, `aria-credential`, `aria-audience` | yes |
+| `retrieval` | GET `?operation=<id>` | `@method`, `@target-uri`, `aria-credential`, `aria-audience` | no |
 
-The receiver: authenticate (unsigned failures), admit (a refusal is a signed
-`rejected/attempt` and claims nothing), then `OperationLedger.begin`:
+plus every semantic header the operation declares and the request carries.
+`ARIA-Operation` is the operation id (a UUID, the same on every retry and the idempotency
+key); `ARIA-Credential` names the exact credential by URL with its digest
+(`"<url>";digest=:<sha-256>:`); `ARIA-Audience` is the receiver DID.
 
-- no record: create it as `claimed` with a fresh claim id, and run;
-- same fingerprint with an outcome: return the governing receipt, no second effect;
-- another fingerprint, or claimed by another worker: a signed `rejected/attempt`
-  (`aria.idempotency_conflict`, `aria.operation_in_progress`) that changes nothing.
+`verifyPresentation` checks in a fixed order and stops at the first failure: method and
+one described operation, body and media type, query, `ARIA-Operation` (400
+`aria.request_invalid`); then one `aria` signature, the covered components, the
+parameters and window (at most 60 s, 5 s skew), `Content-Digest`, a live challenge, the
+exact credential (resolved by `context.resolveCredential(url)`, verified, URL and digest
+equal, `keyid` its holder key), and strict Ed25519 over the base rebuilt from the
+receiver's configured origin (401 `aria.authentication_failed` with that subtype). Only
+then is the challenge consumed. Strict Ed25519 means the key and `R` canonical, not small
+order and torsion free, and `S < L`. The fingerprint is SHA-256 over the canonical
+`{class, method, path, query, semanticHeaders, mediaType, contentDigest}`; the challenge,
+times, key and signature are not in it.
 
-**Storage is compare-and-set.** Every stored operation has a `revision`; a claim has an
-id. `create` inserts only if absent; `replace`, `reclaim` and `remove` write only if the
-revision and claim they read are still there. So two workers cannot both settle an
-operation, a stale worker cannot replace a final outcome, and a late failure cannot
-release another worker's claim.
+An expired or not-yet-valid credential does not authenticate (401 `credential`): the
+credential verifier produces no result for it. `aria.credential_expired` is the admission
+answer when validity ends between authentication and admission.
 
-**When a handler throws**, `ledger.fail(claim, 'rolled-back')` releases the claim only
-when the adopter knows its transaction did not commit; `'uncertain'` keeps it, and retries
-get `operation_in_progress`. `ledger.reconcile` later decides it from the adopter's own
-record of the effect. Since the effect and its signed outcome commit together, a
-committed effect already has its stored receipt, which is returned and never regenerated;
-an open claim reported as committed breaks that invariant and fails; only an explicit
-«not committed» releases the claim, never a timeout alone. The claimed record keeps the
-authenticated attempt that claimed it, because a fingerprint cannot rebuild a signature
-base.
+## Receiver identity (provisional, D3)
 
-**`accepted` continues after a restart** through `ledger.resume(key, admission)`: a fresh
-admission of the same operation and fingerprint (current status, policy and approval),
-then a new claim at the stored revision; one worker gets it, the others are refused. The
-final receipt is new; the `accepted` one stays in the immutable history.
+`identify` answers `{ credential, statement }`: the receiver's AID document and a
+statement `aria-ap-identity/1` with `subject`, `credential`, `origin`, `audience`,
+`nonce`, a fresh `challenge` (single use, 60 s) and `created`, signed with the
+receiver's holder key over its canonical JSON without `proof.value`.
+`verifyReceiverIdentity` checks, in order: the form (`malformed`); the document verifies
+and is the one named (`credential`); the pinned DID (`unexpected_receiver`), origin
+(`origin`), audience (`audience`), nonce (`nonce`); `created` within 60 s (`stale`); the
+signature by that credential's holder key (`signature`); and the credential's standing is
+`good` now (`status`). The client pins origin and DID; nothing is learnt from the answer.
 
-Receipts have exactly two sources: an **operation outcome**, recorded by `ledger.settle`
-in the business effect's transaction, and an **attempt refusal**, from a denied admission
-or a refused claim (`ap.buildAttemptRefusal`). An admission cannot make either. Errors before
-authentication are unsigned.
+## Admission
 
-**The client keeps every attempt.** `OperationTracker` holds the operation's binding
-(operation id, sender, receiver) and every `SentAttempt`. A receipt's request digest only
-selects the kept attempt; signature, receiver, sender and every binding are then checked
-against it, so the original receipt returned to a retry with a fresh challenge is
-recognised. Every request, a lookup included, uses a new challenge from a fresh receiver
-authentication: a lookup consumes its challenge, so the mutation after it needs another.
-It moves only on a verified operation receipt of this operation; an attempt
-refusal is kept as evidence and leaves the state; an unverifiable binding or another
-sender or receiver changes nothing. Failing to send a retry is that retry's error: once
-an attempt was sent (`everSent`) the operation is not «not sent».
+Order: audience; the credential's standing (`not_valid_now` → `credential_expired`,
+`unknown` → `indeterminate`, `revoked`, `superseded`); level against the operation's
+minimum; scope (exact); delegation (unsupported); human approval, judged at the
+standing's instant; then the application's `authorize`, called only when all of these
+pass. A refusal by `authorize` carries the receiver's own code (`bank.account_not_granted`)
+and is a 403 attempt refusal. Refusals are signed `rejected/attempt` receipts and claim
+nothing; `indeterminate` is a signed 503 `aria.status_unavailable`.
 
-**Historical verification** (`mode: 'historical'`) works offline from retained evidence:
-the exact receiver credential the receipt names (its URL is in the receipt; the DID's
-current document may be another one) and, optionally, the retained signed status list.
-It reports separately whether that credential verifies under the trusted issuer now,
-whether the receiver's claimed `issuedAt` falls in its signed validity, and the retained
-status; it never establishes the signing time, which is the receiver's own claim. Without
-the exact credential it fails with `evidence_missing`. It neither fetches the DID's
-current document nor moves the verifier's clock.
+A retrieval is admitted by `admitLookup` (provisional, D4): a credential of the
+operation's sender DID whose standing is `good` reads that operation's receipts; a
+revoked, superseded or expired credential reads nothing. Its refusals are unsigned
+problems, since a retrieval gets no receipt of its own.
 
-## Human approval
+## Operations and receipts
 
-When the credential lists the operation's scope in `hitlRequired`, admission needs
-`ApprovalEvidence` from the receiver's approval system, bound to the sender, the exact
-credential, the operation id, its fingerprint and an expiry. Without it the attempt is
-refused (`approval_required`) and a later attempt carrying an approval can proceed.
+`OperationLedger` keys an operation by receiver, sender DID and operation id, over the
+adopter's `OperationStorage` (each method one atomic compare-and-set;
+`MemoryOperationStorage` is the reference). `begin` claims a new operation, returns the
+governing receipt of a finished one with its original status, or refuses this attempt:
+`aria.idempotency_conflict` for other content, `aria.operation_in_progress` while
+claimed. `settle` records the outcome and signs its receipt inside the effect's
+transaction; `fail('rolled-back')` releases a claim, `fail('uncertain')` keeps it for
+`reconcile`, which only an explicit «not committed» releases; `resume` continues an
+`accepted` operation after a fresh admission of the same operation and content. A stale
+worker gets `StaleClaim`; a record that contradicts the adopter's effect,
+`InvariantViolation`.
 
-Holding an operation for an approval workflow (`accepted` without running it) is
-**deferred, not decided**: it needs decision D8 and is not offered by this API until then.
-Enrollment consent and the agent's own signature are not approvals.
+Receipts (`aria-ap-receipt/1`, provisional D4) have two sources only: a settled outcome
+and an attempt refusal. The governing receipt is the final one if any, else the latest
+`accepted`; history is never rewritten.
+
+## The client
+
+`OperationTracker` keeps every signed attempt with the receiver it was signed for.
+`observe` selects the kept attempt by the receipt's request digest and checks the exact
+receiver credential and key, the signature, then operation, sender and receiver against
+that attempt (`binding`), then the transport status (`status_mismatch` in `decision`
+mode; `not_operation` for an attempt refusal in `retrieval` mode). With no attempt kept it
+refuses (`binding_unverifiable`). Only a verified operation receipt moves the state; an
+attempt refusal is kept as evidence; it never moves back, and two different final
+receipts make it `inconsistent`. Once an attempt was recorded, `everSent` stays true.
+
+## Not offered yet
+
+- **Historical verification** of a kept receipt offline, against the retained receiver
+  credential: it needs the ARIA SDK to establish a retained credential's authenticity
+  without its current validity.
+- **Holding an operation for approval** (`hold`, D8), **delegation**, a credential **by
+  value**, and the WIMSE binding.
 
 ## Package and runtimes
 
 - ESM only, with type declarations. Peer dependency: `@aria-registry/sdk` `^1.0.0-alpha.0`;
-  each package keeps its own version, and the compatible pair is the one the release
-  manifest records after [`../scripts/check-pair.mjs`](../scripts/check-pair.mjs) passed.
-- Node.js 20 and 22 (declared). The package has no install scripts and reads no
-  environment file.
+  the compatible pair is the one the release manifest records after
+  [`../scripts/check-pair.mjs`](../scripts/check-pair.mjs) passed.
+- Node.js 20 and 22 (declared). Uses the Web Crypto `getRandomValues` and `randomUUID`.
+  No install scripts; reads no environment file.

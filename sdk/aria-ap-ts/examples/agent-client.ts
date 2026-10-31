@@ -1,35 +1,26 @@
 // The agent's side: authenticate the receiver, sign each attempt, keep every
 // attempt, and recover the operation's original receipt after a lost answer,
 // without a second effect and without calling an already-sent operation unsent.
-import {
-  createAp,
-  OperationTracker,
-  type CredentialPresentation,
-  type HttpRequestLike,
-  type Receipt,
-  type ReceiverPin,
-  type Signer,
-  type VerifiedReceiver,
-} from '@aria-registry/ap';
-import type { Did, Verifier } from '@aria-registry/sdk';
+import { createAp, OperationTracker, type HttpRequestLike, type Receipt, type ReceiverPin, type Signer, type VerifiedReceiver } from '@aria-registry/ap';
+import type { Did, Verifier, VerifiedCredential } from '@aria-registry/sdk';
 
 declare const verifier: Verifier; // the credential verifier, with the agent's trust profiles
 const ap = createAp({ credentials: verifier });
 declare const signer: Signer; // the holder key, outside the language model
-declare const credential: CredentialPresentation;
-declare const me: { did: Did; credential: string };
+declare const credential: VerifiedCredential; // the agent's own credential, verified by `verifier`
+declare const me: Did;
 declare function newOperationId(): string;
-declare function newNonce(): string;
-declare function fetchIdentity(origin: string, nonce: string): Promise<unknown>;
+declare function newNonce(): string; // 32 random bytes, base64url
+declare function fetchIdentity(origin: string, nonce: string, audience: Did): Promise<unknown>;
 declare function send(request: HttpRequestLike): Promise<{ status: number; receipt?: Receipt } | 'lost'>;
-declare function lookup(request: HttpRequestLike): Promise<{ current?: Receipt } | 'lost'>;
+declare function lookup(request: HttpRequestLike): Promise<{ status: number; history?: readonly unknown[] } | 'lost'>;
 
 const bank: ReceiverPin = { origin: 'https://bank.example', did: 'did:aria:bank.example:transfers' };
 
 /** A freshly authenticated receiver with a new single-use challenge: one per request, never reused. */
 async function freshReceiver(): Promise<VerifiedReceiver | string> {
   const nonce = newNonce();
-  const identity = await ap.verifyReceiverIdentity(await fetchIdentity(bank.origin, nonce), bank, nonce);
+  const identity = await ap.verifyReceiverIdentity(await fetchIdentity(bank.origin, nonce, me), bank, { nonce, audience: me });
   return identity.ok ? identity.receiver : `receiver ${identity.reason}`;
 }
 
@@ -48,16 +39,15 @@ export async function transfer(body: Uint8Array): Promise<{ state: string; lastA
         continue;
       }
       const { request: signedLookup } = await ap.signRequest({
-        request: { method: 'GET', target: `/v1/transfers?operation=${tracker.operation.operationId}`, headers: {} },
+        request: { method: 'GET', target: `/v1/operations?operation=${tracker.operation.operationId}`, headers: {} },
         class: 'retrieval',
         receiver,
         credential,
         signer,
       });
       const stored = await lookup(signedLookup);
-      if (stored !== 'lost' && stored.current) {
-        await tracker.observe(ap, stored.current, { mode: 'retrieval' });
-        if (tracker.state !== 'unknown') break;
+      if (stored !== 'lost' && stored.status === 200 && stored.history) {
+        if ((await tracker.observeLookup(ap, { history: stored.history })) !== 'unknown') break;
       }
     }
 
@@ -67,7 +57,7 @@ export async function transfer(body: Uint8Array): Promise<{ state: string; lastA
       lastAttemptError = receiver;
       continue;
     }
-    const { request: signed, sent } = await ap.signRequest({
+    const signed = await ap.signRequest({
       request: { method: 'POST', target: '/v1/transfers', headers: { 'content-type': 'application/json' }, body },
       class: 'unsafe-body',
       operationId: tracker.operation.operationId,
@@ -75,9 +65,9 @@ export async function transfer(body: Uint8Array): Promise<{ state: string; lastA
       credential,
       signer,
     });
-    tracker.record(sent); // kept before sending: the receipt may name this attempt or an earlier one
+    tracker.record(signed); // kept before sending: the receipt may name this attempt or an earlier one
 
-    const answer = await send(signed);
+    const answer = await send(signed.request);
     if (answer === 'lost' || !answer.receipt) continue; // no conclusive receipt: still unknown, same operation id
 
     // The receipt names its attempt by digest; the tracker checks it against that kept attempt.

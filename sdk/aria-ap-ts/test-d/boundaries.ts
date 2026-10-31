@@ -1,7 +1,7 @@
 // Compile-time boundaries of the ARIA AP API. Each `@ts-expect-error` must stay an
 // error: `tsc` fails if one of these lines starts to compile. The same boundaries
-// are checked again at run time (AP2), since a cast gets past any type.
-import { OperationLedger, type Admission, type Ap, type OperationClaim, type Receipt, type ReceiverSelf, type VerifiedPresentation } from '@aria-registry/ap';
+// are checked again at run time, since a cast gets past any type.
+import { OperationLedger, OperationTracker, type Admission, type Ap, type OperationClaim, type Receipt, type ReceiverSelf, type SentAttempt, type Signer, type VerifiedPresentation, type VerifiedReceiver } from '@aria-registry/ap';
 import type { CredentialFacts, Standing, StatusEvidence, VerifiedCredential } from '@aria-registry/sdk';
 
 declare const ap: Ap;
@@ -15,6 +15,10 @@ declare const receipt: Receipt;
 declare const credential: VerifiedCredential;
 declare const facts: CredentialFacts;
 declare const standing: Standing;
+declare const receiver: VerifiedReceiver;
+declare const attempts: readonly SentAttempt[];
+declare const signer: Signer;
+declare const tracker: OperationTracker;
 
 export async function boundaries(): Promise<void> {
   // No admission without proof of the holder key.
@@ -47,19 +51,39 @@ export async function boundaries(): Promise<void> {
   // @ts-expect-error a rejected operation carries its code
   await ledger.settle(claim, { state: 'rejected', status: 422 });
 
+  // A receipt is checked against the receiver the client verified, never against a pin it typed.
+  const pin = { origin: 'https://bank.example', did: 'did:aria:bank.example:transfers' } as const;
+  // @ts-expect-error a pin is not a verified receiver
+  await ap.verifyReceipt(receipt, { receiver: pin, attempts, mode: 'retrieval' });
   // A fresh answer is checked against its transport status; a retrieval is not.
-  const receiver = { origin: 'https://bank.example', did: 'did:aria:bank.example:transfers' } as const;
   // @ts-expect-error `decision` needs the transport status
-  await ap.verifyReceipt(receipt, { receiver, mode: 'decision' });
-  await ap.verifyReceipt(receipt, { receiver, mode: 'retrieval' });
-  // @ts-expect-error historical verification needs the retained receiver credential
-  await ap.verifyReceipt(receipt, { receiver, mode: 'historical' });
-  await ap.verifyReceipt(receipt, { receiver, mode: 'historical', evidence: { receiverCredential: {} } });
+  await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'decision' });
+  await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'decision', transportStatus: 201 });
+  await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'retrieval' });
+  // Historical verification waits for the credential package (not offered).
+  // @ts-expect-error no historical mode yet
+  await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'historical' });
 
   // A valid receipt is not a success: callers read its state.
-  const checked = await ap.verifyReceipt(receipt, { receiver, mode: 'retrieval' });
+  const checked = await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'retrieval' });
   if (checked.ok && checked.statement.state === 'rejected' && checked.statement.applies === 'attempt') {
     // This attempt was refused; the operation's own outcome is not known from it.
   }
+
+  // A lookup reads receipts only once admitted, and only as allowed.
+  const lookup = await ap.admitLookup({ presentation, status });
+  // @ts-expect-error a denied lookup reads nothing
+  await ledger.lookup(lookup);
+  // @ts-expect-error an operation key is not an admitted lookup
+  await ledger.lookup({ receiver: pin.did, sender: credential.did, operationId: 'x' });
+  if (lookup.decision === 'allow') await ledger.lookup(lookup);
+
+  // The agent signs with its verified credential; the trust interface's data is not one.
+  // @ts-expect-error facts are not a verified credential
+  await ap.signRequest({ request: { method: 'POST', target: '/', headers: {} }, class: 'unsafe-body', receiver, credential: facts, signer });
+
+  // The tracker keeps signed attempts, with the receiver they were signed for.
+  // @ts-expect-error a bare sent attempt does not say which receiver to check against
+  tracker.record(attempts[0]!);
   void presentation;
 }

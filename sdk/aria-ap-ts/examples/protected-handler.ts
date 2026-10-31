@@ -1,11 +1,14 @@
-// A receiver's protected operation: authenticate, admit, claim, run once, sign.
-import { createAp, OperationLedger, type ChallengeStore, type HttpRequestLike, type OperationDescriptor, type OperationStorage, type Receipt, type ReceiverSelf } from '@aria-registry/ap';
+// A receiver's side: its identity statement, then each protected request:
+// authenticate, admit, claim, run once, sign; and the signed lookup that recovers
+// an operation's receipts after a lost answer.
+import { createAp, OperationLedger, type ChallengeStore, type HttpRequestLike, type IdentityResponse, type OperationDescriptor, type OperationStorage, type Receipt, type ReceiverSelf } from '@aria-registry/ap';
 import type { Verifier } from '@aria-registry/sdk';
 
 declare const verifier: Verifier; // the credential verifier, with the bank's trust profiles
-declare const self: ReceiverSelf; // the bank's own identity and signer
-declare const challenges: ChallengeStore;
+declare const self: ReceiverSelf; // the bank's own identity, credential document and signer
+declare const challenges: ChallengeStore; // shared by the bank's instances; consume is atomic
 declare const storage: OperationStorage; // the bank's database
+declare function credentialDocument(url: string): Promise<unknown>; // bounded fetch or cache of AID documents
 declare function inTransaction<T>(work: () => Promise<T>): Promise<T>;
 declare function moveMoney(body: Uint8Array): Promise<{ ok: true } | { ok: false; code: string }>;
 declare function rolledBack(error: unknown): boolean; // true only when the bank knows its transaction did not commit
@@ -21,25 +24,36 @@ const transfer: OperationDescriptor = {
   minLevel: 'L1',
   onMissingApproval: 'refuse',
 };
+const lookup: OperationDescriptor = { name: 'lookup', class: 'retrieval', method: 'GET', path: '/v1/operations', query: ['operation'] };
 
 // ARIA AP builds on that verifier: credential and status results are read through it.
 const ap = createAp({ credentials: verifier });
 const ledger = new OperationLedger(ap, storage, self);
+const context = { receiver: { did: self.did, origin: self.origin }, operations: [transfer, lookup], challenges, resolveCredential: credentialDocument };
 
-type Answer = { status: number; receipt?: Receipt; problem?: string; challenge?: string };
+/** `GET /.well-known/aria/identity?nonce=…&audience=…`: who the bank is, and a challenge for the client's next request. */
+export function identity(nonce: string, audience: string): Promise<IdentityResponse> {
+  return ap.identify(self, { nonce, audience }, challenges);
+}
+
+type Answer = { status: number; receipt?: Receipt; problem?: string; current?: Receipt | null; history?: readonly Receipt[] };
 
 export async function handle(request: HttpRequestLike): Promise<Answer> {
   // 1. Who is asking. Failures here are unsigned: nothing is attributed to a DID that proved no key.
-  const presented = await ap.verifyPresentation(request, { receiver: self, operations: [transfer], challenges });
-  if (!presented.ok) {
-    return presented.challenge === undefined
-      ? { status: presented.status, problem: presented.reason }
-      : { status: presented.status, problem: presented.reason, challenge: presented.challenge };
-  }
+  const presented = await ap.verifyPresentation(request, context);
+  if (!presented.ok) return { status: presented.status, problem: `${presented.code} (${presented.reason})` };
   const { presentation } = presented;
+  const status = await verifier.checkStatus(presentation.credential);
+
+  // A lookup: a current credential of the operation's sender reads its stored receipts, and gets none of its own.
+  if (presentation.operation.class === 'retrieval') {
+    const allowed = await ap.admitLookup({ presentation, status });
+    if (allowed.decision !== 'allow') return { status: allowed.status, problem: allowed.code };
+    const found = await ledger.lookup(allowed);
+    return found ? { status: 200, current: found.current, history: found.history } : { status: 404, problem: 'aria.operation_unknown' };
+  }
 
   // 2. Admission: the exact document's status, level, scope, human approval and the bank's own rule.
-  const status = await verifier.checkStatus(presentation.credential);
   const admission = await ap.admit({
     presentation,
     status,

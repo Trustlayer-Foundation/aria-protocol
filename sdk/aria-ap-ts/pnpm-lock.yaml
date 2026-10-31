@@ -7,10 +7,14 @@ settings:
 importers:
 
   .:
-    devDependencies:
+    dependencies:
       '@noble/curves':
         specifier: ^2.4.0
         version: 2.4.0
+      '@noble/hashes':
+        specifier: ^2.4.0
+        version: 2.4.0
+    devDependencies:
       '@noble/post-quantum':
         specifier: ^0.5.4
         version: 0.5.4
