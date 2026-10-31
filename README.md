@@ -180,8 +180,11 @@ its transport, receipt, scope and human-approval rules await decisions):
 3. **Admission.** The receiver verifies the credential and its current status with the
    ARIA SDK, then checks audience, level, scope, delegation and human approval, then its
    own resource rule. A refusal is a signed receipt for that attempt only.
-4. **Once per operation.** An admitted operation is claimed, run once and settled with a
-   signed `aria-ap-receipt/1`; retries of the same operation get the original receipt.
+4. **Once per operation.** An admitted operation is claimed and settled with a signed
+   `aria-ap-receipt/1` in the adopter's storage, in the same transaction as its effect;
+   retries of the same operation get the original receipt. Running it once depends on
+   that storage and effect integration, and on reconciliation, whose handling of an
+   uncertain failure is still open.
 5. **Recovery.** After a lost answer, a signed lookup returns the operation's receipts.
 
 Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas

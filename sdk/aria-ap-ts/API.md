@@ -145,6 +145,13 @@ transaction; `fail('rolled-back')` releases a claim, `fail('uncertain')` keeps i
 worker gets `StaleClaim`; a record that contradicts the adopter's effect,
 `InvariantViolation`.
 
+**Open limitation.** `fail('uncertain')` leaves no mark on the record, so
+`reconcile(key, { committed: false })` cannot tell an uncertain claim from one still
+running and can release it. With a transactional effect the running worker's `settle`
+then fails its compare-and-set and its transaction rolls back; with an effect outside that
+transaction a second execution is possible. Call `reconcile` only for claims you know
+have stopped. The contract fix is pending review.
+
 Receipts (`aria-ap-receipt/1`, provisional D4) have two sources only: a settled outcome
 and an attempt refusal. The governing receipt is the final one if any, else the latest
 `accepted`; history is never rewritten.
@@ -174,6 +181,23 @@ One JSON Schema (draft 2020-12) per wire document, in the protocol's
 | `aria-ap-receipt-1.json` | A receipt, `aria-ap-receipt/1`, including which state, `applies`, status and code go together |
 | `aria-ap-identity-1.json` | The identity response: the receiver's AID 1.0 document (by reference to `aid-1.0.json`) and its `aria-ap-identity/1` statement |
 | `aria-ap-lookup-1.json` | A retrieval's answer: `current` and `history`, operation receipts only |
+
+`aria-ap-identity-1.json` refers to `https://aria.bar/schema/aid-1.0.json`; outside this
+repository, load it from `@aria-registry/sdk/schemas/aid-1.0.json`, which the ARIA SDK
+exports byte for byte, and assert formats (for example Ajv with `ajv-formats`), since the
+instants rely on `date-time`:
+
+```ts
+import Ajv2020 from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import aid from '@aria-registry/sdk/schemas/aid-1.0.json' with { type: 'json' };
+import identity from '@aria-registry/ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
+
+const ajv = new Ajv2020();
+addFormats(ajv);
+ajv.addSchema(aid);
+const validIdentity = ajv.compile(identity);
+```
 
 They are provisional with D3 and D4. Conforming to a schema is neither a valid signature
 nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers

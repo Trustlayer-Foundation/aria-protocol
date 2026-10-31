@@ -13,7 +13,6 @@ conformance vectors check those separately.
 | Schema | Document | Status |
 |---|---|---|
 | [`aid-1.0.json`](aid-1.0.json) | The ARIA Identity Document, `spec_version: "1.0"` | Draft until the issuance cutover; embedded byte for byte in the ARIA SDK |
-| [`enrollment-manifest-v1.json`](enrollment-manifest-v1.json) | The enrollment manifest an agent's controller submits | In force |
 | [`aria-ap-receipt-1.json`](aria-ap-receipt-1.json) | An ARIA AP receipt, `aria-ap-receipt/1` | **Provisional** (decisions D3, D4); shipped byte for byte in ARIA AP |
 | [`aria-ap-identity-1.json`](aria-ap-identity-1.json) | An ARIA AP receiver identity response, statement `aria-ap-identity/1` | **Provisional** (D3); shipped byte for byte in ARIA AP |
 | [`aria-ap-lookup-1.json`](aria-ap-lookup-1.json) | The answer to an ARIA AP retrieval: `current` and `history` | **Provisional** (D4); shipped byte for byte in ARIA AP |
@@ -21,6 +20,12 @@ conformance vectors check those separately.
 The ARIA AP schemas change with the decisions they depend on. Rules JSON Schema cannot
 express (strict parsing of receipts, signatures, bindings) are in their `$comment` and in
 the [ARIA AP API contract](../sdk/aria-ap-ts/API.md).
+
+## Published, not the current workflow
+
+| Schema | Status |
+|---|---|
+| [`enrollment-manifest-v1.json`](enrollment-manifest-v1.json) | A published contract of an earlier enrollment workflow: a per-agent token, an `_aria-enroll` record and an administrator's second factor as the last step. The current enrollment does not use it: a registration authority opens an enrollment window, and the agent submits a statement signed with keys it generated itself. The versioned contract for that enrollment is pending and is not yet in this repository. This file stays unchanged; its own `spec_version` value does not make it current. |
 
 ## Historical compatibility
 
