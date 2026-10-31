@@ -1,14 +1,15 @@
 import type { Admission, AdmissionInput } from './admission';
 import type { ReceiverIdentityResult } from './agent';
-import type { CredentialResult, Inspection, VerifiedCredential } from './credential';
+import type { CredentialFacts, CredentialResult, Inspection, VerifiedCredential } from './credential';
 import { AriaUsageError, pending } from './errors';
 import { fromOnline, fromStatusList, type StatusSnapshot } from './internal/check-status';
 import { iso } from './internal/instant';
 import { issue, recall } from './internal/provenance';
+import { judge } from './internal/standing';
 import { LEVELS, plainCopy, verifyCredentialDocument, type CredentialSnapshot, type ProfileSnapshot } from './internal/verify-credential';
 import type { PresentationContext, PresentationResult } from './presentation';
 import type { ReceiptCheck, ReceiptResult, ReceiverPin } from './receipt';
-import type { StatusEvidence, StatusOptions } from './status';
+import type { Standing, StatusEvidence, StatusOptions } from './status';
 import type { Did, HttpRequestLike, TrustLevel } from './types';
 
 /** One issuer the verifier trusts. Its `id` is a label for results, never a trust identity. */
@@ -62,6 +63,19 @@ export interface Verifier {
   verifyCredential(document: unknown): CredentialResult;
   /** Status of the credential's exact document. */
   checkStatus(credential: VerifiedCredential, options?: StatusOptions): Promise<StatusEvidence>;
+  /**
+   * What this verifier established about `credential`, from its own record: a
+   * fresh copy, holder key bytes included. This is how packages built on this one
+   * (ARIA AP) read a credential. Throws `AriaUsageError` for anything this verifier
+   * did not produce: a copy, an altered or hand-made object, another verifier's result.
+   */
+  facts(credential: VerifiedCredential): CredentialFacts;
+  /**
+   * Whether `credential` stands now: inside its signed validity, with `status`
+   * being this verifier's evidence about that same result, still fresh under its
+   * rules. Judged at every call with this verifier's clock. Throws like `facts`.
+   */
+  standing(credential: VerifiedCredential, status: StatusEvidence): Standing;
   /** Authenticates a request: holder key, bound to this receiver, operation and content. */
   verifyPresentation(request: HttpRequestLike, context: PresentationContext): Promise<PresentationResult>;
   /** The single admission decision, judged now. Refuses inputs it did not produce, or about different documents. */
@@ -173,6 +187,31 @@ export function createVerifier(config: VerifierConfig): Verifier {
       return issue(verifier, 'status', statusView(status), status);
     },
 
+    facts(credential) {
+      const s = recall<CredentialSnapshot>(verifier, 'credential', credential);
+      return Object.freeze({
+        binding: Object.freeze({ credentialId: s.credentialId, digest: s.digest, profile: s.profile.id }),
+        did: s.did,
+        issuer: s.issuer,
+        trustLevel: s.trustLevel,
+        scopes: Object.freeze([...s.scopes]),
+        hitlRequired: Object.freeze([...s.hitlRequired]),
+        delegationDepth: s.delegationDepth,
+        // A typed array with elements cannot be frozen: each call returns a new copy instead.
+        holderKey: Object.freeze({ id: s.holderKeyId, publicKey: Uint8Array.from(s.holderKey) }),
+        validFrom: iso(s.validFrom),
+        validUntil: iso(s.validUntil),
+      });
+    },
+
+    standing(credential, status) {
+      const c = recall<CredentialSnapshot>(verifier, 'credential', credential);
+      const st = recall<StatusSnapshot>(verifier, 'status', status);
+      const at = now();
+      const judged = judge(c, st, { now: at, skewMs, statusMaxAgeMs, onlineMaxAgeMs });
+      return Object.freeze({ kind: 'standing', ...judged, judgedAt: iso(at) }) as Standing;
+    },
+
     async verifyPresentation() {
       return pending('AP2');
     },
@@ -180,9 +219,7 @@ export function createVerifier(config: VerifierConfig): Verifier {
     async admit(input) {
       // Provenance first: only this verifier's own presentation and status, about one document.
       recall(verifier, 'presentation', input?.presentation);
-      const status = recall<StatusSnapshot>(verifier, 'status', input.status);
-      void status;
-      void onlineMaxAgeMs;
+      recall<StatusSnapshot>(verifier, 'status', input.status);
       return pending('AP2');
     },
 

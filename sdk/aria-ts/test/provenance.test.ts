@@ -1,7 +1,6 @@
 // S0-R1: a result is trusted only as the exact object its verifier produced.
 import { describe, expect, it } from 'vitest';
 import { AriaUsageError, createVerifier, type VerifiedCredential } from '../src';
-import { evaluate } from '../src/internal/policy';
 import { recall } from '../src/internal/provenance';
 import type { CredentialSnapshot } from '../src/internal/verify-credential';
 import { credential, fakeFetch, HOUR, LIST_URL, newIssuer, NOW, profile, sign, statusList } from './fixtures';
@@ -90,39 +89,23 @@ describe('the trusted configuration is copied when the verifier is created', () 
 });
 
 describe('time-sensitive evidence is judged when it is used', () => {
-  it('a credential verified earlier is expired at admission time', () => {
-    const v = createVerifier({ trust: [profile(issuer)], clock });
-    const snapshot = recall<CredentialSnapshot>(v, 'credential', verifiedBy(v));
-    const status = { source: 'status-list' as const, state: 'active' as const, credential: snapshot, list: { url: LIST_URL, index: 7, validFrom: NOW, validUntil: NOW + 48 * HOUR }, fetchedAt: NOW };
-    expect(evaluate({ ...input(snapshot, status), now: snapshot.validUntil + 1 })).toEqual({ decision: 'deny', reason: 'credential_expired' });
+  it('a credential verified earlier is no longer valid when its standing is judged later', async () => {
+    let t = NOW;
+    const v = createVerifier({ trust: [profile(issuer)], clock: () => new Date(t), fetch: { allowedOrigins: ['https://status.example.test'], fetch: fakeFetch({ [LIST_URL]: statusList(issuer, []) }) } });
+    const c = verifiedBy(v);
+    const status = await v.checkStatus(c);
+    t = Date.parse(c.validUntil) + 1;
+    expect(v.standing(c, status)).toMatchObject({ state: 'not_valid_now' });
   });
 
   it('status evidence that was fresh is stale later, and status of another document is no evidence', async () => {
-    const fetch = fakeFetch({ [LIST_URL]: statusList(issuer, []) });
-    const v = createVerifier({ trust: [profile(issuer)], clock, fetch: { allowedOrigins: ['https://status.example.test'], fetch } });
+    let t = NOW;
+    const v = createVerifier({ trust: [profile(issuer)], clock: () => new Date(t), fetch: { allowedOrigins: ['https://status.example.test'], fetch: fakeFetch({ [LIST_URL]: statusList(issuer, []) }) } });
     const c = verifiedBy(v);
-    const snapshot = recall<CredentialSnapshot>(v, 'credential', c);
-    const status = recall<any>(v, 'status', await v.checkStatus(c));
-    expect(evaluate(input(snapshot, status))).toEqual({ decision: 'allow' });
-    expect(evaluate({ ...input(snapshot, status), now: NOW + 2 * HOUR })).toEqual({ decision: 'indeterminate', reason: 'status_unavailable' });
-
-    const second = recall<CredentialSnapshot>(v, 'credential', verifiedBy(v));
-    expect(evaluate(input(second, status))).toEqual({ decision: 'indeterminate', reason: 'status_unavailable' });
+    const status = await v.checkStatus(c);
+    expect(v.standing(c, status)).toMatchObject({ state: 'good' });
+    expect(v.standing(verifiedBy(v), status)).toMatchObject({ state: 'unknown', reason: 'other_document' });
+    t = NOW + 2 * HOUR;
+    expect(v.standing(c, status)).toMatchObject({ state: 'unknown', reason: 'stale' });
   });
 });
-
-function input(credential: CredentialSnapshot, status: any) {
-  return {
-    credential,
-    status,
-    audienceMatches: true,
-    operation: { scope: 'data:documents:read', minLevel: 'L0' as const, onMissingApproval: 'refuse' as const },
-    operationId: 'op-1',
-    fingerprint: 'fp-1',
-    approval: null,
-    now: NOW,
-    skewMs: 5000,
-    statusMaxAgeMs: HOUR,
-    onlineMaxAgeMs: 60_000,
-  };
-}

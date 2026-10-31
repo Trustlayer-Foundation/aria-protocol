@@ -1,8 +1,6 @@
 import type { AdmissionReason } from '../admission';
+import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '../index';
 import type { MissingApproval } from '../presentation';
-import type { TrustLevel } from '../types';
-import type { StatusSnapshot } from './check-status';
-import { LEVELS, type CredentialSnapshot } from './verify-credential';
 
 /** An approval as the receiver's approval system supplied it, already copied. */
 export interface ApprovalSnapshot {
@@ -14,18 +12,18 @@ export interface ApprovalSnapshot {
 }
 
 export interface PolicyInput {
-  readonly credential: CredentialSnapshot;
-  readonly status: StatusSnapshot;
+  /** From the credential verifier's `facts`: never read from a result's view. */
+  readonly credential: CredentialFacts;
+  /** From the credential verifier's `standing`, judged for this admission. */
+  readonly standing: Standing;
   /** Whether the presentation named this receiver in its signed audience. */
   readonly audienceMatches: boolean;
   readonly operation: { readonly scope: string; readonly minLevel: TrustLevel; readonly onMissingApproval: MissingApproval };
   readonly operationId: string | null;
   readonly fingerprint: string;
   readonly approval: ApprovalSnapshot | null;
+  /** The instant the standing was judged; approvals expire against the same clock. */
   readonly now: number;
-  readonly skewMs: number;
-  readonly statusMaxAgeMs: number;
-  readonly onlineMaxAgeMs: number;
 }
 
 export type PolicyOutcome =
@@ -34,27 +32,29 @@ export type PolicyOutcome =
   | { readonly decision: 'indeterminate'; readonly reason: 'status_unavailable' };
 
 /**
- * The admission rules after authentication, in their fixed order. Pure: every
- * time-sensitive input is judged at `now`, not when it was obtained. The public
- * `admit` calls this only with a verified presentation; nothing here runs without one.
+ * The admission rules after authentication, in their fixed order. Pure: the
+ * credential's standing (validity, status, freshness) is the credential
+ * verifier's judgment; level, scope, delegation and approval are judged here.
+ * The public `admit` calls this only with a verified presentation.
  */
 export function evaluate(input: PolicyInput): PolicyOutcome {
-  const { credential, status, now } = input;
+  const { credential, standing } = input;
   if (!input.audienceMatches) return { decision: 'deny', reason: 'audience_mismatch' };
-  if (credential.validUntil <= now || credential.validFrom > now + input.skewMs) return { decision: 'deny', reason: 'credential_expired' };
 
-  // Status of this exact document, still fresh now.
-  if (status.credential !== credential) return { decision: 'indeterminate', reason: 'status_unavailable' };
-  if (status.state === 'unavailable') return { decision: 'indeterminate', reason: 'status_unavailable' };
-  if (status.source === 'status-list') {
-    if (status.list.validUntil <= now || now - status.list.validFrom > input.statusMaxAgeMs) return { decision: 'indeterminate', reason: 'status_unavailable' };
-  } else if (now - status.fetchedAt > input.onlineMaxAgeMs) {
-    return { decision: 'indeterminate', reason: 'status_unavailable' };
+  switch (standing.state) {
+    case 'not_valid_now':
+      return { decision: 'deny', reason: 'credential_expired' };
+    case 'unknown':
+      return { decision: 'indeterminate', reason: 'status_unavailable' };
+    case 'revoked':
+      return { decision: 'deny', reason: 'credential_revoked' };
+    case 'superseded':
+      return { decision: 'deny', reason: 'credential_superseded' };
+    case 'good':
+      break;
   }
-  if (status.state === 'revoked') return { decision: 'deny', reason: 'credential_revoked' };
-  if (status.state === 'superseded') return { decision: 'deny', reason: 'credential_superseded' };
 
-  if (LEVELS.indexOf(credential.trustLevel) < LEVELS.indexOf(input.operation.minLevel)) return { decision: 'deny', reason: 'level_insufficient' };
+  if (TRUST_LEVELS.indexOf(credential.trustLevel) < TRUST_LEVELS.indexOf(input.operation.minLevel)) return { decision: 'deny', reason: 'level_insufficient' };
   if (!credential.scopes.includes(input.operation.scope)) return { decision: 'deny', reason: 'scope_missing' };
   if (credential.delegationDepth !== 0) return { decision: 'deny', reason: 'delegation_unsupported' };
 
@@ -63,10 +63,10 @@ export function evaluate(input: PolicyInput): PolicyOutcome {
     if (!a) return { decision: 'deny', reason: 'approval_required' };
     if (
       a.sender !== credential.did ||
-      a.credentialId !== credential.credentialId ||
+      a.credentialId !== credential.binding.credentialId ||
       a.operationId !== input.operationId ||
       a.fingerprint !== input.fingerprint ||
-      a.expiresAt <= now
+      a.expiresAt <= input.now
     ) {
       return { decision: 'deny', reason: 'approval_invalid' };
     }

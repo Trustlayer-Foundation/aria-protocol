@@ -1,12 +1,12 @@
 // The 17 observations of the earlier SDK probes, each at its own layer
 // (ops/evidence/2026-10-31-aria-1-plan-review/acceptance-map.json): six controls
 // kept as they were, nine former defects now refused, two layer distinctions.
+// Where the decision is admission's (a failed scope, a revoked status, a copied
+// credential, unknown status), its half is in test/admission.test.ts.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AriaUsageError, createVerifier, inspectCredential, type VerifiedCredential } from '../src';
 import { schemaFailure } from '../src/internal/schema';
-import { evaluate } from '../src/internal/policy';
-import { recall } from '../src/internal/provenance';
-import type { CredentialSnapshot } from '../src/internal/verify-credential';
 import { credential, fakeFetch, HOUR, iso, LIST_URL, newIssuer, NOW, profile, sign, statusList } from './fixtures';
 
 const issuer = newIssuer();
@@ -87,20 +87,13 @@ describe('former defects, now refused', () => {
     await expect(offline.checkStatus(seen as unknown as VerifiedCredential)).rejects.toBeInstanceOf(AriaUsageError);
   });
 
-  it('a failed requested scope is a denial, not a valid result', () => {
-    const snapshot = recall<CredentialSnapshot>(offline, 'credential', verified());
-    const status = { source: 'status-list' as const, state: 'active' as const, credential: snapshot, list: { url: LIST_URL, index: 7, validFrom: NOW - 60_000, validUntil: NOW + HOUR }, fetchedAt: NOW };
-    expect(evaluate(policyInput(snapshot, status, { scope: 'banking:payment:execute' }))).toEqual({ decision: 'deny', reason: 'scope_missing' });
-  });
-
-  it('a revoked status is refused, however recent the check', async () => {
+  it('a revoked status is revoked, however recent the check', async () => {
     const fetch = fakeFetch({ [LIST_URL]: statusList(issuer, [7]) });
     const v = createVerifier({ trust: [profile(issuer)], clock, fetch: { allowedOrigins: ['https://status.example.test'], fetch } });
     const c = verified(v);
     const status = await v.checkStatus(c);
     expect(status).toMatchObject({ source: 'status-list', state: 'revoked' });
-    const snapshot = recall<CredentialSnapshot>(v, 'credential', c);
-    expect(evaluate(policyInput(snapshot, recall(v, 'status', status)))).toEqual({ decision: 'deny', reason: 'credential_revoked' });
+    expect(v.standing(c, status)).toMatchObject({ state: 'revoked' });
   });
 
   it('proof metadata that is not the profile is refused, and is still not signed', () => {
@@ -125,20 +118,18 @@ describe('former defects, now refused', () => {
 });
 
 describe('each result at its own layer', () => {
-  it('a copied, authentic credential verifies as a document, and cannot be admitted without its holder key', async () => {
+  it('a copied, authentic credential verifies as a document: the document says nothing about who presents it', () => {
     const copy = JSON.parse(JSON.stringify(signed));
     const c = verified(offline, copy);
-    const status = await offline.checkStatus(c);
-    // No presentation exists without the holder's signature; nothing else is accepted in its place.
-    await expect(offline.admit({ presentation: c as never, status, authorize: async () => ({ allowed: true }) })).rejects.toBeInstanceOf(AriaUsageError);
+    expect(c.kind).toBe('verified-credential');
+    expect(Object.keys(c)).not.toContain('presenter');
   });
 
-  it('offline verification succeeds with status unknown, and an admission that needs status is indeterminate', async () => {
+  it('offline verification succeeds with status unknown, and its standing is unknown, never good', async () => {
     const c = verified();
     const status = await offline.checkStatus(c);
     expect(status).toMatchObject({ state: 'unavailable', reason: 'offline' });
-    const snapshot = recall<CredentialSnapshot>(offline, 'credential', c);
-    expect(evaluate(policyInput(snapshot, recall(offline, 'status', status)))).toEqual({ decision: 'indeterminate', reason: 'status_unavailable' });
+    expect(offline.standing(c, status)).toMatchObject({ state: 'unknown', reason: 'unavailable' });
   });
 });
 
@@ -193,18 +184,10 @@ describe('field and rule observations', () => {
   });
 });
 
-function policyInput(credential: CredentialSnapshot, status: any, operation: Partial<{ scope: string; minLevel: 'L0' | 'L1' }> = {}) {
-  return {
-    credential,
-    status,
-    audienceMatches: true,
-    operation: { scope: 'data:documents:read', minLevel: 'L0' as const, onMissingApproval: 'refuse' as const, ...operation },
-    operationId: 'op-1',
-    fingerprint: 'fp-1',
-    approval: null,
-    now: NOW,
-    skewMs: 5000,
-    statusMaxAgeMs: HOUR,
-    onlineMaxAgeMs: 60_000,
-  };
-}
+describe('the embedded schema', () => {
+  it('is byte-identical to the protocol’s schema/aid-1.0.json', () => {
+    const embedded = readFileSync(new URL('../src/internal/aid-1.0.schema.json', import.meta.url));
+    const normative = readFileSync(new URL('../../../schema/aid-1.0.json', import.meta.url));
+    expect(embedded.equals(normative)).toBe(true);
+  });
+});

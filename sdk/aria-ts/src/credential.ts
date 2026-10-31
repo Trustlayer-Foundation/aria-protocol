@@ -86,6 +86,26 @@ export interface VerifiedCredential extends Produced<'credential'> {
   readonly verifiedAt: string;
 }
 
+/**
+ * What a verifier established about one of its own credential results, read
+ * through `Verifier.facts` from its record, never from the view. A fresh copy at
+ * each call, holder key bytes included. Data, not evidence: no entry point of this
+ * SDK or of ARIA AP accepts it in place of a result.
+ */
+export interface CredentialFacts {
+  readonly binding: CredentialBinding;
+  readonly did: Did;
+  readonly issuer: Did;
+  readonly trustLevel: TrustLevel;
+  readonly scopes: readonly string[];
+  readonly hitlRequired: readonly string[];
+  readonly delegationDepth: number;
+  /** The 32 raw bytes, already accepted by the strict key rule; a copy the caller owns. */
+  readonly holderKey: { readonly id: string; readonly publicKey: Uint8Array };
+  readonly validFrom: string;
+  readonly validUntil: string;
+}
+
 export type CredentialResult =
   | { readonly ok: true; readonly credential: VerifiedCredential }
   | { readonly ok: false; readonly reason: CredentialFailure; readonly path?: string };

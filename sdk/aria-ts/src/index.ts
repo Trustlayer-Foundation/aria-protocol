@@ -3,8 +3,10 @@
 export { createVerifier, inspectCredential } from './verifier';
 export type { Verifier, VerifierConfig, TrustProfile, FetchPolicy } from './verifier';
 
-export type { Inspection, CredentialResult, CredentialFailure, VerifiedCredential, Principal, Produced } from './credential';
-export type { StatusEvidence, StatusOptions, StatusUnavailable } from './status';
+export type { Inspection, CredentialResult, CredentialFailure, CredentialFacts, VerifiedCredential, Principal, Produced } from './credential';
+export type { Standing, StandingState, StatusEvidence, StatusOptions, StatusUnavailable } from './status';
+export { canonicalJson } from './internal/canonical';
+export { LEVELS as TRUST_LEVELS } from './internal/verify-credential';
 
 export type {
   RequestClass,

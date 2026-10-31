@@ -50,6 +50,30 @@ export type StatusEvidence =
       readonly reason: StatusUnavailable;
     });
 
+/** The judgment itself, without its time. */
+export type StandingState =
+  | { readonly state: 'good'; readonly source: 'status-list' | 'online' }
+  /** Outside its signed validity at the moment judged: expired, or not yet valid. */
+  | { readonly state: 'not_valid_now' }
+  | { readonly state: 'revoked' }
+  | { readonly state: 'superseded' }
+  | {
+      readonly state: 'unknown';
+      /** No evidence, evidence past its validity or maximum age, or evidence about another verified result. */
+      readonly reason: 'unavailable' | 'stale' | 'other_document';
+    };
+
+/**
+ * Whether one exact credential stands now, from `Verifier.standing`: judged at
+ * the call under the verifier's own clock and freshness rules. A judgment, not
+ * evidence: no entry point of this SDK or of ARIA AP accepts it as input.
+ */
+export type Standing = StandingState & {
+  readonly kind: 'standing';
+  /** When it was judged (RFC 3339, the verifier's clock). */
+  readonly judgedAt: string;
+};
+
 export interface StatusOptions {
   /** `status-list` (default) tells the issuer nothing about which credential is checked. */
   readonly via?: 'status-list' | 'online';
