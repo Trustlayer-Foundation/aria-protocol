@@ -86,7 +86,9 @@ answers. Nothing in them selects a trust anchor or a fetch target outside the al
 origins.
 
 There is no global configuration and nothing embedded: a verifier trusts exactly its
-profiles.
+profiles. The level order is protocol, not configuration: `TRUST_LEVELS` lists the levels
+lowest first and is frozen, so no consumer can reorder the ranking this verifier and
+ARIA AP apply.
 
 ## Credential verification (S1)
 

@@ -42,7 +42,9 @@ export interface CredentialSnapshot {
   readonly verifiedAt: number;
 }
 
-export const LEVELS: readonly TrustLevel[] = ['L0', 'L1', 'L2', 'L3'];
+// Lowest first. Exported as TRUST_LEVELS and ranked by this verifier and by ARIA AP:
+// frozen, so no consumer can reorder the ranking they apply.
+export const LEVELS: readonly TrustLevel[] = Object.freeze(['L0', 'L1', 'L2', 'L3']);
 const MAX_DOCUMENT_BYTES = 100 * 1024;
 
 type Outcome = { readonly ok: true; readonly snapshot: CredentialSnapshot } | { readonly ok: false; readonly reason: CredentialFailure; readonly path?: string };
