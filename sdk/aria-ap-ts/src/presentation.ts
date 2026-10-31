@@ -1,5 +1,5 @@
-import type { Produced, VerifiedCredential } from './credential';
-import type { Did, TrustLevel } from './types';
+import type { Did, Produced, TrustLevel, VerifiedCredential } from '@aria-registry/sdk';
+import type { Signer } from './types';
 
 /**
  * The request classes of the ARIA AP HTTP profile. Each fixes which components
@@ -53,8 +53,9 @@ export interface ReceiverSelf {
   readonly did: Did;
   /** The origin it is reached at; requests signed for another origin fail. */
   readonly origin: string;
+  /** Its own verified credential, from the credential verifier the instance was created with. */
   readonly credential: VerifiedCredential;
-  readonly signer: import('./types').Signer;
+  readonly signer: Signer;
 }
 
 /** Single-use, short-lived challenges, stored by the adopter. `consume` must be atomic across its instances. */

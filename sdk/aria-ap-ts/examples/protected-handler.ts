@@ -1,17 +1,8 @@
 // A receiver's protected operation: authenticate, admit, claim, run once, sign.
-import {
-  buildAttemptRefusal,
-  OperationLedger,
-  type ChallengeStore,
-  type HttpRequestLike,
-  type OperationDescriptor,
-  type OperationStorage,
-  type Receipt,
-  type ReceiverSelf,
-  type Verifier,
-} from '@aria-registry/sdk';
+import { createAp, OperationLedger, type ChallengeStore, type HttpRequestLike, type OperationDescriptor, type OperationStorage, type Receipt, type ReceiverSelf } from '@aria-registry/ap';
+import type { Verifier } from '@aria-registry/sdk';
 
-declare const verifier: Verifier;
+declare const verifier: Verifier; // the credential verifier, with the bank's trust profiles
 declare const self: ReceiverSelf; // the bank's own identity and signer
 declare const challenges: ChallengeStore;
 declare const storage: OperationStorage; // the bank's database
@@ -31,13 +22,15 @@ const transfer: OperationDescriptor = {
   onMissingApproval: 'refuse',
 };
 
-const ledger = new OperationLedger(storage, self);
+// ARIA AP builds on that verifier: credential and status results are read through it.
+const ap = createAp({ credentials: verifier });
+const ledger = new OperationLedger(ap, storage, self);
 
 type Answer = { status: number; receipt?: Receipt; problem?: string; challenge?: string };
 
 export async function handle(request: HttpRequestLike): Promise<Answer> {
   // 1. Who is asking. Failures here are unsigned: nothing is attributed to a DID that proved no key.
-  const presented = await verifier.verifyPresentation(request, { receiver: self, operations: [transfer], challenges });
+  const presented = await ap.verifyPresentation(request, { receiver: self, operations: [transfer], challenges });
   if (!presented.ok) {
     return presented.challenge === undefined
       ? { status: presented.status, problem: presented.reason }
@@ -47,7 +40,7 @@ export async function handle(request: HttpRequestLike): Promise<Answer> {
 
   // 2. Admission: the exact document's status, level, scope, human approval and the bank's own rule.
   const status = await verifier.checkStatus(presentation.credential);
-  const admission = await verifier.admit({
+  const admission = await ap.admit({
     presentation,
     status,
     authorize: async ({ presentation: p }) =>
@@ -55,13 +48,13 @@ export async function handle(request: HttpRequestLike): Promise<Answer> {
   });
   if (admission.decision !== 'allow') {
     // An authenticated refusal of this attempt only: the operation is not claimed.
-    return { status: admission.refusal.status, receipt: await buildAttemptRefusal(admission.refusal, self) };
+    return { status: admission.refusal.status, receipt: await ap.buildAttemptRefusal(admission.refusal, self) };
   }
 
   // 3. The operation: once per operation id, whatever the number of attempts.
   const begun = await ledger.begin(admission);
   if (begun.kind === 'existing') return { status: begun.status, receipt: begun.governing };
-  if (begun.kind === 'refused') return { status: begun.refusal.status, receipt: await buildAttemptRefusal(begun.refusal, self) };
+  if (begun.kind === 'refused') return { status: begun.refusal.status, receipt: await ap.buildAttemptRefusal(begun.refusal, self) };
 
   // 4. The effect and its outcome commit together; the receipt comes from the recorded outcome.
   try {

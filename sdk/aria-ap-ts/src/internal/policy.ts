@@ -1,5 +1,5 @@
 import type { AdmissionReason } from '../admission';
-import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '../index';
+import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '@aria-registry/sdk';
 import type { MissingApproval } from '../presentation';
 
 /** An approval as the receiver's approval system supplied it, already copied. */

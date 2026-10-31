@@ -3,7 +3,8 @@
 // results it produced, judged when admission runs. Their credential-layer halves
 // stay in credential.test.ts and provenance.test.ts.
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError, createVerifier, type StatusEvidence, type VerifiedCredential } from '../src';
+import { AriaUsageError, createVerifier, type StatusEvidence, type VerifiedCredential } from '@aria-registry/sdk';
+import { createAp } from '../src';
 import { evaluate, type PolicyInput } from '../src/internal/policy';
 import { credential, fakeFetch, HOUR, LIST_URL, newIssuer, NOW, profile, sign, statusList } from './fixtures';
 
@@ -67,7 +68,8 @@ describe('each result at its own layer', () => {
     const c = verify();
     const status = await v.checkStatus(c);
     // No presentation exists without the holder's signature; nothing else is accepted in its place.
-    await expect(v.admit({ presentation: c as never, status, authorize: async () => ({ allowed: true }) })).rejects.toBeInstanceOf(AriaUsageError);
+    const ap = createAp({ credentials: v });
+    await expect(ap.admit({ presentation: c as never, status, authorize: async () => ({ allowed: true }) })).rejects.toBeInstanceOf(AriaUsageError);
   });
 });
 
@@ -88,6 +90,15 @@ describe('time-sensitive evidence is judged when it is used', () => {
     expect(decide(v, verify(), status)).toEqual({ decision: 'indeterminate', reason: 'status_unavailable' });
     at(NOW + 2 * HOUR);
     expect(decide(v, c, status)).toEqual({ decision: 'indeterminate', reason: 'status_unavailable' });
+  });
+});
+
+describe('ARIA AP builds on one credential verifier', () => {
+  it('needs a verifier from @aria-registry/sdk', () => {
+    expect(() => createAp({ credentials: {} as never })).toThrow(AriaUsageError);
+    expect(() => createAp({} as never)).toThrow(AriaUsageError);
+    const { v } = setup(null);
+    expect(() => createAp({ credentials: v })).not.toThrow();
   });
 });
 

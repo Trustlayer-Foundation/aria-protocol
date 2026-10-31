@@ -1,5 +1,4 @@
-import type { Produced, VerifiedCredential } from './credential';
-import { pending } from './errors';
+import type { Produced, VerifiedCredential } from '@aria-registry/sdk';
 import type { RequestClass } from './presentation';
 import type { ReceiverPin, SentAttempt } from './receipt';
 import type { HttpRequestLike, Signer } from './types';
@@ -43,8 +42,8 @@ export interface SignRequestInput {
   readonly signer: Signer;
 }
 
-/** Signs one attempt (RFC 9421 profile) and returns it with what the client must keep to check its receipt. */
-export function signRequest(input: SignRequestInput): Promise<{ readonly request: HttpRequestLike; readonly sent: SentAttempt }> {
-  void input;
-  return pending('AP2');
+export interface SignedAttempt {
+  readonly request: HttpRequestLike;
+  /** What the client must keep to check this attempt's receipts. */
+  readonly sent: SentAttempt;
 }

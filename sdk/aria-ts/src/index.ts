@@ -1,4 +1,6 @@
-// The ARIA SDK. Provisional package name, pending confirmation of its owner (D9).
+// The ARIA SDK: inspect and verify an agent's credential, and establish the
+// status of that exact document. ARIA AP (requests, admission, receipts) is the
+// separate package built on it. Provisional package name, pending its owner (D9).
 
 export { createVerifier, inspectCredential } from './verifier';
 export type { Verifier, VerifierConfig, TrustProfile, FetchPolicy } from './verifier';
@@ -8,52 +10,5 @@ export type { Standing, StandingState, StatusEvidence, StatusOptions, StatusUnav
 export { canonicalJson } from './internal/canonical';
 export { LEVELS as TRUST_LEVELS } from './internal/verify-credential';
 
-export type {
-  RequestClass,
-  MissingApproval,
-  OperationDescriptor,
-  ReceiverSelf,
-  ChallengeStore,
-  PresentationContext,
-  PresentationFailure,
-  PresentationResult,
-  VerifiedPresentation,
-} from './presentation';
-
-export type { Admission, Admitted, AdmissionInput, AdmissionReason, ApprovalEvidence, ResourceAuthorizer } from './admission';
-
-export { OperationLedger } from './operations';
-export type {
-  OperationKey,
-  OperationStorage,
-  StoredOperation,
-  OperationClaim,
-  RecordedOperationOutcome,
-  AttemptRefusal,
-  Begin,
-  Settlement,
-  Expected,
-  Failure,
-  LedgerOptions,
-} from './operations';
-
-export { buildAttemptRefusal, OperationTracker } from './receipt';
-export type {
-  Receipt,
-  ReceiptCheck,
-  ReceiptFailure,
-  ReceiptResult,
-  ReceiptStatement,
-  ReceiverPin,
-  SentAttempt,
-  RetainedEvidence,
-  HistoricalFindings,
-  OperationState,
-  Observation,
-} from './receipt';
-
-export { signRequest } from './agent';
-export type { CredentialPresentation, ReceiverIdentityFailure, ReceiverIdentityResult, SignRequestInput, VerifiedReceiver } from './agent';
-
-export type { CredentialBinding, Did, HttpRequestLike, Signer, TrustLevel } from './types';
-export { NotYetImplemented, AriaUsageError } from './errors';
+export type { CredentialBinding, Did, TrustLevel } from './types';
+export { AriaUsageError } from './errors';

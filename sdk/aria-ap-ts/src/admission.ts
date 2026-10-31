@@ -1,7 +1,6 @@
-import type { Produced } from './credential';
+import type { Produced, StatusEvidence } from '@aria-registry/sdk';
 import type { AttemptRefusal } from './operations';
 import type { VerifiedPresentation } from './presentation';
-import type { StatusEvidence } from './status';
 
 /**
  * A human's approval, from the receiver's own approval system, of exactly this
@@ -25,7 +24,11 @@ export type ResourceAuthorizer = (request: {
 export interface AdmissionInput {
   /** Required: there is no admission without proof of the holder key. */
   readonly presentation: VerifiedPresentation;
-  /** Status evidence of the presentation's exact credential. */
+  /**
+   * Status evidence of the presentation's exact credential, from the credential
+   * verifier this instance was created with. Read through its `standing`, never
+   * from its fields: a copy, a hand-made object or another verifier's evidence is refused.
+   */
   readonly status: StatusEvidence;
   readonly approval?: ApprovalEvidence;
   readonly authorize: ResourceAuthorizer;

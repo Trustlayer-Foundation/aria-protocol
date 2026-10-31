@@ -1,0 +1,29 @@
+{
+  "name": "@aria-registry/ap",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "ARIA AP: authenticate an agent's request and its receiver, admit it, and sign and verify its receipt. Built on the credential verifier of @aria-registry/sdk.",
+  "license": "Apache-2.0",
+  "author": "TrustLayer Foundation",
+  "homepage": "https://aria.bar",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@aria-registry/sdk": "^1.0.0-alpha.0"
+  },
+  "devDependencies": {
+    "@aria-registry/sdk": "link:../aria-ts",
+    "@noble/curves": "^2.4.0",
+    "@noble/post-quantum": "^0.5.4",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.7"
+  }
+}

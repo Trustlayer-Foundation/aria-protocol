@@ -1,9 +1,9 @@
+import type { Did, Produced } from '@aria-registry/sdk';
 import type { Admitted } from './admission';
-import type { Produced } from './credential';
+import type { Ap } from './ap';
 import { pending } from './errors';
 import type { ReceiverSelf } from './presentation';
 import type { Receipt } from './receipt';
-import type { Did } from './types';
 
 /** A logical operation: one sender's operation id at one receiver. */
 export interface OperationKey {
@@ -128,6 +128,8 @@ export interface LedgerOptions {
  */
 export class OperationLedger {
   constructor(
+    /** The instance whose admissions this ledger accepts and whose claims it issues. */
+    private readonly ap: Ap,
     private readonly storage: OperationStorage,
     private readonly receiver: ReceiverSelf,
     private readonly options: LedgerOptions = {},
@@ -136,6 +138,7 @@ export class OperationLedger {
   /** Claims the admitted operation, or returns its existing outcome or a refusal of this attempt. */
   begin(admission: Admitted): Promise<Begin> {
     void admission;
+    void this.ap;
     void this.storage;
     return pending('AP2');
   }

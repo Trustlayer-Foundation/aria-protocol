@@ -1,16 +1,12 @@
-import type { Admission, AdmissionInput } from './admission';
-import type { ReceiverIdentityResult } from './agent';
 import type { CredentialFacts, CredentialResult, Inspection, VerifiedCredential } from './credential';
-import { AriaUsageError, pending } from './errors';
+import { AriaUsageError } from './errors';
 import { fromOnline, fromStatusList, type StatusSnapshot } from './internal/check-status';
 import { iso } from './internal/instant';
 import { issue, recall } from './internal/provenance';
 import { judge } from './internal/standing';
 import { LEVELS, plainCopy, verifyCredentialDocument, type CredentialSnapshot, type ProfileSnapshot } from './internal/verify-credential';
-import type { PresentationContext, PresentationResult } from './presentation';
-import type { ReceiptCheck, ReceiptResult, ReceiverPin } from './receipt';
 import type { Standing, StatusEvidence, StatusOptions } from './status';
-import type { Did, HttpRequestLike, TrustLevel } from './types';
+import type { Did, TrustLevel } from './types';
 
 /** One issuer the verifier trusts. Its `id` is a label for results, never a trust identity. */
 export interface TrustProfile {
@@ -76,13 +72,6 @@ export interface Verifier {
    * rules. Judged at every call with this verifier's clock. Throws like `facts`.
    */
   standing(credential: VerifiedCredential, status: StatusEvidence): Standing;
-  /** Authenticates a request: holder key, bound to this receiver, operation and content. */
-  verifyPresentation(request: HttpRequestLike, context: PresentationContext): Promise<PresentationResult>;
-  /** The single admission decision, judged now. Refuses inputs it did not produce, or about different documents. */
-  admit(input: AdmissionInput): Promise<Admission>;
-  /** Authenticates the receiver from its identity statement, before the client sends anything sensitive. */
-  verifyReceiverIdentity(statement: unknown, pin: ReceiverPin, nonce: string): Promise<ReceiverIdentityResult>;
-  verifyReceipt(receipt: unknown, check: ReceiptCheck): Promise<ReceiptResult>;
 }
 
 const ML_DSA_65_PUBLIC_KEY = 1952;
@@ -210,25 +199,6 @@ export function createVerifier(config: VerifierConfig): Verifier {
       const at = now();
       const judged = judge(c, st, { now: at, skewMs, statusMaxAgeMs, onlineMaxAgeMs });
       return Object.freeze({ kind: 'standing', ...judged, judgedAt: iso(at) }) as Standing;
-    },
-
-    async verifyPresentation() {
-      return pending('AP2');
-    },
-
-    async admit(input) {
-      // Provenance first: only this verifier's own presentation and status, about one document.
-      recall(verifier, 'presentation', input?.presentation);
-      recall<StatusSnapshot>(verifier, 'status', input.status);
-      return pending('AP2');
-    },
-
-    async verifyReceiverIdentity() {
-      return pending('AP2');
-    },
-
-    async verifyReceipt() {
-      return pending('AP2');
     },
   };
   return Object.freeze(verifier);

@@ -1,8 +1,5 @@
-import type { Produced } from './credential';
+import type { Did, Produced } from '@aria-registry/sdk';
 import { pending } from './errors';
-import type { AttemptRefusal } from './operations';
-import type { ReceiverSelf } from './presentation';
-import type { Did } from './types';
 
 /**
  * The receipt on the wire (type `aria-ap-receipt/1`, pending decision D4). The
@@ -33,12 +30,6 @@ export interface Receipt {
   readonly proof: { readonly alg: 'ed25519'; readonly keyid: string; readonly value: string };
 }
 
-/** Signs a refusal of one attempt. Operation receipts come only from {@link OperationLedger.settle}. */
-export function buildAttemptRefusal(refusal: AttemptRefusal, receiver: ReceiverSelf): Promise<Receipt> {
-  void refusal;
-  void receiver;
-  return pending('AP2');
-}
 
 /** What the client signed for one attempt and must keep: the evidence its receipts are checked against. */
 export interface SentAttempt {
