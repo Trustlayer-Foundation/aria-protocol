@@ -52,6 +52,9 @@ export interface RefusalSnapshot {
 
 export const newReceiptId = (): string => `urn:uuid:${globalThis.crypto.randomUUID()}`;
 
+/** Admissions that already claimed, resumed or answered: each admits one use, judged when it was made. */
+export const spentAdmissions = new WeakSet<object>();
+
 /** An attempt refusal as callers see it; the snapshot stays with the instance that refused. */
 export function refusalOf(ap: object, s: RefusalSnapshot): AttemptRefusal {
   const view = { status: s.status, code: s.code, operationId: s.operationId, requestDigest: s.requestDigest };

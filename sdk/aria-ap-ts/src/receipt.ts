@@ -1,5 +1,8 @@
 import { AriaUsageError, type Did, type Produced } from '@aria-registry/sdk';
 import type { SignedAttempt, VerifiedReceiver } from './agent';
+import type { Ap } from './ap';
+import { internalsOf } from './internal/instance';
+import { recall } from './internal/provenance';
 
 /**
  * The receipt on the wire (type `aria-ap-receipt/1`, pending decision D4). The
@@ -57,7 +60,7 @@ export type ReceiptCheck = {
   /** A fresh answer to a request: transport status and signed status must agree. */
   | { readonly mode: 'decision'; readonly transportStatus: number }
   /** A stored receipt fetched later: HTTP 200 may carry a signed 422; only operation receipts are returned. */
-  | { readonly mode: 'retrieval' }
+  | { readonly mode: 'retrieval'; readonly transportStatus?: number }
 );
 
 export type ReceiptFailure =
@@ -85,6 +88,8 @@ export interface ReceiptStatement extends Produced<'receipt'> {
   readonly receiver: { readonly did: Did; readonly credential: string };
   readonly sender: { readonly did: Did; readonly credential: string };
   readonly requestDigest: string;
+  /** SHA-256 of the whole receipt's canonical JSON, signature included: what identifies a statement, since its `id` is the receiver's choice. */
+  readonly digest: string;
 }
 
 export type ReceiptResult =
@@ -101,8 +106,6 @@ export type Observation =
   | { readonly applied: 'attempt'; readonly state: OperationState }
   /** Not this operation's evidence: nothing changed. */
   | { readonly applied: 'none'; readonly state: OperationState; readonly reason: ReceiptFailure };
-
-type ReceiptVerifier = { verifyReceipt(receipt: unknown, check: ReceiptCheck): Promise<ReceiptResult> };
 
 function namedReceiver(receipt: unknown): string | null {
   try {
@@ -123,10 +126,14 @@ function namedReceiver(receipt: unknown): string | null {
  */
 export class OperationTracker {
   private current: OperationState = 'unknown';
+  /** The digest of the final receipt that governs. */
   private terminal: string | null = null;
   private readonly sent: SentAttempt[] = [];
   private readonly receivers = new Map<string, VerifiedReceiver>();
+  /** Every verified statement by digest, never overwritten. */
   private readonly kept = new Map<string, ReceiptStatement>();
+  /** The digest first seen under each receipt id: the same id with other content is equivocation. */
+  private readonly ids = new Map<string, string>();
 
   constructor(readonly operation: { readonly operationId: string; readonly sender: Did; readonly receiver: ReceiverPin }) {}
 
@@ -161,29 +168,38 @@ export class OperationTracker {
     this.receivers.set(sent.receiver.credential, receiver);
   }
 
-  /** Checks `receipt` against the kept attempts and the receiver they were signed for, and applies it if it is this operation's evidence. */
-  async observe(verifier: ReceiptVerifier, receipt: unknown, transport: { readonly mode: 'decision'; readonly transportStatus: number } | { readonly mode: 'retrieval' }): Promise<Observation> {
+  /**
+   * Checks `receipt` with `ap` against the kept attempts and the receiver they were
+   * signed for, and applies it if it is this operation's evidence. Only statements
+   * `ap` produced count; a receipt is identified by its signed content.
+   */
+  async observe(ap: Ap, receipt: unknown, transport: { readonly mode: 'decision'; readonly transportStatus: number } | { readonly mode: 'retrieval'; readonly transportStatus?: number }): Promise<Observation> {
+    internalsOf(ap);
     const receiver = this.receivers.get(namedReceiver(receipt) ?? '');
     if (!receiver) return { applied: 'none', state: this.current, reason: this.sent.length === 0 ? 'binding_unverifiable' : 'receiver_mismatch' };
-    const checked = await verifier.verifyReceipt(receipt, { receiver, attempts: this.sent, ...transport });
+    const checked = await ap.verifyReceipt(receipt, { receiver, attempts: this.sent, ...transport });
     if (!checked.ok) return { applied: 'none', state: this.current, reason: checked.reason };
-    const s = checked.statement;
-    this.kept.set(s.receiptId, s);
+    const s = recall<ReceiptStatement>(ap, 'receipt', checked.statement);
+    if (!this.kept.has(s.digest)) this.kept.set(s.digest, checked.statement);
+    const seen = this.ids.get(s.receiptId);
+    if (seen === undefined) this.ids.set(s.receiptId, s.digest);
     if (s.applies === 'attempt') return { applied: 'attempt', state: this.current };
-    if (s.state === 'accepted') {
+    if (seen !== undefined && seen !== s.digest) {
+      this.current = 'inconsistent';
+    } else if (s.state === 'accepted') {
       if (this.current === 'unknown') this.current = 'accepted';
-    } else if (this.terminal !== null && this.terminal !== s.receiptId) {
+    } else if (this.terminal !== null && this.terminal !== s.digest) {
       this.current = 'inconsistent';
     } else if (this.current !== 'inconsistent') {
-      this.terminal = s.receiptId;
+      this.terminal = s.digest;
       this.current = s.state;
     }
     return { applied: 'operation', state: this.current };
   }
 
   /** Applies a retrieval's answer: every stored operation receipt, oldest first. */
-  async observeLookup(verifier: ReceiptVerifier, answer: { readonly history: readonly unknown[] }): Promise<OperationState> {
-    for (const receipt of answer.history) await this.observe(verifier, receipt, { mode: 'retrieval' });
+  async observeLookup(ap: Ap, answer: { readonly history: readonly unknown[] }): Promise<OperationState> {
+    for (const receipt of answer.history) await this.observe(ap, receipt, { mode: 'retrieval' });
     return this.current;
   }
 }

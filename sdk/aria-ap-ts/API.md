@@ -107,6 +107,8 @@ and is the one named (`credential`); the pinned DID (`unexpected_receiver`), ori
 (`origin`), audience (`audience`), nonce (`nonce`); `created` within 60 s (`stale`); the
 signature by that credential's holder key (`signature`); and the credential's standing is
 `good` now (`status`). The client pins origin and DID; nothing is learnt from the answer.
+The identity endpoint is anonymous and every call signs and stores a challenge:
+rate-limit it. `MemoryChallengeStore` refuses to hold more than `maxLive` (default 10 000).
 
 ## Admission
 
@@ -117,6 +119,11 @@ standing's instant; then the application's `authorize`, called only when all of 
 pass. A refusal by `authorize` carries the receiver's own code (`bank.account_not_granted`)
 and is a 403 attempt refusal. Refusals are signed `rejected/attempt` receipts and claim
 nothing; `indeterminate` is a signed 503 `aria.status_unavailable`.
+
+Every admission is used once: `begin` and `resume` refuse an admission already used,
+so a continuation is always judged on current evidence. Operation descriptors are
+checked: a minimum level outside `TRUST_LEVELS` or an approval policy other than
+`refuse` is a usage error.
 
 A retrieval is admitted by `admitLookup` (provisional, D4): a credential of the
 operation's sender DID whose standing is `good` reads that operation's receipts; a
@@ -143,14 +150,17 @@ and an attempt refusal. The governing receipt is the final one if any, else the 
 
 ## The client
 
-`OperationTracker` keeps every signed attempt with the receiver it was signed for.
-`observe` selects the kept attempt by the receipt's request digest and checks the exact
+`OperationTracker` keeps every signed attempt with the receiver it was signed for, and
+takes statements only from the `Ap` instance it is given. `observe` selects the kept attempt by the receipt's request digest and checks the exact
 receiver credential and key, the signature, then operation, sender and receiver against
 that attempt (`binding`), then the transport status (`status_mismatch` in `decision`
 mode; `not_operation` for an attempt refusal in `retrieval` mode). With no attempt kept it
 refuses (`binding_unverifiable`). Only a verified operation receipt moves the state; an
 attempt refusal is kept as evidence; it never moves back, and two different final
-receipts make it `inconsistent`. Once an attempt was recorded, `everSent` stays true.
+receipts make it `inconsistent`. A receipt is identified by the digest of its signed
+content, not by its `id`, which the receiver chooses: the same `id` with other content is
+also `inconsistent`, and every statement is kept as evidence. Once an attempt was
+recorded, `everSent` stays true.
 
 ## Not offered yet
 

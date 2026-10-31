@@ -3,7 +3,7 @@ import type { Admitted, LookupAdmission } from './admission';
 import type { Ap } from './ap';
 import { InvariantViolation, StaleClaim } from './errors';
 import { instantText } from './internal/bytes';
-import { internalsOf, newReceiptId, refusalOf, type AdmissionSnapshot, type Internals } from './internal/instance';
+import { internalsOf, newReceiptId, refusalOf, spentAdmissions, type AdmissionSnapshot, type Internals } from './internal/instance';
 import { issue, recall } from './internal/provenance';
 import { isReceiverCode, RECEIPT_TYPE, signReceipt } from './internal/receipt';
 import type { ReceiverSelf } from './presentation';
@@ -279,6 +279,8 @@ export class OperationLedger {
     const a = recall<AdmissionSnapshot>(this.#ap, 'admission', admission);
     if (a.decision !== 'allow') throw new AriaUsageError('only an allowed admission claims an operation');
     if (a.presentation.receiverDid !== this.#receiver.did) throw new AriaUsageError('the admission is for another receiver');
+    if (spentAdmissions.has(admission)) throw new AriaUsageError('an admission is used once: admit a fresh attempt');
+    spentAdmissions.add(admission);
     return a;
   }
 
@@ -324,7 +326,7 @@ function outcomeOf(s: Settlement): Receipt['outcome'] {
   }
   if (s.state === 'accepted' && s.status === 202) return { state: 'accepted', applies: 'operation', status: 202, code: 'aria.accepted' };
   if (s.state === 'rejected' && s.status === 422 && isReceiverCode(s.code)) return { state: 'rejected', applies: 'operation', status: 422, code: s.code };
-  throw new AriaUsageError('a settlement is completed (200, 201), accepted (202) or rejected (422 with the receiver’s own code)');
+  throw new AriaUsageError('a settlement is completed (200, 201), accepted (202) or rejected (422 with a code of the receiver)');
 }
 
 const keyText = (k: OperationKey): string => JSON.stringify([k.receiver, k.sender, k.operationId]);

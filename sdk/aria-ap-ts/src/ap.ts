@@ -155,7 +155,7 @@ export function createAp(config: ApConfig): Ap {
     async admit(input) {
       const p = recall<PresentationSnapshot>(ap, 'presentation', input?.presentation);
       if (p.descriptor.class === 'retrieval') throw new AriaUsageError('a retrieval is admitted with admitLookup');
-      if (typeof input.authorize !== 'function') throw new AriaUsageError('admission needs the application’s resource decision (authorize)');
+      if (typeof input.authorize !== 'function') throw new AriaUsageError('admission needs the resource decision of the application (authorize)');
       // Read through the credential verifier: it refuses evidence it did not produce for this exact result.
       const standing = credentials.standing(p.credential, input.status);
       const d = p.descriptor;
@@ -174,7 +174,7 @@ export function createAp(config: ApConfig): Ap {
         const decided = await input.authorize({ presentation: input.presentation });
         if (decided?.allowed !== true) {
           code = (decided as { code?: unknown } | undefined)?.code as string;
-          if (typeof code !== 'string' || !isReceiverCode(code)) throw new AriaUsageError('a resource refusal carries the receiver’s own code, such as bank.account_not_granted');
+          if (typeof code !== 'string' || !isReceiverCode(code)) throw new AriaUsageError('a resource refusal carries a code of the receiver, such as bank.account_not_granted');
           outcome = { decision: 'deny', reason: 'forbidden' };
         }
       }
@@ -315,7 +315,9 @@ export function createAp(config: ApConfig): Ap {
       if (!Number.isInteger(windowSeconds) || windowSeconds < 1 || windowSeconds > PROFILE.maxWindowSeconds) throw new AriaUsageError('the window is 1 to 60 seconds');
       const created = Math.floor(now() / 1000);
       const credentialDigest = fromBase64(f.binding.digest.slice('sha-256=:'.length, -1))!;
-      const prepared = prepareSignature({
+      let prepared: ReturnType<typeof prepareSignature>;
+      try {
+        prepared = prepareSignature({
         method,
         target,
         origin: receiver.pin.origin,
@@ -330,7 +332,10 @@ export function createAp(config: ApConfig): Ap {
         keyId: f.holderKey.id,
         created,
         expires: created + windowSeconds,
-      });
+        });
+      } catch (error) {
+        throw new AriaUsageError(`the request cannot be signed as given: ${(error as Error).message}`);
+      }
       const signature = await input.signer.sign(utf8(prepared.base));
       if (!(signature instanceof Uint8Array) || signature.length !== 64) throw new AriaUsageError('an Ed25519 signer returns 64 bytes');
       const signedHeaders = { ...prepared.headers, 'signature-input': `${PROFILE.label}=${serializeInnerList(prepared.params)}`, signature: `${PROFILE.label}=:${toBase64(signature)}:` };
@@ -348,7 +353,7 @@ export function createAp(config: ApConfig): Ap {
 
     async verifyReceipt(receipt, check) {
       const receiver = recall<ReceiverSnapshot>(ap, 'receiver', check?.receiver);
-      const mode = check.mode === 'decision' ? { mode: 'decision' as const, transportStatus: check.transportStatus } : { mode: 'retrieval' as const };
+      const mode = check.mode === 'decision' ? { mode: 'decision' as const, transportStatus: check.transportStatus } : { mode: 'retrieval' as const, ...(check.transportStatus === undefined ? {} : { transportStatus: check.transportStatus }) };
       if (check.mode !== 'decision' && check.mode !== 'retrieval') throw new AriaUsageError('a receipt is checked as a decision or a retrieval');
       const r = checkReceipt(receipt, receiver.key, check.attempts ?? [], mode);
       if (!r.ok) return r;
@@ -364,6 +369,7 @@ export function createAp(config: ApConfig): Ap {
         receiver: { ...x.receiver },
         sender: { ...x.request.sender },
         requestDigest: x.request.digest,
+        digest: digestField(utf8(canonicalJson(x))),
       };
       return { ok: true, statement: issue(ap, 'receipt', view as never as ReceiptStatement, view), attempt: r.attempt };
     },

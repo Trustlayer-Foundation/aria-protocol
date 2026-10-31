@@ -3,7 +3,8 @@
 // the original operation receipt after a lost answer.
 import { describe, expect, it } from 'vitest';
 import { AriaUsageError } from '@aria-registry/sdk';
-import { createAp, OperationTracker } from '../src';
+import { createAp, MemoryChallengeStore, OperationTracker } from '../src';
+import { RECEIPT_TYPE, signReceipt } from '../src/internal/receipt';
 import { AGENT, BANK, NOW, world } from './world';
 
 const OP = '55ee2e26-ffcc-40ca-b388-d12966453e48';
@@ -342,5 +343,73 @@ describe('receipts the client refuses', () => {
     const altered = { ...answer.receipt!, outcome: { ...answer.receipt!.outcome, status: 200 } };
     expect(await tracker.observe(w.agentAp, altered, { mode: 'decision', transportStatus: 200 })).toEqual({ applied: 'none', state: 'unknown', reason: 'signature_invalid' });
     expect(tracker.state).toBe('unknown');
+  });
+});
+
+describe('self-review corrections', () => {
+  it('the same receipt id with other signed content makes the client inconsistent and keeps both', async () => {
+    const w = world();
+    const tracker = new OperationTracker({ operationId: OP, sender: AGENT, receiver: BANK });
+    const attempt = await w.signTransfer(OP);
+    tracker.record(attempt);
+    const answer = await w.handle(attempt.request);
+    expect(await tracker.observe(w.agentAp, answer.receipt, { mode: 'decision', transportStatus: 201 })).toEqual({ applied: 'operation', state: 'completed' });
+    const { proof: _, ...unsigned } = answer.receipt!;
+    const equivocation = await signReceipt({ ...unsigned, type: RECEIPT_TYPE, outcome: { state: 'rejected', applies: 'operation', status: 422, code: 'bank.reversed' } }, w.self.signer);
+    expect(equivocation.id).toBe(answer.receipt!.id);
+    expect(await tracker.observe(w.agentAp, equivocation, { mode: 'retrieval' })).toEqual({ applied: 'operation', state: 'inconsistent' });
+    expect(tracker.evidence.map((e) => e.state).sort()).toEqual(['completed', 'rejected']);
+    // The same receipt again is the same statement: nothing changes.
+    expect(await tracker.observe(w.agentAp, answer.receipt, { mode: 'decision', transportStatus: 201 })).toEqual({ applied: 'operation', state: 'inconsistent' });
+    expect(tracker.evidence).toHaveLength(2);
+  });
+
+  it('the tracker takes statements only from an ARIA AP instance, never from a look-alike verifier', async () => {
+    const w = world();
+    const tracker = new OperationTracker({ operationId: OP, sender: AGENT, receiver: BANK });
+    const attempt = await w.signTransfer(OP);
+    tracker.record(attempt);
+    const stub = { verifyReceipt: async () => ({ ok: true, statement: { receiptId: 'x', applies: 'operation', state: 'completed' }, attempt: attempt.sent }) };
+    await expect(tracker.observe(stub as never, {}, { mode: 'retrieval' })).rejects.toThrow(AriaUsageError);
+    expect(tracker.state).toBe('unknown');
+  });
+
+  it('a descriptor with an unknown minimum level or approval policy is refused', async () => {
+    const w = world();
+    const request = (await w.signTransfer(OP)).request;
+    for (const bad of [{ minLevel: 'L9' }, { minLevel: 'l1' }, { onMissingApproval: 'hold' }]) {
+      const context = { ...w.context, operations: [{ ...w.context.operations[0]!, ...bad } as never, w.context.operations[1]!] };
+      await expect(w.bankAp.verifyPresentation(request, context)).rejects.toThrow(AriaUsageError);
+    }
+  });
+
+  it('an admission is used once: no second claim, and no resume after the credential was revoked', async () => {
+    const w = world();
+    const presented = await w.bankAp.verifyPresentation((await w.signTransfer(OP)).request, w.context);
+    if (!presented.ok) throw new Error(presented.reason);
+    const admission = await w.bankAp.admit({ presentation: presented.presentation, status: await w.bankVerifier.checkStatus(presented.presentation.credential), authorize: async () => ({ allowed: true }) });
+    if (admission.decision !== 'allow') throw new Error('expected allow');
+    const begun = await w.ledger.begin(admission);
+    if (begun.kind !== 'claimed') throw new Error('expected a claim');
+    await w.ledger.settle(begun.claim, { state: 'accepted', status: 202 });
+    await expect(w.ledger.begin(admission)).rejects.toThrow(AriaUsageError);
+    w.revoke(11);
+    await expect(w.ledger.resume({ receiver: BANK.did, sender: AGENT, operationId: OP }, admission)).rejects.toThrow(AriaUsageError);
+  });
+
+  it('a retrieval answer is checked against its transport status when given', async () => {
+    const w = world();
+    const attempt = await w.signTransfer(OP);
+    const answer = await w.handle(attempt.request);
+    const check = { receiver: attempt.receiver, attempts: [attempt.sent!] };
+    expect(await w.agentAp.verifyReceipt(answer.receipt, { ...check, mode: 'retrieval', transportStatus: 200 })).toMatchObject({ ok: true });
+    expect(await w.agentAp.verifyReceipt(answer.receipt, { ...check, mode: 'retrieval', transportStatus: 500 })).toEqual({ ok: false, reason: 'status_mismatch' });
+  });
+
+  it('the in-memory challenge store holds a bounded number of live challenges', async () => {
+    const store = new MemoryChallengeStore(() => new Date(NOW), { maxLive: 2 });
+    await store.issue(BANK.did, 60);
+    await store.issue(BANK.did, 60);
+    await expect(store.issue(BANK.did, 60)).rejects.toThrow(AriaUsageError);
   });
 });

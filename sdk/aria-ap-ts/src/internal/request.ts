@@ -1,9 +1,9 @@
-import { canonicalJson, type Did } from '@aria-registry/sdk';
+import { canonicalJson, TRUST_LEVELS, type Did } from '@aria-registry/sdk';
 import type { OperationDescriptor, RequestClass } from '../presentation';
 import type { HttpRequestLike } from '../types';
 import { digestField, sameBytes, toBase64, utf8, UUID } from './bytes';
 import { acceptableKey, strictVerify } from './ed25519';
-import { isInnerList, parseDictionary, parseItem, serializeInnerList, sfStringOf, type BareItem, type InnerList, type Item, type Member } from './sf';
+import { isInnerList, parseDictionary, parseItem, serializeBare, serializeInnerList, sfStringOf, type BareItem, type InnerList, type Item, type Member } from './sf';
 import { sha256 } from '@noble/hashes/sha2.js';
 
 // The ARIA AP HTTP profile (provisional, D3): RFC 9421 with one signature labelled
@@ -71,7 +71,8 @@ export function checkDescriptors(operations: readonly OperationDescriptor[]): re
     const rule = CLASSES[d.class];
     if (!rule || !rule.methods.includes(d.method)) throw new TypeError(`operation ${d.name}: ${d.method} is not a ${d.class} method`);
     if (!d.path.startsWith('/') || d.path.includes('?')) throw new TypeError(`operation ${d.name}: the path is absolute and has no query`);
-    if (rule.receipt && (typeof d.scope !== 'string' || typeof d.minLevel !== 'string')) throw new TypeError(`operation ${d.name}: a receiptable operation names its scope and minimum level`);
+    if (rule.receipt && (typeof d.scope !== 'string' || d.scope === '' || !TRUST_LEVELS.includes(d.minLevel!))) throw new TypeError(`operation ${d.name}: a receiptable operation names its scope and one of ${TRUST_LEVELS.join(', ')} as its minimum level`);
+    if (d.onMissingApproval !== undefined && d.onMissingApproval !== 'refuse') throw new TypeError(`operation ${d.name}: refuse is the only approval policy`);
     if (d.class === 'retrieval' && (d.query?.length !== 1 || d.query[0] !== 'operation')) throw new TypeError(`operation ${d.name}: a retrieval takes exactly the operation parameter`);
     const mediaType = d.class === 'unsafe-body' ? normalizeMediaType(d.mediaType ?? '') : null;
     if (d.class === 'unsafe-body' && !mediaType) throw new TypeError(`operation ${d.name}: a body operation declares its one media type`);
@@ -325,9 +326,9 @@ export function prepareSignature(input: SigningInput): { readonly headers: Recor
   const headers: Record<string, string | readonly string[]> = {};
   for (const [name, value] of fieldsOf(input.headers)) headers[name] = value.length === 1 ? value[0]! : value;
   if (rule.components.includes('content-digest')) headers['content-digest'] = digestField(input.body);
-  if (input.operationId !== null) headers['aria-operation'] = `"${input.operationId}"`;
-  headers['aria-credential'] = `"${input.credential.url}";digest=:${toBase64(input.credential.digest)}:`;
-  headers['aria-audience'] = `"${input.audience}"`;
+  if (input.operationId !== null) headers['aria-operation'] = serializeBare(input.operationId);
+  headers['aria-credential'] = `${serializeBare(input.credential.url)};digest=${serializeBare(input.credential.digest)}`;
+  headers['aria-audience'] = serializeBare(input.audience);
   const covered = [...rule.components, ...input.semanticHeaders];
   const params = new Map<string, BareItem>([
     ['created', input.created],
