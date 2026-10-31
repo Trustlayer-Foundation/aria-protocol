@@ -8,7 +8,7 @@ import { checks, credential, fetchServing, NOW, ORIGIN, profile, rejects, status
 const c = checks('pair');
 await c.check('ARIA AP exports its own API only', () => {
   const names = Object.keys(ap).sort().join(',');
-  return names === 'NotYetImplemented,OperationLedger,OperationTracker,createAp' || names;
+  return names === 'InvariantViolation,MemoryChallengeStore,MemoryOperationStorage,OperationLedger,OperationTracker,StaleClaim,createAp' || names;
 });
 await c.check('one copy of the credential package: none nested under ARIA AP', () => {
   let nested = [];
@@ -27,6 +27,6 @@ const r = verifier.verifyCredential(credential);
 const status = await verifier.checkStatus(r.credential);
 await c.check('a verified credential is not a presentation: admission refuses it', () => rejects(instance.admit({ presentation: r.credential, status, authorize: async () => ({ allowed: true }) }), sdk.AriaUsageError));
 await c.check('a hand-made presentation is refused', () => rejects(instance.admit({ presentation: { kind: 'verified-presentation', credential: r.credential }, status, authorize: async () => ({ allowed: true }) }), sdk.AriaUsageError));
-await c.check('the AP2 entry points say so', () => rejects(instance.verifyPresentation({ method: 'GET', target: '/', headers: {} }, {}), ap.NotYetImplemented));
+await c.check('a ledger needs this instance’s receiver credential and its holder key', () => rejects(() => new ap.OperationLedger(instance, new ap.MemoryOperationStorage(), { did: r.credential.did, credential: r.credential, signer: { keyId: 'other', algorithm: 'ed25519', sign: async () => new Uint8Array(64) } }), sdk.AriaUsageError));
 
 c.done();

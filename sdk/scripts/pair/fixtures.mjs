@@ -17,7 +17,7 @@ const DID = 'did:aria:example.test:probe';
 
 const pq = ml_dsa65.keygen();
 const edSecret = randomBytes(32);
-const holder = ed25519.getPublicKey(randomBytes(32));
+const probeHolder = ed25519.getPublicKey(randomBytes(32));
 
 export const profile = {
   id: 'demo',
@@ -65,7 +65,7 @@ export function sign(document) {
   };
 }
 
-export const credential = sign({
+const unsignedCredential = {
   '@context': ['https://www.w3.org/ns/credentials/v2', 'https://aria.bar/ns/v1'],
   id: 'https://api.aria.bar/v1/credentials/019a0000-0000-7000-8000-000000000001',
   type: ['VerifiableCredential', 'ARIAIdentityDocument'],
@@ -83,11 +83,24 @@ export const credential = sign({
     delegationDepth: 0,
     maxDelegationDepth: 0,
     principal: { type: 'Person', did: 'did:aria:example.test:owner', jurisdiction: 'MX', verificationStatus: 'self-declared' },
-    holderKey: { id: `${DID}#holder-key-1`, type: 'Ed25519VerificationKey2020', publicKeyMultibase: `z${base58(holder)}` },
+    holderKey: { id: `${DID}#holder-key-1`, type: 'Ed25519VerificationKey2020', publicKeyMultibase: `z${base58(probeHolder)}` },
     enrollmentAttestation: { userAgentAgreement: true, attestedAt: iso(-2 * HOUR), termsVersion: '1.0.0', privacyVersion: '1.0.0' },
   },
   credentialStatus: { id: `${LIST_URL}#7`, type: 'BitstringStatusListEntry', statusPurpose: 'revocation', statusListIndex: '7', statusListCredential: LIST_URL },
-});
+};
+export const credential = sign(unsignedCredential);
+
+/** A credential of `did` with its own holder key (index `n` in the status list), and that key as a signer. */
+export function holder(did, n, { level = 'L1', scopes = ['payments:transfer:create'], hitl = [] } = {}) {
+  const secret = randomBytes(32);
+  const doc = structuredClone(unsignedCredential);
+  const keyId = `${did}#holder-key-${n}`;
+  doc.id = `https://api.aria.bar/v1/credentials/019a0000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+  Object.assign(doc.credentialSubject, { id: did, trustLevel: level, scope: scopes, hitlRequired: hitl });
+  doc.credentialSubject.holderKey = { id: keyId, type: 'Ed25519VerificationKey2020', publicKeyMultibase: `z${base58(ed25519.getPublicKey(secret))}` };
+  doc.credentialStatus = { ...doc.credentialStatus, id: `${LIST_URL}#${n}`, statusListIndex: String(n) };
+  return { document: sign(doc), url: doc.id, signer: { keyId, algorithm: 'ed25519', sign: async (bytes) => ed25519.sign(bytes, secret) } };
+}
 
 export function statusList(revoked) {
   const bits = Buffer.alloc(131_072 / 8);
@@ -103,10 +116,12 @@ export function statusList(revoked) {
   });
 }
 
+/** Serves the status list: `body`, or what `body()` returns at each fetch. */
 export function fetchServing(body) {
   return async (input, init) => {
     if (init?.redirect !== 'error') throw new Error('redirects must be refused');
-    return String(input) === LIST_URL ? new Response(JSON.stringify(body), { status: 200 }) : new Response('not found', { status: 404 });
+    if (String(input) !== LIST_URL) return new Response('not found', { status: 404 });
+    return new Response(JSON.stringify(typeof body === 'function' ? body() : body), { status: 200 });
   };
 }
 

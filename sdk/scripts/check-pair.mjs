@@ -60,32 +60,36 @@ for (const pkg of PACKAGES) {
   if (!artifacts[pkg.name].reproducible) fail('pack is not reproducible', { package: pkg.name });
   const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
   if (unexpected.length) fail('unexpected files in the tarball', { package: pkg.name, unexpected });
-  // A packed manifest names registry ranges only: no path, link, workspace or URL into the repository.
+  // A packed manifest names registry versions, ranges or tags only: no path, link,
+  // workspace, git, alias or URL, which all need a ':', '/' or '@'.
   const packed = JSON.parse(run('tar', ['-xzOf', first, 'package/package.json'], work));
   const local = ['dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies'].flatMap((field) =>
     Object.entries(packed[field] ?? {})
-      .filter(([, spec]) => /^(link|file|workspace|portal|git(\+[a-z]+)?|https?):|^[./~]/.test(String(spec)))
+      .filter(([, spec]) => !/^[0-9A-Za-z.^~<>=|*+ -]+$/.test(String(spec)))
       .map(([name, spec]) => `${field}.${name}: ${spec}`),
   );
   if (local.length) fail('the packed manifest references a development location', { package: pkg.name, local });
 }
 
-// ARIA AP's built code imports the credential package by its public name only, and carries none of it.
+// ARIA AP's built code imports the credential package by its public name only, and
+// carries none of it; its other imports are its own declared dependencies.
 const apTar = artifacts['@aria-registry/ap'].tarball;
 const apCode = run('tar', ['-xzOf', apTar, 'package/dist/index.js'], work);
+const apManifest = JSON.parse(run('tar', ['-xzOf', apTar, 'package/package.json'], work));
+const apDependencies = Object.keys(apManifest.dependencies ?? {});
+const allowedImport = (s) => s === '@aria-registry/sdk' || apDependencies.some((d) => d !== '@aria-registry/sdk' && (s === d || s.startsWith(`${d}/`)));
 const apImports = [...apCode.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]);
-if (apImports.some((s) => s !== '@aria-registry/sdk')) fail('ARIA AP imports something other than the credential package entry', { apImports });
+if (!apImports.includes('@aria-registry/sdk') || apImports.some((s) => !allowedImport(s))) fail('ARIA AP imports something other than the credential package entry and its own dependencies', { apImports });
 for (const marker of ['mldsa65-ed25519-2026', 'BitstringStatusList', 'createVerifier(']) {
   if (apCode.includes(marker)) fail('ARIA AP carries credential-package code', { marker });
 }
 // Its declarations, likewise: the credential package's types come from the peer, not a copy.
 const apTypes = run('tar', ['-xzOf', apTar, 'package/dist/index.d.ts'], work);
 const apTypeImports = [...apTypes.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]);
-if (apTypeImports.some((s) => s !== '@aria-registry/sdk')) fail('ARIA AP types import something other than the credential package entry', { apTypeImports });
+if (apTypeImports.some((s) => !allowedImport(s))) fail('ARIA AP types import something other than the credential package entry and its own dependencies', { apTypeImports });
 for (const marker of ['interface CredentialFacts', 'declare function createVerifier', 'type StandingState']) {
   if (apTypes.includes(marker)) fail('ARIA AP declares credential-package types itself', { marker });
 }
-const apManifest = JSON.parse(run('tar', ['-xzOf', apTar, 'package/package.json'], work));
 if (!apManifest.peerDependencies?.['@aria-registry/sdk'] || apManifest.dependencies?.['@aria-registry/sdk']) {
   fail('ARIA AP must declare the credential package as a peer dependency, not bundle or pin its own copy', { peer: apManifest.peerDependencies, deps: apManifest.dependencies });
 }
@@ -131,6 +135,7 @@ try {
 try {
   const pairDir = consumer('pair', [sdkTar, apTar]);
   scenarios.push(scenario(pairDir, 'pair.mjs'));
+  scenarios.push(scenario(pairDir, 'ap-exchange.mjs'));
   const second = join(pairDir, 'second');
   mkdirSync(second);
   writeFileSync(join(second, 'package.json'), JSON.stringify({ name: 'second-copy', private: true, type: 'module' }));
