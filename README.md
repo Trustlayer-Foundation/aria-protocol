@@ -47,6 +47,27 @@ Every agent gets a DID (`did:aria:*`), a trust level (L0–L3), a set of scopes 
 | **NIST filing** | NIST-2025-0035, March 9, 2026 |
 | **NCCoE response** | AI-Identity@nist.gov, April 2, 2026 |
 
+## Repository layout
+
+One repository holds the protocol and its SDKs. This is its long-term structure.
+
+| Path | What it is | Status |
+|---|---|---|
+| `schema/`, `context/` | Normative JSON Schemas and the JSON-LD context | Normative |
+| `spec/` | Where the specification stands; its text is authored with [aria.bar/spec](https://aria.bar/spec) today (`spec/README.md`) | |
+| `conformance/` | Vectors and harnesses any implementation runs, in any language | `conformance/ap/` (ARIA AP) is provisional |
+| `federation/` | The contract between registration authorities and the issuing authority | |
+| `examples/` | Signed reference credentials and usage examples | |
+| `sdk/verify-ts/` | `@aria-registry/verify` 1.x, the SDK used below | Published |
+| `sdk/aria-ts/` | The ARIA SDK: credential verification and the status of the exact document | In development, not released |
+| `sdk/aria-ap-ts/` | ARIA AP: request authentication, admission, operations and receipts, built on the ARIA SDK | In development, not released |
+
+The two new SDKs are separate packages. A service that only checks credentials will
+install the ARIA SDK; one that admits agent requests or exchanges receipts will install
+ARIA AP as well, which uses the ARIA SDK's verifier and has no credential verification
+of its own. Neither is published and their package names are provisional;
+`sdk/scripts/check-pair.mjs` tests them as packed artifacts, alone and together.
+
 ## Verify a credential in 3 lines
 
 ```bash

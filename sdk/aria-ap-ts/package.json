@@ -7,11 +7,27 @@
   "author": "TrustLayer Foundation",
   "homepage": "https://aria.bar",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "API.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=20"
   },
   "sideEffects": false,
   "scripts": {
+    "build": "tsup",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
@@ -23,6 +39,7 @@
     "@noble/curves": "^2.4.0",
     "@noble/post-quantum": "^0.5.4",
     "@types/node": "^22.20.5",
+    "tsup": "8.5.1",
     "typescript": "^5.9.0",
     "vitest": "^3.2.7"
   }

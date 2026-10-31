@@ -27,6 +27,33 @@ jobs:
       - run: pnpm test
         working-directory: sdk/verify-ts
 
+  sdk-packages:
+    # The ARIA SDK and ARIA AP (not released): each package's own checks, then
+    # both as packed artifacts installed with npm outside the repository, alone
+    # and together. ARIA AP builds against the ARIA SDK's built types.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/aria-ts
+      - run: pnpm typecheck && pnpm test
+        working-directory: sdk/aria-ts
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/aria-ap-ts
+      - run: pnpm typecheck && pnpm test
+        working-directory: sdk/aria-ap-ts
+      - run: node sdk/scripts/check-pair.mjs
+
   conformance:
     # The vectors are the contract between implementations, so they run on every
     # change. The harness needs the SDK built, since it tests the published entry

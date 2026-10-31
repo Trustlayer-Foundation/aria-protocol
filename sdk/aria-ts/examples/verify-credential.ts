@@ -20,14 +20,18 @@ export async function describe(): Promise<string> {
   const { credential } = checked;
 
   const status = await verifier.checkStatus(credential);
-  switch (status.state) {
-    case 'active':
-      return `${credential.did}, document ${credential.binding.credentialId}, is active`;
+  // The evidence says what was observed and when; its standing says whether it holds now.
+  const standing = verifier.standing(credential, status);
+  switch (standing.state) {
+    case 'good':
+      return `${credential.did}, document ${credential.binding.credentialId}, is active (${standing.source})`;
     case 'revoked':
     case 'superseded':
-      return `${credential.did}: this document is ${status.state}`;
-    case 'unavailable':
+      return `${credential.did}: this document is ${standing.state}`;
+    case 'not_valid_now':
+      return `${credential.did}: this document is outside its validity`;
+    case 'unknown':
       // Unknown is not active.
-      return `status could not be established: ${status.reason}`;
+      return `status could not be established: ${standing.reason}`;
   }
 }
