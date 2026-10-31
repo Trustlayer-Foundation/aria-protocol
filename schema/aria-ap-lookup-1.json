@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/aria-ap-lookup-1.json",
+  "title": "ARIA AP retrieval answer (provisional: pending decision D4)",
+  "description": "The body of a 200 answer to a signed retrieval (GET <path>?operation=<id>): the operation's governing receipt and every operation receipt, oldest first. A retrieval gets no receipt of its own, and attempt refusals are never part of an operation's history. Provisional: the receipt rules are not decided, and this schema changes with them. Conforming to it says nothing about the receipts' signatures or bindings: the client verifies each receipt in retrieval mode against the attempts it kept.",
+  "$comment": "Rules JSON Schema cannot express, checked by the ARIA AP SDK: current is the final receipt in history if there is one, else the latest accepted one; every receipt names the same operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["current", "history"],
+  "properties": {
+    "current": {
+      "description": "The receipt that governs; null while the operation is claimed and has none yet.",
+      "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/operationReceipt" }]
+    },
+    "history": { "type": "array", "items": { "$ref": "#/$defs/operationReceipt" } }
+  },
+  "$defs": {
+    "operationReceipt": {
+      "allOf": [{ "$ref": "https://aria.bar/schema/aria-ap-receipt-1.json" }, { "properties": { "outcome": { "properties": { "applies": { "const": "operation" } } } } }]
+    }
+  }
+}

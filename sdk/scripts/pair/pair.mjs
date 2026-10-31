@@ -1,6 +1,7 @@
 // Both packages installed from their tarballs: ARIA AP resolves the application's
 // copy of the credential package through its peer dependency, and uses its verifier.
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import * as ap from '@aria-registry/ap';
 import * as sdk from '@aria-registry/sdk';
 import { checks, credential, fetchServing, NOW, ORIGIN, profile, rejects, statusList } from './fixtures.mjs';
@@ -16,6 +17,12 @@ await c.check('one copy of the credential package: none nested under ARIA AP', (
     nested = readdirSync('node_modules/@aria-registry/ap/node_modules');
   } catch {}
   return nested.length === 0 || nested.join(',');
+});
+
+await c.check('ARIA AP exports its provisional schemas by path', () => {
+  const require = createRequire(import.meta.url);
+  const ids = ['receipt', 'identity', 'lookup'].map((n) => JSON.parse(readFileSync(require.resolve(`@aria-registry/ap/schemas/aria-ap-${n}-1.json`), 'utf8')).$id);
+  return ids.join() === ['receipt', 'identity', 'lookup'].map((n) => `https://aria.bar/schema/aria-ap-${n}-1.json`).join() || ids.join();
 });
 
 const verifier = sdk.createVerifier({ trust: [profile], clock: () => new Date(NOW), fetch: { allowedOrigins: [ORIGIN], fetch: fetchServing(statusList([])) } });

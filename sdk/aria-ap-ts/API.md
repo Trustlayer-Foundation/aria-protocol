@@ -5,7 +5,8 @@ Status: implemented against a **provisional** wire profile. The vectors in
 decisions D3 (transport), D4 (receipt), D5 (scopes) and D8 (human approval), none of
 which is taken; the identity statement below is provisional under D3 as well. Expect the
 wire format to change when they are decided. Package name provisional
-(`@aria-registry/ap`) until its owner is confirmed; private, not published.
+(`@aria-registry/ap`) until its owner is confirmed. Version 1.0.0 is a local candidate:
+private, not published, not an approved release.
 
 ## What it builds on
 
@@ -161,6 +162,25 @@ receipts make it `inconsistent`. A receipt is identified by the digest of its si
 content, not by its `id`, which the receiver chooses: the same `id` with other content is
 also `inconsistent`, and every statement is kept as evidence. Once an attempt was
 recorded, `everSent` stays true.
+
+## Schemas (provisional)
+
+One JSON Schema (draft 2020-12) per wire document, in the protocol's
+[`schema/`](../../schema/README.md) and shipped byte for byte in `schemas/` (a test and
+`check-pair` compare them):
+
+| Schema | Document |
+|---|---|
+| `aria-ap-receipt-1.json` | A receipt, `aria-ap-receipt/1`, including which state, `applies`, status and code go together |
+| `aria-ap-identity-1.json` | The identity response: the receiver's AID 1.0 document (by reference to `aid-1.0.json`) and its `aria-ap-identity/1` statement |
+| `aria-ap-lookup-1.json` | A retrieval's answer: `current` and `history`, operation receipts only |
+
+They are provisional with D3 and D4. Conforming to a schema is neither a valid signature
+nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers
+only, at most 4096 bytes, which JSON Schema cannot express), verifies signatures, pins the
+receiver's exact credential and binds each receipt to a kept attempt. Against the AP1
+receipt vectors the schema and the SDK agree on every document but the three that only
+the strict parsing refuses.
 
 ## Not offered yet
 

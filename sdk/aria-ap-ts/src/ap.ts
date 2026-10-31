@@ -239,6 +239,7 @@ export function createAp(config: ApConfig): Ap {
 
     async identify(receiver, request, challenges) {
       const f = selfFacts(receiver);
+      if (typeof receiver.origin !== 'string' || new URL(receiver.origin).origin !== receiver.origin) throw new AriaUsageError('the receiver origin is scheme, host and port only');
       if (!NONCE.test(request?.nonce ?? '') || typeof request.audience !== 'string' || !request.audience.startsWith('did:aria:')) {
         throw new AriaUsageError('an identity request names a base64url nonce and the client DID');
       }
@@ -263,7 +264,7 @@ export function createAp(config: ApConfig): Ap {
       const keys = ['type', 'subject', 'credential', 'origin', 'audience', 'nonce', 'challenge', 'created', 'proof'];
       const s = isObject(response) ? response.statement : undefined;
       if (!exactly(response, ['credential', 'statement']) || !exactly(s, keys) || !exactly(s.proof, ['alg', 'keyid', 'value'])) return fail('malformed');
-      if (s.type !== IDENTITY_TYPE || keys.slice(1, -1).some((k) => typeof s[k] !== 'string') || !CHALLENGE.test(s.challenge as string)) return fail('malformed');
+      if (s.type !== IDENTITY_TYPE || keys.slice(1, -1).some((k) => typeof s[k] !== 'string') || !CHALLENGE.test(s.challenge as string) || !NONCE.test(s.nonce as string)) return fail('malformed');
       const proof = s.proof as Record<string, unknown>;
       const created = instantOf(s.created);
       if (created === null) return fail('malformed');

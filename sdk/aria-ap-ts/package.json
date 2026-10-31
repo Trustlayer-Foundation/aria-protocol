@@ -14,10 +14,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./schemas/*.json": "./schemas/*.json",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
+    "schemas",
     "README.md",
     "API.md",
     "LICENSE"
@@ -41,6 +43,8 @@
   "devDependencies": {
     "@noble/post-quantum": "^0.5.4",
     "@types/node": "^22.20.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "tsup": "8.5.1",
     "typescript": "^5.9.0",
     "vitest": "^3.2.7"

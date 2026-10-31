@@ -58,7 +58,7 @@ for (const pkg of PACKAGES) {
     files,
   };
   if (!artifacts[pkg.name].reproducible) fail('pack is not reproducible', { package: pkg.name });
-  const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
+  const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|schemas\/aria-ap-[a-z]+-1\.json|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
   if (unexpected.length) fail('unexpected files in the tarball', { package: pkg.name, unexpected });
   // A packed manifest names registry versions, ranges or tags only: no path, link,
   // workspace, git, alias or URL, which all need a ':', '/' or '@'.
@@ -82,6 +82,14 @@ const apImports = [...apCode.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]
 if (!apImports.includes('@aria-registry/sdk') || apImports.some((s) => !allowedImport(s))) fail('ARIA AP imports something other than the credential package entry and its own dependencies', { apImports });
 for (const marker of ['mldsa65-ed25519-2026', 'BitstringStatusList', 'createVerifier(']) {
   if (apCode.includes(marker)) fail('ARIA AP carries credential-package code', { marker });
+}
+// The schemas it ships are the protocol's, byte for byte, and all of them.
+const shipped = artifacts['@aria-registry/ap'].files.filter((f) => f.startsWith('package/schemas/')).map((f) => f.slice('package/schemas/'.length));
+const protocolSchemas = readdirSync(join(SDK, '..', 'schema')).filter((f) => /^aria-ap-[a-z]+-1\.json$/.test(f));
+if (shipped.sort().join() !== protocolSchemas.sort().join()) fail('ARIA AP does not ship exactly the protocol\'s ARIA AP schemas', { shipped, protocolSchemas });
+for (const name of shipped) {
+  const packed = execFileSync('tar', ['-xzOf', apTar, `package/schemas/${name}`], { cwd: work });
+  if (!packed.equals(readFileSync(join(SDK, '..', 'schema', name)))) fail('a packaged schema differs from the protocol\'s', { name });
 }
 // Its declarations, likewise: the credential package's types come from the peer, not a copy.
 const apTypes = run('tar', ['-xzOf', apTar, 'package/dist/index.d.ts'], work);
