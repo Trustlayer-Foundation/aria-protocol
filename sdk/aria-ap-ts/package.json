@@ -1,6 +1,6 @@
 {
   "name": "@aria-registry/ap",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0",
   "private": true,
   "description": "ARIA AP: authenticate an agent's request and its receiver, admit it, and sign and verify its receipt. Built on the credential verifier of @aria-registry/sdk.",
   "license": "Apache-2.0",
@@ -32,7 +32,7 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@aria-registry/sdk": "^1.0.0-alpha.0"
+    "@aria-registry/sdk": "^1.0.0"
   },
   "dependencies": {
     "@noble/curves": "^2.4.0",

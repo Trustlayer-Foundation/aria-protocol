@@ -172,7 +172,7 @@ recorded, `everSent` stays true.
 
 ## Package and runtimes
 
-- ESM only, with type declarations. Peer dependency: `@aria-registry/sdk` `^1.0.0-alpha.0`;
+- ESM only, with type declarations. Peer dependency: `@aria-registry/sdk` `^1.0.0`;
   the compatible pair is the one the release manifest records after
   [`../scripts/check-pair.mjs`](../scripts/check-pair.mjs) passed.
 - Node.js 20 and 22 (declared). Uses the Web Crypto `getRandomValues` and `randomUUID`.
