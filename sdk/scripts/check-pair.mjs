@@ -60,6 +60,14 @@ for (const pkg of PACKAGES) {
   if (!artifacts[pkg.name].reproducible) fail('pack is not reproducible', { package: pkg.name });
   const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
   if (unexpected.length) fail('unexpected files in the tarball', { package: pkg.name, unexpected });
+  // A packed manifest names registry ranges only: no path, link, workspace or URL into the repository.
+  const packed = JSON.parse(run('tar', ['-xzOf', first, 'package/package.json'], work));
+  const local = ['dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies'].flatMap((field) =>
+    Object.entries(packed[field] ?? {})
+      .filter(([, spec]) => /^(link|file|workspace|portal|git(\+[a-z]+)?|https?):|^[./~]/.test(String(spec)))
+      .map(([name, spec]) => `${field}.${name}: ${spec}`),
+  );
+  if (local.length) fail('the packed manifest references a development location', { package: pkg.name, local });
 }
 
 // ARIA AP's built code imports the credential package by its public name only, and carries none of it.
@@ -69,6 +77,13 @@ const apImports = [...apCode.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]
 if (apImports.some((s) => s !== '@aria-registry/sdk')) fail('ARIA AP imports something other than the credential package entry', { apImports });
 for (const marker of ['mldsa65-ed25519-2026', 'BitstringStatusList', 'createVerifier(']) {
   if (apCode.includes(marker)) fail('ARIA AP carries credential-package code', { marker });
+}
+// Its declarations, likewise: the credential package's types come from the peer, not a copy.
+const apTypes = run('tar', ['-xzOf', apTar, 'package/dist/index.d.ts'], work);
+const apTypeImports = [...apTypes.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]);
+if (apTypeImports.some((s) => s !== '@aria-registry/sdk')) fail('ARIA AP types import something other than the credential package entry', { apTypeImports });
+for (const marker of ['interface CredentialFacts', 'declare function createVerifier', 'type StandingState']) {
+  if (apTypes.includes(marker)) fail('ARIA AP declares credential-package types itself', { marker });
 }
 const apManifest = JSON.parse(run('tar', ['-xzOf', apTar, 'package/package.json'], work));
 if (!apManifest.peerDependencies?.['@aria-registry/sdk'] || apManifest.dependencies?.['@aria-registry/sdk']) {

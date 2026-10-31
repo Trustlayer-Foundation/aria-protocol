@@ -1,16 +1,13 @@
 lockfileVersion: '9.0'
 
 settings:
-  autoInstallPeers: true
+  autoInstallPeers: false
   excludeLinksFromLockfile: false
 
 importers:
 
   .:
     devDependencies:
-      '@aria-registry/sdk':
-        specifier: link:../aria-ts
-        version: link:../aria-ts
       '@noble/curves':
         specifier: ^2.4.0
         version: 2.4.0

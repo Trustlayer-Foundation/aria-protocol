@@ -35,7 +35,6 @@
     "@aria-registry/sdk": "^1.0.0-alpha.0"
   },
   "devDependencies": {
-    "@aria-registry/sdk": "link:../aria-ts",
     "@noble/curves": "^2.4.0",
     "@noble/post-quantum": "^0.5.4",
     "@types/node": "^22.20.5",
