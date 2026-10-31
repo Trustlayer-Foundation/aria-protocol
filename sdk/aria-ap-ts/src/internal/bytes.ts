@@ -65,5 +65,28 @@ export function instantOf(value: unknown): number | null {
   return Number.isFinite(t) && instantText(t) === value ? t : null;
 }
 
+/**
+ * The profile's origin rule (provisional): `https://<host>[:<port>]`, or `http://` with a
+ * loopback host for local use; a lower-case host, no default port, path, query, fragment
+ * or user information; exactly its own URL serialization. Never normalised: a value
+ * that is not already canonical is refused.
+ */
+export function isProfileOrigin(value: unknown): value is string {
+  if (typeof value !== 'string' || !(HTTPS_ORIGIN.test(value) || LOOPBACK_ORIGIN.test(value))) return false;
+  try {
+    return new URL(value).origin === value;
+  } catch {
+    return false;
+  }
+}
+
+// The same expressions as schema/aria-ap-identity-1.json: a DNS name whose last label
+// starts with a letter, or a dotted-quad IPv4 address, so URL parsing leaves it unchanged.
+const LABEL = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+const HOST = `(?:(?:${LABEL}\\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?|(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))`;
+const PORT = '(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])';
+const HTTPS_ORIGIN = new RegExp(`^https://${HOST}(?::(?!443$)${PORT})?$`);
+const LOOPBACK_ORIGIN = new RegExp(`^http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::(?!80$)${PORT})?$`);
+
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const DIGEST = /^sha-256=:[A-Za-z0-9+/]{43}=:$/;

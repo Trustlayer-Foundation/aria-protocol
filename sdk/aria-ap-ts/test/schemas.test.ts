@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormatsModule from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
+import { AriaUsageError, canonicalJson } from '@aria-registry/sdk';
+import { isProfileOrigin } from '../src/internal/bytes';
 import { readReceipt } from '../src/internal/receipt';
 import { load } from './conformance';
 import { AGENT, BANK, world } from './world';
@@ -147,5 +149,97 @@ describe('conforming is not authenticity', () => {
     x.statement.challenge = 'another-challenge-0001';
     expect(identity(x)).toBe(true);
     expect(await w.agentAp.verifyReceiverIdentity(x, BANK, { nonce: 'n'.repeat(22), audience: AGENT })).toEqual({ ok: false, reason: 'signature' });
+  });
+});
+
+const VALID_ORIGINS = ['https://bank.example.test', 'https://bank.example.test:8443', 'https://127.0.0.1', 'https://localhost', 'https://xn--bnk-sna.example', 'http://localhost:3000', 'http://127.0.0.1', 'http://[::1]:8080'];
+const INVALID_ORIGINS = [
+  'ftp://bank.example.test', 'wss://bank.example.test', 'https://bank.example.test/api', 'https://bank.example.test/', 'https://user@bank.example.test',
+  'https://bank.example.test?x=1', 'https://bank.example.test#f', 'https://Bank.example.test', 'https://bank.example.test:443', 'https://bank.example.test:0443',
+  'https://bank.example.test:0', 'https://bank.example.test:65536', 'http://bank.example.test', 'http://localhost:80', 'https://1.2.3', 'https://bank.123',
+  'https://-bank.example.test', 'https://bank..example.test', 'https://[::1]', 'not a url', '',
+];
+const VALID_INSTANTS = ['2028-02-29T00:00:00Z', '2026-12-31T23:59:59Z', '2026-01-01T00:00:00Z', '2000-02-29T12:30:45Z'];
+const INVALID_INSTANTS = [
+  '2026-02-29T00:00:00Z', '2026-02-31T00:00:00Z', '2026-04-31T00:00:00Z', '2100-02-29T00:00:00Z', '2026-13-01T00:00:00Z', '2026-00-10T00:00:00Z',
+  '2026-01-00T00:00:00Z', '2026-01-01T24:00:00Z', '2026-01-01T23:60:00Z', '2026-01-01T23:59:60Z', '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00+00:00', '2026-01-01t00:00:00z',
+];
+
+async function resigned(w: ReturnType<typeof world>, response: any, change: (s: any) => void) {
+  const x = json(response) as any;
+  change(x.statement);
+  const { proof, ...unsigned } = x.statement;
+  const bytes = new TextEncoder().encode(canonicalJson({ ...unsigned, proof: { alg: proof.alg, keyid: proof.keyid } }));
+  x.statement.proof.value = Buffer.from(await w.self.signer.sign(bytes)).toString('base64url');
+  return x;
+}
+
+describe('one origin rule for the identity statement (RL review F1)', () => {
+  const originSchema = ajv.compile({ $ref: 'https://aria.bar/schema/aria-ap-identity-1.json#/properties/statement/properties/origin' });
+
+  it('the SDK and the schema agree on every origin', () => {
+    for (const o of [...VALID_ORIGINS, ...INVALID_ORIGINS]) expect([o, isProfileOrigin(o)], o).toEqual([o, originSchema(o)]);
+    expect(VALID_ORIGINS.every(isProfileOrigin)).toBe(true);
+    expect(INVALID_ORIGINS.some(isProfileOrigin)).toBe(false);
+  });
+
+  it('identify emits conforming responses for valid origins and refuses the rest', async () => {
+    const w = world();
+    for (const origin of VALID_ORIGINS) {
+      const response = await w.bankAp.identify({ ...w.self, origin }, { nonce: 'n'.repeat(22), audience: AGENT }, w.challenges);
+      expect(identity(json(response)), origin).toBe(true);
+    }
+    for (const origin of INVALID_ORIGINS) {
+      await expect(w.bankAp.identify({ ...w.self, origin }, { nonce: 'n'.repeat(22), audience: AGENT }, w.challenges), origin).rejects.toThrow(AriaUsageError);
+    }
+  });
+
+  it('verification accepts a valid origin, local HTTP included, and refuses a signed statement or a pin outside the rule', async () => {
+    const w = world();
+    const expected = { nonce: 'n'.repeat(22), audience: AGENT };
+    for (const origin of ['https://bank.example.test', 'http://localhost:3000']) {
+      const response = await w.bankAp.identify({ ...w.self, origin }, expected, w.challenges);
+      expect((await w.agentAp.verifyReceiverIdentity(response, { ...BANK, origin }, expected)).ok, origin).toBe(true);
+    }
+    const base = await w.bankAp.identify(w.self, expected, w.challenges);
+    for (const origin of ['https://bank.example.test/api', 'ftp://bank.example.test', 'https://user@bank.example.test', 'https://bank.example.test?x=1', 'https://Bank.example.test']) {
+      const signed = await resigned(w, base, (st) => (st.origin = origin));
+      expect(identity(signed), origin).toBe(false);
+      expect(await w.agentAp.verifyReceiverIdentity(signed, { ...BANK, origin }, expected), origin).toEqual({ ok: false, reason: 'malformed' });
+    }
+    for (const origin of ['https://bank.example.test/api', 'wss://bank.example.test', 'not a url']) {
+      expect(await w.agentAp.verifyReceiverIdentity(base, { ...BANK, origin }, expected), origin).toEqual({ ok: false, reason: 'origin' });
+    }
+  });
+
+  it('the receiver context takes the same rule', async () => {
+    const w = world();
+    const request = (await w.signTransfer('55ee2e26-ffcc-40ca-b388-d12966453e48')).request;
+    await expect(w.bankAp.verifyPresentation(request, { ...w.context, receiver: { did: BANK.did, origin: 'ftp://bank.example.test' } })).rejects.toThrow(AriaUsageError);
+  });
+});
+
+describe('instants that exist, on both sides (RL review F2)', () => {
+  it('a receipt\'s issuedAt: the schema and the strict reader agree', async () => {
+    const w = world();
+    const r = json((await w.handle((await w.signTransfer(OP)).request)).receipt!) as any;
+    for (const t of [...VALID_INSTANTS, ...INVALID_INSTANTS]) {
+      const x = { ...r, issuedAt: t };
+      expect([t, receipt(x)], t).toEqual([t, readReceipt(JSON.stringify(x)).ok]);
+    }
+    expect(VALID_INSTANTS.every((t) => receipt({ ...r, issuedAt: t }))).toBe(true);
+    expect(INVALID_INSTANTS.some((t) => receipt({ ...r, issuedAt: t }))).toBe(false);
+  });
+
+  it('an identity statement\'s created: the schema and verifyReceiverIdentity agree on what is well formed', async () => {
+    const w = world();
+    const base = json(await w.bankAp.identify(w.self, { nonce: 'n'.repeat(22), audience: AGENT }, w.challenges)) as any;
+    for (const t of [...VALID_INSTANTS, ...INVALID_INSTANTS]) {
+      const x = structuredClone(base);
+      x.statement.created = t;
+      const r = await w.agentAp.verifyReceiverIdentity(x, BANK, { nonce: 'n'.repeat(22), audience: AGENT });
+      // Valid instants are far from now: well formed, then stale. Invalid ones are malformed.
+      expect([t, identity(x), r], t).toEqual([t, VALID_INSTANTS.includes(t), { ok: false, reason: VALID_INSTANTS.includes(t) ? 'stale' : 'malformed' }]);
+    }
   });
 });

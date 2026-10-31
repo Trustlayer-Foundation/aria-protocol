@@ -1,7 +1,7 @@
 import { AriaUsageError, canonicalJson, type CredentialFacts, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
 import type { Admission, AdmissionInput, AdmissionReason, ApprovalEvidence, LookupAdmission, LookupInput } from './admission';
 import type { IdentityResponse, IdentityStatement, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
-import { digestField, fromBase64, fromBase64url, instantOf, instantText, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
+import { digestField, fromBase64, fromBase64url, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
 import { strictVerify } from './internal/ed25519';
 import { newReceiptId, refusalOf, register, type AdmissionSnapshot, type PresentationSnapshot, type RefusalSnapshot } from './internal/instance';
 import { evaluate, type ApprovalSnapshot } from './internal/policy';
@@ -58,6 +58,7 @@ const STATEMENT_MAX_AGE_MS = 60_000;
 const CHALLENGE_TTL_SECONDS = 60;
 const NONCE = /^[A-Za-z0-9_-]{22,128}$/;
 const CHALLENGE = /^[A-Za-z0-9._~+/=-]{8,256}$/;
+const ORIGIN_RULE = 'an origin is https://host[:port], or http:// on a loopback host, in its canonical form without path, query, fragment or user information';
 
 interface ReceiverSnapshot {
   readonly pin: ReceiverPin;
@@ -118,7 +119,7 @@ export function createAp(config: ApConfig): Ap {
     async verifyPresentation(request, context) {
       const operations = operationsOf(context.operations);
       const { did: receiverDid, origin } = context.receiver;
-      if (typeof origin !== 'string' || new URL(origin).origin !== origin) throw new AriaUsageError('the receiver origin is scheme, host and port only');
+      if (!isProfileOrigin(origin)) throw new AriaUsageError(ORIGIN_RULE);
       let credential: VerifiedCredential | null = null;
       const result = await authenticate(request, {
         origin,
@@ -239,7 +240,7 @@ export function createAp(config: ApConfig): Ap {
 
     async identify(receiver, request, challenges) {
       const f = selfFacts(receiver);
-      if (typeof receiver.origin !== 'string' || new URL(receiver.origin).origin !== receiver.origin) throw new AriaUsageError('the receiver origin is scheme, host and port only');
+      if (!isProfileOrigin(receiver.origin)) throw new AriaUsageError(ORIGIN_RULE);
       if (!NONCE.test(request?.nonce ?? '') || typeof request.audience !== 'string' || !request.audience.startsWith('did:aria:')) {
         throw new AriaUsageError('an identity request names a base64url nonce and the client DID');
       }
@@ -264,7 +265,7 @@ export function createAp(config: ApConfig): Ap {
       const keys = ['type', 'subject', 'credential', 'origin', 'audience', 'nonce', 'challenge', 'created', 'proof'];
       const s = isObject(response) ? response.statement : undefined;
       if (!exactly(response, ['credential', 'statement']) || !exactly(s, keys) || !exactly(s.proof, ['alg', 'keyid', 'value'])) return fail('malformed');
-      if (s.type !== IDENTITY_TYPE || keys.slice(1, -1).some((k) => typeof s[k] !== 'string') || !CHALLENGE.test(s.challenge as string) || !NONCE.test(s.nonce as string)) return fail('malformed');
+      if (s.type !== IDENTITY_TYPE || keys.slice(1, -1).some((k) => typeof s[k] !== 'string') || !CHALLENGE.test(s.challenge as string) || !NONCE.test(s.nonce as string) || !isProfileOrigin(s.origin)) return fail('malformed');
       const proof = s.proof as Record<string, unknown>;
       const created = instantOf(s.created);
       if (created === null) return fail('malformed');
@@ -274,7 +275,8 @@ export function createAp(config: ApConfig): Ap {
       const f = credentials.facts(verified.credential);
       if (f.binding.credentialId !== s.credential || f.did !== s.subject) return fail('credential');
       if (s.subject !== pin.did) return fail('unexpected_receiver');
-      if (s.origin !== pin.origin) return fail('origin');
+      // A pin outside the origin rule matches no statement.
+      if (!isProfileOrigin(pin.origin) || s.origin !== pin.origin) return fail('origin');
       if (s.audience !== expected.audience) return fail('audience');
       if (s.nonce !== expected.nonce) return fail('nonce');
       const t = now();
