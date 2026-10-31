@@ -58,7 +58,7 @@ for (const pkg of PACKAGES) {
     files,
   };
   if (!artifacts[pkg.name].reproducible) fail('pack is not reproducible', { package: pkg.name });
-  const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|schemas\/aria-ap-[a-z]+-1\.json|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
+  const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|schemas\/(?:aria-ap-[a-z]+-1|aid-1\.0)\.json|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
   if (unexpected.length) fail('unexpected files in the tarball', { package: pkg.name, unexpected });
   // A packed manifest names registry versions, ranges or tags only: no path, link,
   // workspace, git, alias or URL, which all need a ':', '/' or '@'.
@@ -90,6 +90,11 @@ if (shipped.sort().join() !== protocolSchemas.sort().join()) fail('ARIA AP does 
 for (const name of shipped) {
   const packed = execFileSync('tar', ['-xzOf', apTar, `package/schemas/${name}`], { cwd: work });
   if (!packed.equals(readFileSync(join(SDK, '..', 'schema', name)))) fail('a packaged schema differs from the protocol\'s', { name });
+}
+// The credential package exports the AID 1.0 schema those schemas refer to, byte for byte.
+const sdkTarFile = artifacts['@aria-registry/sdk'].tarball;
+if (!artifacts['@aria-registry/sdk'].files.includes('package/schemas/aid-1.0.json') || !execFileSync('tar', ['-xzOf', sdkTarFile, 'package/schemas/aid-1.0.json'], { cwd: work }).equals(readFileSync(join(SDK, '..', 'schema', 'aid-1.0.json')))) {
+  fail('the credential package does not export the protocol\'s aid-1.0.json byte for byte');
 }
 // Its declarations, likewise: the credential package's types come from the peer, not a copy.
 const apTypes = run('tar', ['-xzOf', apTar, 'package/dist/index.d.ts'], work);

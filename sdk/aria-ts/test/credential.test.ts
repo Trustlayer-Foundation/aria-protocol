@@ -190,4 +190,10 @@ describe('the embedded schema', () => {
     const normative = readFileSync(new URL('../../../schema/aid-1.0.json', import.meta.url));
     expect(embedded.equals(normative)).toBe(true);
   });
+
+  it('is exported byte for byte as @aria-registry/sdk/schemas/aid-1.0.json, for schemas that refer to it', () => {
+    const exported = readFileSync(new URL('../schemas/aid-1.0.json', import.meta.url));
+    const normative = readFileSync(new URL('../../../schema/aid-1.0.json', import.meta.url));
+    expect(exported.equals(normative)).toBe(true);
+  });
 });

@@ -154,7 +154,9 @@ values, which does not make them signed (decision D12 covers a successor suite).
 
 ## Package and runtimes
 
-- ESM only, with type declarations; `exports` has the package entry and `package.json`.
+- ESM only, with type declarations; `exports` has the package entry, `package.json`, and
+  `schemas/aid-1.0.json`, a byte-identical copy of the protocol's schema, so that schemas
+  referring to it (ARIA AP's identity response) compile outside this repository.
   The dependencies are `@noble/curves`, `@noble/hashes`, `@noble/post-quantum`, `ajv` and
   `ajv-formats`.
 - Node.js 20 and 22: everything (declared; the artifact check in

@@ -14,10 +14,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./schemas/aid-1.0.json": "./schemas/aid-1.0.json",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
+    "schemas",
     "README.md",
     "API.md",
     "MIGRATION.md",
