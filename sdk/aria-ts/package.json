@@ -1,0 +1,20 @@
+{
+  "name": "@aria-registry/sdk",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "The ARIA SDK: verify an agent's credential and its status, authenticate the agent and the receiver of an operation, admit it, and sign and verify its receipt.",
+  "license": "Apache-2.0",
+  "author": "TrustLayer Foundation",
+  "homepage": "https://aria.bar",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
