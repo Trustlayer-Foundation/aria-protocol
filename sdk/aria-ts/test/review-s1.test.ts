@@ -138,6 +138,8 @@ describe('N1: an incomplete online answer is not evidence of a replacement', () 
     ['an empty reference and no status', { did: DID, credentialId: '' }],
     ['another reference and no status', { did: DID, credentialId: 'https://api.aria.bar/v1/credentials/019a0000-0000-7000-8000-0000000000ff' }],
     ['a reference that is not a URL', { did: DID, credentialId: 'abc', status: 'active' }],
+    ['a URL-shaped reference the URL parser refuses (N4)', { did: DID, credentialId: 'https://:/document', status: 'active' }],
+    ['a reference with a query', { did: DID, credentialId: 'https://api.aria.bar/v1/credentials/x?y=1', status: 'active' }],
   ] as const) {
     it(`${name} is unavailable`, async () => {
       const v = createVerifier({ trust: [profile(issuer)], clock: () => new Date(NOW), fetch: { allowedOrigins: [ORIGIN], fetch: fakeFetch({ [url]: answer }) } });

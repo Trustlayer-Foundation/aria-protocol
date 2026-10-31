@@ -152,7 +152,7 @@ export async function fromOnline(credential: CredentialSnapshot, context: Status
     !answer ||
     answer.did !== credential.did ||
     typeof answer.credentialId !== 'string' ||
-    !CREDENTIAL_REFERENCE.test(answer.credentialId) ||
+    !isCredentialReference(answer.credentialId) ||
     (answer.status !== 'active' && answer.status !== 'revoked')
   ) {
     return unavailable('online', credential, 'malformed', now);
@@ -163,5 +163,16 @@ export async function fromOnline(credential: CredentialSnapshot, context: Status
   return { source: 'online', state: answer.status, credential, currentCredentialId: null, fetchedAt: now };
 }
 
-/** An exact credential document reference: an https URL with a path. */
-const CREDENTIAL_REFERENCE = /^https:\/\/[^\s/?#]+\/[^\s?#]+$/;
+/**
+ * An exact credential document reference: an absolute https URL that the URL
+ * parser accepts, with a host and a path, no query, fragment or credentials, and
+ * already in its serialized form. Compared afterwards as the exact string.
+ */
+function isCredentialReference(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname !== '' && url.pathname.length > 1 && !url.search && !url.hash && !url.username && !url.password && url.href === value;
+  } catch {
+    return false;
+  }
+}
