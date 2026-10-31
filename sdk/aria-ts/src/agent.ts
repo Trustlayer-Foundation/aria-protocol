@@ -1,12 +1,11 @@
-import type { VerifiedCredential } from './credential';
-import { pending, type issued } from './internal';
+import type { Produced, VerifiedCredential } from './credential';
+import { pending } from './errors';
 import type { RequestClass } from './presentation';
 import type { ReceiverPin, SentAttempt } from './receipt';
 import type { HttpRequestLike, Signer } from './types';
 
 /** The receiver, authenticated for this client before anything sensitive is sent. */
-export interface VerifiedReceiver {
-  readonly [issued]: 'receiver';
+export interface VerifiedReceiver extends Produced<'receiver'> {
   readonly pin: ReceiverPin;
   readonly credential: VerifiedCredential;
   /** The single-use challenge it issued, for the next request. */

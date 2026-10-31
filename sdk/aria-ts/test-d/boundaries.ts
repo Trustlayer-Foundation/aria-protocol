@@ -62,6 +62,14 @@ export async function boundaries(): Promise<void> {
   // @ts-expect-error `decision` needs the transport status
   await verifier.verifyReceipt(receipt, { receiver, mode: 'decision' });
   await verifier.verifyReceipt(receipt, { receiver, mode: 'retrieval' });
+  // @ts-expect-error historical verification needs the retained receiver credential
+  await verifier.verifyReceipt(receipt, { receiver, mode: 'historical' });
+  await verifier.verifyReceipt(receipt, { receiver, mode: 'historical', evidence: { receiverCredential: {} } });
+
+  // A copy keeps the type, which is not the boundary: the verifier refuses it at run time (test/provenance.test.ts).
+  const credential = (verifier.verifyCredential({}) as Extract<ReturnType<Verifier['verifyCredential']>, { ok: true }>).credential;
+  const copy: VerifiedCredential = { ...credential, scopes: ['payments:transfer:create'] };
+  void copy;
 
   // A valid receipt is not a success: callers read its state.
   const checked = await verifier.verifyReceipt(receipt, { receiver, mode: 'retrieval' });

@@ -39,17 +39,18 @@ through `OperationLedger` (see `examples/protected-handler.ts`).
 | `result.reason` (free text) | fixed reasons: `CredentialFailure`, `StatusUnavailable`, `PresentationFailure`, `AdmissionReason` |
 | `result.signatures.pqValid/classicalValid` | both required; a failure is `signature_invalid` |
 | `result.expired` | `not_yet_valid`, `expired` or `invalid_validity`, with strict instants |
-| `result.issuedAt` | `validFrom` (signed). There is no issuance time: `proof.created` is not signed |
+| `result.issuedAt` | `validFrom` (signed, RFC 3339 string). There is no issuance time: `proof.created` is not signed |
 | `result.expiresAt` | `validUntil` |
 | `result.credentialId`, `previousCredentialId` | `credential.binding.credentialId`; `credential.previousCredentialId` as data, never fetched |
 | `result.revocationStatus`, `revocationCheckedAt` | `checkStatus(credential)` → `StatusEvidence` with source, signed list times and `fetchedAt` |
 | `checkRevocation(did)` | removed: it asked about a DID, not the presented document |
-| `checkCredentialStatus(c, { via })` | `checkStatus(credential, { via })` |
+| `checkCredentialStatus(c, { via })` | `checkStatus(credential, { via: 'status-list' \| 'online' })`; the online endpoint is the profile's `onlineStatus` |
 | `policy.requiredScopes`, `minTrustLevel` | `OperationDescriptor.scope`, `minLevel`, enforced by `admit` |
 | `policy.requireRevocationCheck`, `lastRevocationCheck`, `maxOfflineAge` | `statusMaxAgeSeconds`, from the signed list's `validFrom`; a fresh fetch time is not evidence |
 | `result.hitlRequired` | `credential.hitlRequired`, a declaration; the approval is `ApprovalEvidence` at `admit` |
 | `PolicyLevel` presets | none: each operation states its level and scope |
 | `canonicalJson` | internal; the canonical form stays the ARIA one (INVARIANTS §3) |
+| results as plain objects you could copy or edit | frozen views the producing verifier recognises by identity; copies and other verifiers' results throw `AriaUsageError` |
 
 ## What the old characterizations become
 

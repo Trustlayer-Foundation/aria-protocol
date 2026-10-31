@@ -17,6 +17,7 @@ declare const challenges: ChallengeStore;
 declare const storage: OperationStorage; // the bank's database
 declare function inTransaction<T>(work: () => Promise<T>): Promise<T>;
 declare function moveMoney(body: Uint8Array): Promise<{ ok: true } | { ok: false; code: string }>;
+declare function rolledBack(error: unknown): boolean; // true only when the bank knows its transaction did not commit
 declare function accountGranted(sender: string, body: Uint8Array | undefined): Promise<boolean>;
 
 const transfer: OperationDescriptor = {
@@ -69,9 +70,11 @@ export async function handle(request: HttpRequestLike): Promise<Answer> {
       return ledger.settle(begun.claim, moved.ok ? { state: 'completed', status: 201 } : { state: 'rejected', status: 422, code: moved.code });
     });
     return { status: outcome.status, receipt: outcome.receipt };
-  } catch {
-    // Failed before its commit point: no effect, no receipt; the client stays unknown and retries the same operation.
-    await ledger.release(begun.claim);
+  } catch (error) {
+    // No receipt either way; the client stays unknown and retries the same operation.
+    // Release only a proven rollback. If the commit is uncertain the claim stays,
+    // retries get `operation_in_progress`, and `ledger.reconcile` decides later from the bank's records.
+    await ledger.fail(begun.claim, rolledBack(error) ? 'rolled-back' : 'uncertain');
     return { status: 500, problem: 'internal' };
   }
 }

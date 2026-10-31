@@ -1,5 +1,8 @@
-import type { issued } from './internal';
 import type { CredentialBinding, Did, TrustLevel } from './types';
+
+/** Type-only mark of values the SDK produces. The runtime boundary is the verifier's own record of each result. */
+declare const produced: unique symbol;
+export type Produced<K extends string> = { readonly [produced]: K };
 
 /** Parsed fields of a credential nobody has verified. */
 export interface Inspection {
@@ -20,9 +23,10 @@ export interface Inspection {
 
 /** Why a credential is not verified. Fixed names; no caller-supplied text. */
 export type CredentialFailure =
+  /** Not a JSON object within the size bound, or not valid against the schema of its `spec_version`. */
   | 'malformed'
   | 'unsupported_version'
-  /** Proof metadata is not the supported profile. Checking it does not make it signed. */
+  /** Proof metadata is not the trust profile's. Checking it does not make it signed. */
   | 'unsupported_proof'
   | 'untrusted_issuer'
   /** The level is above what the issuer's trust profile may assert. */
@@ -33,13 +37,15 @@ export type CredentialFailure =
   | 'expired'
   /** A validity bound is not an instant, or the bounds are inverted. */
   | 'invalid_validity'
-  /** Missing, or not the 32 raw bytes of the ARIA 1.0 compatibility profile. */
+  /** Not the 32 raw bytes of an Ed25519 key, the ARIA 1.0 compatibility encoding, or not the subject's. */
   | 'holder_key_invalid'
   /** Valid against its schema but not its rules, e.g. `hitlRequired` outside `scope`. */
-  | 'semantic_invalid';
+  | 'semantic_invalid'
+  /** It names a status list its trust profile does not publish. */
+  | 'status_list_untrusted';
 
 export interface Principal {
-  readonly did: Did;
+  readonly did: string;
   readonly type: 'organization' | 'individual';
   /** An organization's asserted name; never a natural person's. */
   readonly legalName: string | null;
@@ -51,9 +57,12 @@ export interface Principal {
  * One exact issued document that conforms to its `spec_version`, is within its
  * validity interval and verifies under a trusted issuer. It says nothing about
  * who presents it, nor about its current status.
+ *
+ * A frozen view: the verifier that produced it keeps the authoritative copy, and
+ * accepts this exact object only. A copy or an altered one is refused.
  */
-export interface VerifiedCredential {
-  readonly [issued]: 'credential';
+export interface VerifiedCredential extends Produced<'credential'> {
+  readonly kind: 'verified-credential';
   readonly binding: CredentialBinding;
   /** The agent's stable identity. */
   readonly did: Did;
@@ -63,16 +72,18 @@ export interface VerifiedCredential {
   readonly scopes: readonly string[];
   /** Scopes the receiver must not act on without a human's approval; a declaration, not an approval. */
   readonly hitlRequired: readonly string[];
+  readonly delegationDepth: number;
   readonly principal: Principal;
-  readonly holderKey: { readonly id: string; readonly ed25519: Uint8Array };
-  /** Signed validity bounds. There is no issuance time: `proof.created` is outside the signature. */
-  readonly validFrom: Date;
-  readonly validUntil: Date;
+  /** `id` and the key as published (multibase); the verifier keeps the decoded 32 bytes. */
+  readonly holderKey: { readonly id: string; readonly publicKeyMultibase: string };
+  /** Signed validity bounds (RFC 3339). There is no issuance time: `proof.created` is outside the signature. */
+  readonly validFrom: string;
+  readonly validUntil: string;
   /** Signed predecessor reference, as data. Verification never fetches it. */
   readonly previousCredentialId: string | null;
   readonly statusEntry: { readonly list: string; readonly index: number };
   /** Local time of this verification. */
-  readonly verifiedAt: Date;
+  readonly verifiedAt: string;
 }
 
 export type CredentialResult =

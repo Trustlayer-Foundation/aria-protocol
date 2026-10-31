@@ -1,5 +1,4 @@
-import type { VerifiedCredential } from './credential';
-import type { issued } from './internal';
+import type { Produced, VerifiedCredential } from './credential';
 import type { Did, TrustLevel } from './types';
 
 /**
@@ -16,12 +15,13 @@ export type RequestClass =
   /** A signed lookup of an earlier operation (`?operation=<id>`). It returns stored receipts and gets none of its own. */
   | 'retrieval';
 
-/** What happens when a scope needs a human's approval and the request has none. Pending decision D8. */
-export type MissingApproval =
-  /** Refuse this attempt; a later attempt with approval can proceed. Recommended for profile 1. */
-  | 'refuse'
-  /** Hold the operation for an approval workflow without running it (only if D8 selects it). */
-  | 'hold';
+/**
+ * What happens when a scope needs a human's approval and the request has none:
+ * this attempt is refused and a later attempt carrying an approval can proceed.
+ * Holding the operation for an approval workflow is deferred, not decided: it
+ * needs decision D8 and its continuation contract before the SDK offers it.
+ */
+export type MissingApproval = 'refuse';
 
 /**
  * One operation a receiver offers. It is the closed list of what may vary: any
@@ -84,8 +84,8 @@ export type PresentationFailure =
  * credential, bound to this receiver, this operation and this content. Not yet
  * admitted: audience, status, level, scope and approval come next.
  */
-export interface VerifiedPresentation {
-  readonly [issued]: 'presentation';
+export interface VerifiedPresentation extends Produced<'presentation'> {
+  readonly kind: 'verified-presentation';
   readonly credential: VerifiedCredential;
   readonly operation: OperationDescriptor;
   /** The signed `aria-operation`; `null` for a retrieval, whose target is `lookupOf`. */

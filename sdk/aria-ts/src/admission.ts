@@ -1,4 +1,4 @@
-import type { issued } from './internal';
+import type { Produced } from './credential';
 import type { AttemptRefusal } from './operations';
 import type { VerifiedPresentation } from './presentation';
 import type { StatusEvidence } from './status';
@@ -13,7 +13,8 @@ export interface ApprovalEvidence {
   readonly credentialId: string;
   readonly operationId: string;
   readonly fingerprint: string;
-  readonly expiresAt: Date;
+  /** RFC 3339; judged when admission runs. */
+  readonly expiresAt: string;
 }
 
 /** The application's own decision on the resource: who may do what to which account. */
@@ -50,24 +51,20 @@ export type AdmissionReason =
  * observing in monitor mode may log `deny`, but what it then runs is not admitted.
  */
 export type Admission =
-  | { readonly [issued]: 'admission'; readonly decision: 'allow'; readonly presentation: VerifiedPresentation; readonly approval?: ApprovalEvidence }
-  | {
-      readonly [issued]: 'admission';
+  | (Produced<'admission'> & { readonly decision: 'allow'; readonly presentation: VerifiedPresentation })
+  | (Produced<'admission'> & {
       readonly decision: 'deny';
       readonly reason: AdmissionReason;
       /** The receiver's code for `forbidden`, e.g. `bank.account_not_granted`. */
       readonly code?: string;
       /** Signable refusal of this attempt; the operation is not claimed. */
       readonly refusal: AttemptRefusal;
-      /** Set for `approval_required` under `hold`: what the receiver's approval workflow needs. */
-      readonly approvalRequest?: { readonly operationId: string; readonly fingerprint: string };
-    }
-  | {
-      readonly [issued]: 'admission';
+    })
+  | (Produced<'admission'> & {
       readonly decision: 'indeterminate';
       /** Required evidence could not be established, e.g. status unavailable or stale. */
       readonly reason: 'status_unavailable';
       readonly refusal: AttemptRefusal;
-    };
+    });
 
 export type Admitted = Extract<Admission, { decision: 'allow' }>;

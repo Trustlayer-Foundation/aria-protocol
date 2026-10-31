@@ -3,17 +3,29 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "types": [],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "@aria-registry/sdk": ["./src/index.ts"]
-    }
+      "@aria-registry/sdk": [
+        "./src/index.ts"
+      ]
+    },
+    "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts", "examples/**/*.ts", "test-d/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "examples/**/*.ts",
+    "test-d/**/*.ts",
+    "test/**/*.ts"
+  ]
 }

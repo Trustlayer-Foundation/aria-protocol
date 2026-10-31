@@ -3,7 +3,7 @@
 export { createVerifier, inspectCredential } from './verifier';
 export type { Verifier, VerifierConfig, TrustProfile, FetchPolicy } from './verifier';
 
-export type { Inspection, CredentialResult, CredentialFailure, VerifiedCredential, Principal } from './credential';
+export type { Inspection, CredentialResult, CredentialFailure, VerifiedCredential, Principal, Produced } from './credential';
 export type { StatusEvidence, StatusOptions, StatusUnavailable } from './status';
 
 export type {
@@ -30,13 +30,28 @@ export type {
   AttemptRefusal,
   Begin,
   Settlement,
+  Expected,
+  Failure,
+  LedgerOptions,
 } from './operations';
 
 export { buildAttemptRefusal, OperationTracker } from './receipt';
-export type { Receipt, ReceiptCheck, ReceiptFailure, ReceiptResult, ReceiptStatement, ReceiverPin, SentAttempt } from './receipt';
+export type {
+  Receipt,
+  ReceiptCheck,
+  ReceiptFailure,
+  ReceiptResult,
+  ReceiptStatement,
+  ReceiverPin,
+  SentAttempt,
+  RetainedEvidence,
+  HistoricalFindings,
+  OperationState,
+  Observation,
+} from './receipt';
 
 export { signRequest } from './agent';
 export type { CredentialPresentation, ReceiverIdentityFailure, ReceiverIdentityResult, SignRequestInput, VerifiedReceiver } from './agent';
 
 export type { CredentialBinding, Did, HttpRequestLike, Signer, TrustLevel } from './types';
-export { NotYetImplemented } from './internal';
+export { NotYetImplemented, AriaUsageError } from './errors';
