@@ -51,7 +51,7 @@ and must not treat the answer as permission to act.
 | `verifyAgent(c, { skipSignatureCheck: true })` | `inspectCredential(c)`: returns an `Inspection`, never a verified result |
 | `setRegistryKeys(...)`, embedded registry keys | `createVerifier({ trust: [profile] })`: explicit, per verifier, nothing global or embedded |
 | `result.valid` | `CredentialResult.ok` for the document only; `standing(...).state === 'good'` for now; ARIA AP's `Admission.decision === 'allow'` to run |
-| `result.reason` (free text) | fixed reasons: `CredentialFailure`, `StatusUnavailable`, standing states; in ARIA AP, `PresentationFailure`, `AdmissionReason` |
+| `result.reason` (free text) | fixed reasons: `CredentialFailure`, `StatusUnavailable`, standing states; in ARIA AP, `RequestInvalidReason`, `AuthenticationReason`, `AdmissionReason` |
 | `result.signatures.pqValid/classicalValid` | both required; a failure is `signature_invalid` |
 | `result.expired` | `not_yet_valid`, `expired` or `invalid_validity`, with strict instants |
 | `result.issuedAt` | `validFrom` (signed, RFC 3339 string). There is no issuance time: `proof.created` is not signed |

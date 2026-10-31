@@ -99,8 +99,9 @@ Check 3 needs real credentials, and real credentials carry `principal.legalName`
 `registryRef`. **No production credential goes in this repository** — it is public,
 and git is forever.
 
-The vectors here are synthetic. `vectors/aid-v1.2-shape.json` is derived from the shape
-of a live 1.2 credential so that the schema checks run against what production actually
+The vectors here are synthetic. `vectors/aid-v1.2-shape.json` is historical
+compatibility, outside the ARIA 1.0 path: it is derived from the shape of a live 1.2
+credential so that the schema checks run against what production actually
 issues, with the principal, every identifier, the holder key and the signature replaced;
 nothing in it identifies the credential it came from. The runner points at real credentials through an
 environment variable, from outside the repository.

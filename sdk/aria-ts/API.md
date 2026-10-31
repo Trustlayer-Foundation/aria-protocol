@@ -3,7 +3,8 @@
 Status: S0 contract, corrected after its review (S0-R1 to S0-R4) and amended for the
 two-package structure, with S1 implemented: inspection, trust, credential verification,
 exact-instance status and the trust interface for ARIA AP work. Package name provisional
-(`@aria-registry/sdk`) until its owner is confirmed. Private, not published.
+(`@aria-registry/sdk`) until its owner is confirmed. Version 1.0.0 is a local candidate:
+private, not published, not an approved release.
 
 This package verifies credentials and their status. Requests, admission, operations and
 receipts are **ARIA AP**, the separate package in [`../aria-ap-ts`](../aria-ap-ts/API.md),

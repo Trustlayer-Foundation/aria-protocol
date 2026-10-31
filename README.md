@@ -11,18 +11,19 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 [![License: Apache 2.0](https://img.shields.io/badge/code-Apache%202.0-blue)](LICENSE-code)
 [![License: CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-blue)](LICENSE-docs)
 [![NIST Filing](https://img.shields.io/badge/NIST-2025--0035-orange)](https://aria.bar/nist)
-[![npm](https://img.shields.io/npm/v/@aria-registry/verify)](https://www.npmjs.com/package/@aria-registry/verify)
 
 ---
 
 ## Version
 
-**ARIA 1.0 — first stable release — September 7, 2026.** Verification Requirements
-(80 citable requirements) as the normative basis, four levels derived from evidence,
-ATP/1, issuer = TrustLayer Foundation. The canonical text is
-[aria.bar/spec](https://aria.bar/spec). Tagged `v1.0.0`. What 1.0 retires and why:
-[DEPRECATIONS.md](DEPRECATIONS.md). Development history before 1.0 is archived
-off-repository and summarized in [CHANGELOG.md](CHANGELOG.md).
+**ARIA 1.0 is relaunched in this repository, with its history.** Its delivery is one
+set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA AP
+1.0.0**, and the schemas, documentation, examples and conformance that go with them.
+Both SDKs are **a local candidate: not published and not an approved release**; ARIA
+AP's wire profile is provisional until its open decisions are taken. The canonical text
+is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
+[DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
+[Historical compatibility](#historical-compatibility) below, outside this path.
 
 **[PLANNED] Issuance cutover.** Credentials under ARIA 1.0 carry `spec_version: "1.0"`
 and are issued by TrustLayer Foundation (issuer DID TBD). Credentials issued before the
@@ -34,7 +35,11 @@ ARIA gives AI agents a verifiable, cryptographically signed identity — a passp
 
 Every agent gets a DID (`did:aria:*`), a trust level (L0–L3), a set of scopes defining what it can do, and a signed credential (AID) that any system can verify offline using post-quantum cryptography.
 
-**The Agent Trust Protocol (ATP)** defines how receiving systems evaluate agent credentials against published DNS policies — like DMARC for AI agents.
+**ARIA AP** is how an agent uses that credential with a service: the agent authenticates
+the receiver, signs each request with its holder key, the receiver admits or refuses it,
+runs each operation once and signs a receipt, and either side can recover the outcome
+after a lost answer. It replaces an earlier admission protocol, now deprecated (see
+[Historical compatibility](#historical-compatibility)).
 
 ## Quick links
 
@@ -43,7 +48,7 @@ Every agent gets a DID (`did:aria:*`), a trust level (L0–L3), a set of scopes 
 | **Live spec** | [aria.bar/spec](https://aria.bar/spec) |
 | **API (public, no auth)** | [api.aria.bar](https://api.aria.bar) |
 | **Registry (sign up)** | [registry.aria.bar](https://registry.aria.bar) |
-| **SDK (npm)** | [@aria-registry/verify](https://www.npmjs.com/package/@aria-registry/verify) |
+| **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0, local candidate, not published |
 | **NIST filing** | NIST-2025-0035, March 9, 2026 |
 | **NCCoE response** | AI-Identity@nist.gov, April 2, 2026 |
 
@@ -53,42 +58,41 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 
 | Path | What it is | Status |
 |---|---|---|
-| `schema/`, `context/` | Normative JSON Schemas and the JSON-LD context | Normative |
+| `schema/`, `context/` | JSON Schemas and the JSON-LD context; [`schema/README.md`](schema/README.md) says which are active and which historical | Normative; ARIA AP schemas provisional |
 | `spec/` | Where the specification stands; its text is authored with [aria.bar/spec](https://aria.bar/spec) today (`spec/README.md`) | |
 | `conformance/` | Vectors and harnesses any implementation runs, in any language | `conformance/ap/` (ARIA AP) is provisional |
 | `federation/` | The contract between registration authorities and the issuing authority | |
-| `examples/` | Signed reference credentials and usage examples | |
-| `sdk/verify-ts/` | `@aria-registry/verify` 1.x, the SDK used below | Published |
-| `sdk/aria-ts/` | The ARIA SDK: credential verification and the status of the exact document | In development, not released |
-| `sdk/aria-ap-ts/` | ARIA AP: request authentication, admission, operations and receipts, built on the ARIA SDK | In development, not released |
+| `examples/` | Reference credentials and usage examples; [`examples/README.md`](examples/README.md) is the index | |
+| `sdk/aria-ts/` | **ARIA SDK** (`@aria-registry/sdk`): credential verification and the status of the exact document | 1.0.0, local candidate, not published |
+| `sdk/aria-ap-ts/` | **ARIA AP** (`@aria-registry/ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, local candidate, not published |
 
-The two new SDKs are separate packages. A service that only checks credentials will
-install the ARIA SDK; one that admits agent requests or exchanges receipts will install
-ARIA AP as well, which uses the ARIA SDK's verifier and has no credential verification
-of its own. Neither is published and their package names are provisional;
-`sdk/scripts/check-pair.mjs` tests them as packed artifacts, alone and together.
+The two SDKs are separate packages. A service that only checks credentials installs the
+ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
+which uses the ARIA SDK's verifier and has no credential verification of its own. Their
+package names are provisional; `sdk/scripts/check-pair.mjs` tests them as packed
+artifacts, alone and together.
 
-## Verify a credential in 3 lines
+## Verify a credential
 
-```bash
-npm install @aria-registry/verify
-```
+With the ARIA SDK (local candidate; build it from `sdk/aria-ts`):
 
 ```typescript
-import { verifyAgent } from '@aria-registry/verify';
+import { createVerifier } from '@aria-registry/sdk';
 
-const result = await verifyAgent(credential);
-console.log(result.valid, result.did, result.trustLevel);
+const verifier = createVerifier({ trust, fetch }); // the issuers you trust, and where status may be fetched
+const result = verifier.verifyCredential(credential);
+if (result.ok) {
+  const standing = verifier.standing(result.credential, await verifier.checkStatus(result.credential));
+  console.log(result.credential.did, result.credential.trustLevel, standing.state);
+}
 ```
 
-**What this checks, and what it does not.** `verifyAgent()` verifies the composite
-signature — ML-DSA-65 and Ed25519, both halves must pass — the validity window, the
-trust level and the provenance of the principal's name. It does **not** check
-revocation: `revocationStatus` comes back `'unknown'` and the credential passes.
-Revocation is a separate, networked call, `checkRevocation(did)`, and it is enforced
-only under a policy that requires it. Read
-[INVARIANTS.md](INVARIANTS.md#not-an-invariant-but-a-documented-default) before you
-gate anything on `valid` alone.
+**What this establishes, and what it does not.** `verifyCredential` checks the AID 1.0
+schema, a trusted issuer, the proof profile, both halves of the composite signature
+(ML-DSA-65 and Ed25519), the validity window and the holder key. The status of that
+exact document is a separate result, and `standing` judges validity and status freshness
+when you ask. None of them is permission to act: deciding whether an agent may do
+something is ARIA AP's admission. See the [API contract](sdk/aria-ts/API.md).
 
 **It is a credential verifier, not a DID resolver.** Resolution as the
 specification defines it — parse the identifier, follow the DNS pointer, pin the
@@ -110,7 +114,7 @@ ARIA is a six-layer protocol:
 |-------|----------|---------|
 | **P1 — Anchor** | W3C DID Core | Every agent gets a DID anchored to DNS |
 | **P2 — Certify** | W3C VC Data Model 2.0 | Signed, portable, offline-verifiable credentials |
-| **P3 — Present** | OAuth 2.0 + DPoP | How credentials are presented and bound |
+| **P3 — Present** | ARIA AP over RFC 9421 HTTP Message Signatures (provisional) | How credentials are presented and bound to a request |
 | **P4 — Protect** | FIPS 204 + RFC 8032 | ML-DSA-65 + Ed25519 composite signatures |
 | **P5 — Revoke** | W3C Bitstring Status List v1.0 | Revocation in under 60 seconds; append-only Trust Ledger |
 | **P6 — Govern** | TrustLayer Foundation | Nonprofit stewardship, open source |
@@ -136,20 +140,17 @@ Each AID is a W3C Verifiable Credential signed with the composite cryptosuite
 
 **Schema:** [`schema/aid-1.0.json`](schema/aid-1.0.json) — **a draft until the issuance
 cutover**, and the file says so: nothing declares `spec_version: "1.0"` yet, the
-Verification Requirements it serves are still v1.3-draft, and planned fields have no
+Verification Requirements it serves are still a draft, and planned fields have no
 place in it. Build against it; it freezes the day the first credential declares 1.0.
 Example: [`examples/aid-example.json`](examples/aid-example.json) (illustrative; its proof
-value is not verifiable) · holder proof:
-[`examples/holder-proof-example.json`](examples/holder-proof-example.json).
+value is not verifiable).
 `credentialSubject.holderKey` is required: a per-agent Ed25519 keypair for
 proof-of-possession that eliminates the bearer-credential vulnerability. The controller
 generates the keypair on its own machine and only the public half is submitted; the
 registry never holds it (spec §3.5.1).
 
-Credentials issued before the cutover declare `spec_version: "1.2"` and validate against
-[`schema/aid-v1.2.json`](schema/aid-v1.2.json), which stays published at that path (it is
-cited from the W3C DID Method Registry) for as long as one such credential is in
-circulation. It is not the 1.0 schema.
+Credentials issued before the cutover use an earlier schema: see
+[Historical compatibility](#historical-compatibility).
 
 Notable fields:
 
@@ -157,8 +158,8 @@ Notable fields:
 |---|---|
 | `id` (top-level) | Unique credential-instance URL — `https://api.aria.bar/v1/credentials/{uuidv7}`. New on every issuance. Equivalent to a TLS certificate serial number. Per W3C VC 2.0 §4.4. |
 | `credentialSubject.id` | The agent DID (`did:aria:…`). Stable across reissuances. |
-| `credentialSubject.spec_version` | `"1.0"` under ARIA 1.0; `"1.2"` on credentials issued before the cutover. Verifiers distinguish the issuance regime by issuer DID, never by this value. |
-| `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Verifiers MUST check a holder proof signed with the corresponding private key (the challenge endpoint is `[PLANNED]`, so this cannot be done yet). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
+| `credentialSubject.spec_version` | `"1.0"` under ARIA 1.0 (earlier credentials: [Historical compatibility](#historical-compatibility)). Verifiers distinguish the issuance regime by issuer DID, never by this value. |
+| `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Possession is proved by a request ARIA AP signs with the corresponding private key (local candidate, provisional profile). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
 | `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability. |
 | `credentialSubject.principal.type` | `Person` (a natural person) or `Organization` (any legal entity), as schema.org types. Decides the next field: an `Organization` carries `legalName`, a `Person` never does. Absent on credentials issued before the field existed; those carry `legalName` whatever the principal was. |
 | `credentialSubject.principal.verificationStatus` | Machine-readable provenance of `principal.legalName`. Enum: `self-declared` (L0, L1), `registry-confirmed` (L2 — confirmed against the Authoritative Source), `legal-verified` (L3 — primary register + Binding Officer). Verifiers MUST consult this before treating `legalName` as authoritative. `legalName` is an **organization** name: natural-person principals MUST NOT populate it (COM-09, L0-03). |
@@ -166,22 +167,25 @@ Notable fields:
 | `credentialStatus` | W3C Bitstring Status List v1.0 entry. The bit is set on every reissue: the superseded instance is no longer active. Superseded and revoked are different states (spec §7) that share one bit. |
 | `proof.proofValue` | Composite ML-DSA-65 + Ed25519 signature; both must verify. Critically, the signature covers `credentialSubject.holderKey` — preventing key substitution by anyone other than the registry. |
 
-## Agent Trust Protocol (ATP)
+## ARIA AP
 
-ATP is the three-phase handshake between an agent and a receiving system:
+ARIA AP is the exchange between an agent and a receiving service (provisional profile:
+its transport, receipt, scope and human-approval rules await decisions):
 
-1. **Declare** — Agent presents AID + intent declaration
-2. **Evaluate** — the receiver checks against its configured policy: the one it publishes at `_aria-policy.<host>`
-3. **Admit** — Pass or reject, returned as an ATP response code. The
-   admit/reject decision is queued for the Agent Interaction Log, which is
-   `[PLANNED]` — see spec §7. Credential lifecycle events are recorded
-   separately in the Trust Ledger.
+1. **Who is the receiver.** The agent fetches the receiver's signed identity statement,
+   with its AID, and checks it against the DID it expects at that origin.
+2. **A signed request.** RFC 9421 over the method, target, body digest, operation id,
+   the exact credential and the audience, signed with the agent's holder key and a
+   single-use challenge from the receiver.
+3. **Admission.** The receiver verifies the credential and its current status with the
+   ARIA SDK, then checks audience, level, scope, delegation and human approval, then its
+   own resource rule. A refusal is a signed receipt for that attempt only.
+4. **Once per operation.** An admitted operation is claimed, run once and settled with a
+   signed `aria-ap-receipt/1`; retries of the same operation get the original receipt.
+5. **Recovery.** After a lost answer, a signed lookup returns the operation's receipts.
 
-```
-_aria-policy.bank.com TXT "v=ATP1; min=L2; enforce=strict; req=commerce:order:*,finance:invoice:read; deny=identity:principal:*; intent=purpose,principal_ref; depth=3; fresh=300s; rua=https://bank.com/atp-reports"
-```
-
-Enforcement modes: `monitor` → `warn` → `strict` (graduated adoption, like DMARC). Scopes have three colon-separated segments with a wildcard only in the last; `fresh=` bounds the age of status evidence (default 3600 s, floor 60 s); `principal_ref` is a DID, never a name. Full grammar, parameter classes and result codes: [aria.bar/spec#atp](https://aria.bar/spec#atp).
+Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas
+[`schema/aria-ap-*.json`](schema/README.md), vectors [`conformance/ap`](conformance/ap/README.md).
 
 ## Cryptography
 
@@ -230,6 +234,47 @@ Specification and documentation: [Creative Commons Attribution 4.0](LICENSE-docs
 ---
 
 **TrustLayer Foundation A.C.** · [aria.bar](https://aria.bar) · Open standards. Nonprofit governance. Trustworthy AI.
+
+## Historical compatibility
+
+Kept only so that what was issued or published keeps working. None of it is part of the
+ARIA 1.0 path above, and none of it is renumbered or rewritten: these files stay as they
+were published. Why each is retired, and what replaces it: [DEPRECATIONS.md](DEPRECATIONS.md).
+
+| Artifact | Why it stays | Until |
+|---|---|---|
+| [`schema/aid-v1.2.json`](schema/aid-v1.2.json), [`examples/aid-example-v1.2.json`](examples/aid-example-v1.2.json), `conformance/vectors/aid-v1.2-shape.json` | Credentials issued before the cutover declare `spec_version: "1.2"` inside their signed bytes and validate against this schema; its path is cited from the W3C DID Method Registry | The last such credential expires or is revoked |
+| [`sdk/verify-ts/`](sdk/verify-ts/README.md) (`@aria-registry/verify` 1.x, published on npm), [`examples/verify-example.ts`](examples/verify-example.ts) | Applications pin published versions | A deprecation on npm, which has not been done |
+| [`schema/atp-policy-v1.json`](schema/atp-policy-v1.json), [`schema/intent-declaration-v1.json`](schema/intent-declaration-v1.json), [`examples/atp-policy-example.txt`](examples/atp-policy-example.txt), the `_aria-policy` record `v=ATP1`, the `ATP-…` codes | Their identifiers were published; ATP is deprecated in favour of ARIA AP | A compatibility decision for each identifier |
+
+**The edition of September 7, 2026** (tagged `v1.0.0`) used Verification Requirements
+(80 citable requirements) as the normative basis, four levels derived from evidence,
+ATP/1 and TrustLayer Foundation as issuer. Development history before it is archived
+off-repository and summarized in [CHANGELOG.md](CHANGELOG.md).
+
+**`@aria-registry/verify` 1.x.** `verifyAgent()` verifies the composite signature, the
+validity window, the trust level and the provenance of the principal's name. It does
+**not** check revocation: `revocationStatus` comes back `'unknown'` and the credential
+passes. Read [INVARIANTS.md](INVARIANTS.md#not-an-invariant-but-a-documented-default)
+before you gate anything on `valid` alone. The migration to the two SDKs is in
+[`sdk/aria-ts/MIGRATION.md`](sdk/aria-ts/MIGRATION.md).
+
+### ATP/1 (deprecated in favour of ARIA AP)
+
+ATP was the three-phase handshake between an agent and a receiving system:
+
+1. **Declare** — Agent presents AID + intent declaration
+2. **Evaluate** — the receiver checks against its configured policy: the one it publishes at `_aria-policy.<host>`
+3. **Admit** — Pass or reject, returned as an ATP response code. The
+   admit/reject decision is queued for the Agent Interaction Log, which is
+   `[PLANNED]` — see spec §7. Credential lifecycle events are recorded
+   separately in the Trust Ledger.
+
+```
+_aria-policy.bank.com TXT "v=ATP1; min=L2; enforce=strict; req=commerce:order:*,finance:invoice:read; deny=identity:principal:*; intent=purpose,principal_ref; depth=3; fresh=300s; rua=https://bank.com/atp-reports"
+```
+
+Enforcement modes: `monitor` → `warn` → `strict` (graduated adoption, like DMARC). Scopes have three colon-separated segments with a wildcard only in the last; `fresh=` bounds the age of status evidence (default 3600 s, floor 60 s); `principal_ref` is a DID, never a name. Full grammar, parameter classes and result codes: [aria.bar/spec#atp](https://aria.bar/spec#atp).
 
 ## Identity of this repository
 
