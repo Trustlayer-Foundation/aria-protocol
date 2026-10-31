@@ -1,0 +1,203 @@
+{
+  "status": "provisional — pending owner/TLF decisions D3 (transport), D4 (receipt), D5 (scopes), D8 (human approval); not an adopted profile",
+  "generatedBy": "conformance/ap/generate.mjs",
+  "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
+  "algorithm": "sha-256 over the ARIA canonical JSON of the object below, written sha-256=:<base64>:",
+  "cases": [
+    {
+      "id": "json-42",
+      "input": {
+        "class": "unsafe-body",
+        "method": "POST",
+        "path": "/v1/transfers",
+        "query": {},
+        "semanticHeaders": {},
+        "mediaType": "application/json",
+        "contentDigest": "sha-256=:c0dctApWjo2ooEXO0RATfhWfiQrE2og7axfcZRs6gEk=:"
+      },
+      "fingerprint": "sha-256=:UzTAeVZeolZGiCD9PbvZm3JfYAsJzFA9hswl7hAkaqs=:"
+    },
+    {
+      "id": "text-42",
+      "input": {
+        "class": "unsafe-body",
+        "method": "POST",
+        "path": "/v1/transfers",
+        "query": {},
+        "semanticHeaders": {},
+        "mediaType": "text/plain",
+        "contentDigest": "sha-256=:c0dctApWjo2ooEXO0RATfhWfiQrE2og7axfcZRs6gEk=:"
+      },
+      "fingerprint": "sha-256=:7ubWkc8h4Fane4zNmLcZ3WrrMxUeBPnnD7okTaaRkRI=:"
+    },
+    {
+      "id": "json-string-42",
+      "input": {
+        "class": "unsafe-body",
+        "method": "POST",
+        "path": "/v1/transfers",
+        "query": {},
+        "semanticHeaders": {},
+        "mediaType": "application/json",
+        "contentDigest": "sha-256=:gzTFVMcnb1lnSBC5L/9Rl81Gv2zL6HJ0L5sEyjHf49E=:"
+      },
+      "fingerprint": "sha-256=:wX0S+IH1Gj/OVFbW4HGnKNuV/7d+hFAGq1Sud/OIglc=:"
+    },
+    {
+      "id": "if-match-v1",
+      "input": {
+        "class": "unsafe-body",
+        "method": "PATCH",
+        "path": "/v1/transfers/t-1001",
+        "query": {},
+        "semanticHeaders": {
+          "if-match": "\"v1\""
+        },
+        "mediaType": "application/json",
+        "contentDigest": "sha-256=:n0RA7srLtGHl8Iqo5Fq01Cgb2F1Bi/RMjb9aknY4s/A=:"
+      },
+      "fingerprint": "sha-256=:yzTcBb37Elq2c8n933K1FFtKm7IvX4lKIvyHAcuD9ps=:"
+    },
+    {
+      "id": "if-match-v2",
+      "input": {
+        "class": "unsafe-body",
+        "method": "PATCH",
+        "path": "/v1/transfers/t-1001",
+        "query": {},
+        "semanticHeaders": {
+          "if-match": "\"v2\""
+        },
+        "mediaType": "application/json",
+        "contentDigest": "sha-256=:n0RA7srLtGHl8Iqo5Fq01Cgb2F1Bi/RMjb9aknY4s/A=:"
+      },
+      "fingerprint": "sha-256=:sQ52zOP0BWX0eHGLL5vQESkrLaPj02Azpv18qltIJ/0=:"
+    },
+    {
+      "id": "delete-empty",
+      "input": {
+        "class": "unsafe-empty",
+        "method": "DELETE",
+        "path": "/v1/transfers/t-1001",
+        "query": {},
+        "semanticHeaders": {},
+        "contentDigest": "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+      },
+      "fingerprint": "sha-256=:JqinwZt2WXxtQ2pXJkuzUrwGrj1H2zS9zFBPbXPch9I=:"
+    },
+    {
+      "id": "post-empty",
+      "input": {
+        "class": "unsafe-empty",
+        "method": "POST",
+        "path": "/v1/transfers/t-1001",
+        "query": {},
+        "semanticHeaders": {},
+        "contentDigest": "sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:"
+      },
+      "fingerprint": "sha-256=:suSGhoFHg76uyyeKB56+SnSCNKWihYPH4zF3HH4VBf8=:"
+    },
+    {
+      "id": "get-eur",
+      "input": {
+        "class": "safe-receiptable",
+        "method": "GET",
+        "path": "/v1/accounts/acc-1/balance",
+        "query": {
+          "currency": "EUR"
+        },
+        "semanticHeaders": {}
+      },
+      "fingerprint": "sha-256=:hBrUvQSepkZz5XyG/Tshp9iQO9Oe1LsSMkSxVCZF1iA=:"
+    },
+    {
+      "id": "get-usd",
+      "input": {
+        "class": "safe-receiptable",
+        "method": "GET",
+        "path": "/v1/accounts/acc-1/balance",
+        "query": {
+          "currency": "USD"
+        },
+        "semanticHeaders": {}
+      },
+      "fingerprint": "sha-256=:Bmt++5t2y1dPowygSym6gXhjXNyzFC0vzn1MkmbfHoI=:"
+    }
+  ],
+  "relations": [
+    {
+      "a": "json-42",
+      "b": "text-42",
+      "same": false,
+      "why": "Same bytes, other media type: a conflict, never the first result (§5.9 #21)."
+    },
+    {
+      "a": "json-42",
+      "b": "json-string-42",
+      "same": false,
+      "why": "A number and a string are different content."
+    },
+    {
+      "a": "if-match-v1",
+      "b": "if-match-v2",
+      "same": false,
+      "why": "A semantic header changes the operation."
+    },
+    {
+      "a": "delete-empty",
+      "b": "post-empty",
+      "same": false,
+      "why": "The method is part of the operation."
+    },
+    {
+      "a": "get-eur",
+      "b": "get-usd",
+      "same": false,
+      "why": "The declared query is part of the operation."
+    }
+  ],
+  "requestRelations": [
+    {
+      "a": "REQ-001",
+      "b": "REQ-002",
+      "same": true,
+      "why": "A retry with a fresh challenge and signature is the same operation (§5.9 #22)."
+    },
+    {
+      "a": "REQ-001",
+      "b": "REQ-003",
+      "same": true,
+      "why": "The media type is normalised before it enters the fingerprint."
+    },
+    {
+      "a": "REQ-001",
+      "b": "REQ-020",
+      "same": true,
+      "why": "An unsigned Idempotency-Key is not part of the operation."
+    },
+    {
+      "a": "REQ-001",
+      "b": "REQ-004",
+      "same": false,
+      "why": "Other content."
+    }
+  ],
+  "requestCases": [
+    {
+      "request": "REQ-004",
+      "case": "json-42"
+    },
+    {
+      "request": "REQ-008",
+      "case": "delete-empty"
+    },
+    {
+      "request": "REQ-011",
+      "case": "get-eur"
+    },
+    {
+      "request": "REQ-023",
+      "case": "if-match-v1"
+    }
+  ]
+}

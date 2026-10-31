@@ -1,0 +1,127 @@
+{
+  "status": "provisional — pending owner/TLF decisions D3 (transport), D4 (receipt), D5 (scopes), D8 (human approval); not an adopted profile",
+  "profile": "aria-ap/1",
+  "transport": {
+    "binding": "RFC 9421 HTTP Message Signatures, one signature labelled 'aria'",
+    "label": "aria",
+    "tag": "aria-ap/1",
+    "alg": "ed25519",
+    "keyid": "the presented credential's holderKey.id",
+    "nonce": "a single-use receiver challenge, fresh for every request, lookups included",
+    "maxWindowSeconds": 60,
+    "skewSeconds": 5,
+    "headers": {
+      "aria-credential": "sf-string: the exact credential document URL, with parameter digest=:<sha-256 of its canonical JSON>:",
+      "aria-audience": "sf-string: the receiver DID the request is for",
+      "aria-operation": "sf-string: the logical operation id (UUID), the same on every retry"
+    }
+  },
+  "classes": {
+    "unsafe-body": {
+      "methods": ["POST", "PUT", "PATCH"],
+      "body": "required",
+      "components": ["@method", "@target-uri", "content-type", "content-digest", "aria-operation", "aria-credential", "aria-audience"],
+      "receipt": true
+    },
+    "unsafe-empty": {
+      "methods": ["DELETE", "POST", "PATCH"],
+      "body": "forbidden",
+      "components": ["@method", "@target-uri", "content-digest", "aria-operation", "aria-credential", "aria-audience"],
+      "contentDigest": "sha-256 of empty content",
+      "receipt": true
+    },
+    "safe-receiptable": {
+      "methods": ["GET"],
+      "body": "forbidden",
+      "components": ["@method", "@target-uri", "aria-operation", "aria-credential", "aria-audience"],
+      "receipt": true
+    },
+    "retrieval": {
+      "methods": ["GET"],
+      "body": "forbidden",
+      "query": ["operation"],
+      "components": ["@method", "@target-uri", "aria-credential", "aria-audience"],
+      "receipt": false,
+      "refusals": "problem documents, unsigned: a retrieval produces no receipt"
+    }
+  },
+  "semanticHeaders": "every semantic header the descriptor declares and the request carries is covered after the class components, and enters the fingerprint",
+  "authenticationOrder": [
+    "400 aria.request_invalid: a supported method and exactly one described operation (method and exact path)",
+    "400: body rules of the class; for unsafe-body, the descriptor's one media type after normalisation",
+    "400: only declared query parameters, each at most once; retrieval names one operation UUID",
+    "400: ARIA-Operation exactly once as a UUID sf-string on receiptable classes, absent on retrieval",
+    "401 signature: exactly one signature, labelled aria",
+    "401 unsigned_operation | digest | signature: covered components are exactly the required ones, without parameters or repeats",
+    "401 signature | window: parameters exactly created, expires, nonce, keyid, alg, tag; window at most 60 s and current within the skew",
+    "401 digest: Content-Digest sha-256 of the exact content",
+    "401 challenge: the nonce is a challenge this receiver issued, unexpired and unconsumed",
+    "401 credential: the exact credential named, its digest, keyid equal to its holderKey.id, the key acceptable",
+    "401 signature: strict Ed25519 over the base rebuilt from the receiver's configured origin",
+    "the challenge is consumed atomically; the request is authenticated",
+    "403 aria.audience_mismatch: the first admission check (signed rejected/attempt, or a problem document for retrieval)"
+  ],
+  "ed25519": "holder key canonical, not small order, torsion free; R canonical, not small order, torsion free; S < L; then RFC 8032 verification (both equations then agree)",
+  "unsupported": ["HEAD", "OPTIONS", "TRACE", "CONNECT", "GET with a body", "streamed bodies or trailers"],
+  "fingerprint": {
+    "algorithm": "sha-256 over the ARIA canonical JSON of the object below, written sha-256=:<base64>:",
+    "object": {
+      "class": "the request class",
+      "method": "the HTTP method",
+      "path": "the exact path, without the query",
+      "query": "object of the descriptor's query parameters present, name to value",
+      "mediaType": "the descriptor's one media type, lowercase, parameters sorted (unsafe-body only)",
+      "semanticHeaders": "object of the descriptor's semantic headers present, lowercase name to value",
+      "contentDigest": "RFC 9530 sha-256 of the body; of empty content for unsafe-empty; absent for safe classes"
+    },
+    "excluded": ["the challenge", "created and expires", "keyid", "the signature"]
+  },
+  "receipt": {
+    "type": "aria-ap-receipt/1",
+    "members": ["type", "id", "request", "receiver", "issuedAt", "outcome", "proof"],
+    "signed": "the ARIA canonical JSON of the receipt with proof.value removed (proof.alg and proof.keyid are signed)",
+    "maxBytes": 4096,
+    "dataModel": "objects, strings and integers only; no duplicate keys; no unknown members",
+    "applies": {
+      "operation": ["accepted", "completed", "rejected"],
+      "attempt": ["rejected"]
+    }
+  },
+  "reasons": {
+    "aria.request_invalid": { "http": 400, "signed": false },
+    "aria.authentication_failed": { "http": 401, "signed": false, "subtypes": ["signature", "window", "digest", "challenge", "unsigned_operation", "credential"], "note": "challenge covers replay: a consumed challenge is refused" },
+    "aria.audience_mismatch": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.credential_expired": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.credential_revoked": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.credential_superseded": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.level_insufficient": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.scope_missing": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.scope_denied": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.intent_mismatch": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.approval_required": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.approval_invalid": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.delegation_unsupported": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.idempotency_conflict": { "http": 409, "signed": true, "applies": "attempt" },
+    "aria.operation_in_progress": { "http": 409, "signed": true, "applies": "attempt" },
+    "aria.status_unavailable": { "http": 503, "signed": true, "applies": "attempt" },
+    "aria.rate_limited": { "http": 429, "signed": false },
+    "aria.operation_unknown": { "http": 404, "signed": false, "note": "retrieval of an operation with no record; the client keeps it unknown" },
+    "aria.accepted": { "http": 202, "signed": true, "applies": "operation" },
+    "aria.completed": { "http": [200, 201], "signed": true, "applies": "operation" }
+  },
+  "receiverReasons": "namespaced <ns>.<name>: resource authorization in admission (403, attempt), business rules after the claim (422, operation)",
+  "atpMapping": {
+    "ATP-200": "admission allow (flagged in monitor/warn); never a receipt state",
+    "ATP-401/SIG|MALFORMED|REQUEST-WINDOW|DIGEST|REPLAY": "aria.authentication_failed or aria.request_invalid, unsigned",
+    "ATP-401/EXPIRED": "aria.credential_expired",
+    "ATP-410/REVOKED": "aria.credential_revoked",
+    "ATP-412/STALE": "aria.status_unavailable",
+    "ATP-421/AUDIENCE": "aria.audience_mismatch (HTTP 403)",
+    "ATP-403/LEVEL": "aria.level_insufficient",
+    "ATP-406/SCOPE-MISSING": "aria.scope_missing",
+    "ATP-462/DEPTH": "aria.delegation_unsupported"
+  },
+  "scopes": "D5 provisional: new grants are namespace:resource:action, three lowercase segments, no @version; 1.0 documents are read under their own pattern (two or more segments); credential scopes compare exactly, never as patterns; receiver policy patterns may end in :* and a matching deny wins",
+  "approval": "D8 provisional: refuse — a missing approval rejects the attempt and claims nothing; holding for approval is deferred",
+  "revocationLookup": "D4 provisional: a revoked credential authorizes no lookup; a currently valid credential of the same DID may retrieve the original receipt; revocation never deletes or reclassifies the operation"
+}

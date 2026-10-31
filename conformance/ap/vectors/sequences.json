@@ -1,0 +1,280 @@
+{
+  "status": "provisional — pending owner/TLF decisions D3, D4, D5 and D8; written before AP2",
+  "about": "Behavioural sequences over one receiver and one client. Labels stand for values: operations (X), content fingerprints (F1, F2), attempts (a1, w1 for a receiver worker resuming), challenges (c1) and receipts (r1). `expect` is the receiver's answer; `client` is the client's operation state after the step. A step with `delivered: false` loses its response before the client sees it.",
+  "steps": {
+    "attempt": "an authenticated request of a receiptable class: challenge, then admission (allow or a denial code), then the operation record; `arrived: false` loses it before the receiver",
+    "settle": "the claimed attempt's handler records its outcome, effect and receipt in one transaction",
+    "fail": "the claimed attempt's handler threw: rolled-back (known not committed) or uncertain",
+    "reconcile": "the adopter reports, from its own record of the effect, whether the operation committed",
+    "resume": "a receiver worker continues an accepted operation after a fresh admission",
+    "lookup": "an authenticated retrieval of the operation's receipts, with the sender's current or revoked credential",
+    "client-observe": "the client receives a receipt that verifies (here: a second terminal one)",
+    "check": "the receiver's record of the operation, its effects, and whether the client ever sent it"
+  },
+  "sequences": [
+    {
+      "id": "SEQ-R1a",
+      "title": "an admission alone is not an execution; a failure before commit releases the operation",
+      "covers": ["§5.9 #13", "AP-R1"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true }, "client": "unknown" },
+        { "do": "fail", "attempt": "a1", "how": "rolled-back", "expect": { "released": true }, "client": "unknown" },
+        { "do": "lookup", "operation": "X", "challenge": "c2", "credential": "current", "expect": { "http": 404, "code": "aria.operation_unknown", "signed": false }, "client": "unknown" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R1b",
+      "title": "a denial observed in monitor or warn mode is still a denial",
+      "covers": ["§5.9 #13", "§5.3"],
+      "note": "There is no mode in which a failed check becomes allow; what a monitoring receiver then runs is not admitted and gets no receipt from this admission.",
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": { "deny": "aria.scope_missing", "observedIn": "monitor" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.scope_missing" } }, "client": "unknown" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R1c",
+      "title": "an operation receipt needs a claimed operation: an admission refusal cannot become one",
+      "covers": ["§5.9 #13", "§5.9 #24", "N2"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": { "deny": "aria.approval_required" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.approval_required" } } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "error": "no_claim" } },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R1d",
+      "title": "a recorded execution yields completed",
+      "covers": ["§5.9 #13"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2a",
+      "title": "completed, response lost, retry refused at admission, lookups with the revoked and with a renewed credential",
+      "covers": ["§5.9 #14", "AP-R2a", "D4 provisional: revocation lookup"],
+      "issued": ["c1", "c2", "c3", "c4"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "delivered": false, "expect": { "http": 201, "receipt": "r1" }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": { "deny": "aria.credential_revoked" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.credential_revoked" } }, "client": "unknown" },
+        { "do": "lookup", "operation": "X", "challenge": "c3", "credential": "revoked", "expect": { "http": 403, "code": "aria.credential_revoked", "signed": false }, "client": "unknown" },
+        { "do": "lookup", "operation": "X", "challenge": "c4", "credential": "current", "expect": { "http": 200, "current": "r1", "history": ["r1"] }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2b",
+      "title": "a 503 attempt refusal claims nothing; the same operation runs once with fresh evidence",
+      "covers": ["§5.9 #15", "AP-R2b"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": { "deny": "aria.status_unavailable" }, "expect": { "http": 503, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.status_unavailable" } }, "client": "unknown" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a2", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2c",
+      "title": "other content under the same operation id is a conflict and replaces nothing",
+      "covers": ["§5.9 #16", "§5.9 #21", "AP-R2c"],
+      "issued": ["c1", "c2", "c3"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F2", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.idempotency_conflict" } }, "client": "completed" },
+        { "do": "lookup", "operation": "X", "challenge": "c3", "credential": "current", "expect": { "http": 200, "current": "r1", "history": ["r1"] }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2d",
+      "title": "accepted, then completed after a fresh admission; a late accepted does not downgrade",
+      "covers": ["§5.9 #17", "AP-R2c"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "accepted", "receipt": "r1", "expect": { "http": 202, "receipt": "r1" }, "client": "accepted" },
+        { "do": "resume", "attempt": "w1", "operation": "X", "fingerprint": "F1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "w1", "outcome": "completed", "receipt": "r2", "delivered": false, "expect": { "http": 201, "receipt": "r2" }, "client": "accepted" },
+        { "do": "lookup", "operation": "X", "challenge": "c2", "credential": "current", "expect": { "http": 200, "current": "r2", "history": ["r1", "r2"] }, "client": "completed" },
+        { "do": "client-observe", "operation": "X", "receipt": { "label": "r1", "state": "accepted", "applies": "operation", "http": 202, "code": "aria.accepted" }, "expect": { "observed": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1", "r2"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2e",
+      "title": "two simultaneous attempts: one claim, one 409, one effect",
+      "covers": ["§5.9 #18", "AP-R2"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.operation_in_progress" } }, "client": "unknown" },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-R2f",
+      "title": "a business rejection is terminal for the operation id",
+      "covers": ["§5.4 422", "§5.6 client rule 4"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": { "rejected": "bank.insufficient_funds" }, "receipt": "r1", "expect": { "http": 422, "receipt": "r1" }, "client": "rejected" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 422, "receipt": "r1" }, "client": "rejected" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "rejected", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CH1",
+      "title": "a lookup consumes its challenge; the mutation after it needs another",
+      "covers": ["fresh challenge per request", "S0-R2"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "lookup", "operation": "X", "challenge": "c1", "credential": "current", "expect": { "http": 404, "code": "aria.operation_unknown", "signed": false }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "http": 401, "code": "aria.authentication_failed", "subtype": "challenge" }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a2", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CH2",
+      "title": "response lost after the effect; a retry with a fresh challenge gets the original receipt",
+      "covers": ["§5.9 #22", "fresh challenge per request"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "delivered": false, "expect": { "http": 201, "receipt": "r1" }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "attempt", "attempt": "a3", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 401, "code": "aria.authentication_failed", "subtype": "challenge" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CH3",
+      "title": "lost before arrival: the operation is unknown, never \"not sent\"",
+      "covers": ["S1 client sequences"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "arrived": false, "expect": { "lost": true }, "client": "unknown" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a2", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" }
+      ]
+    },
+    {
+      "id": "SEQ-D8",
+      "title": "missing, foreign or expired approval refuses the attempt and claims nothing; a valid approval admits",
+      "covers": ["§5.9 #23", "D8 provisional: refuse"],
+      "issued": ["c1", "c2", "c3", "c4"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": { "deny": "aria.approval_required" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.approval_required" } }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": { "deny": "aria.approval_invalid", "approval": "for another operation" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.approval_invalid" } }, "client": "unknown" },
+        { "do": "attempt", "attempt": "a3", "operation": "X", "fingerprint": "F1", "challenge": "c3", "admission": { "deny": "aria.approval_invalid", "approval": "expired" }, "expect": { "http": 403, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.approval_invalid" } }, "client": "unknown" },
+        { "do": "check", "operation": "X", "expect": { "effects": 0, "record": "absent", "receipts": [], "everSent": true } },
+        { "do": "attempt", "attempt": "a4", "operation": "X", "fingerprint": "F1", "challenge": "c4", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a4", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-REC1",
+      "title": "uncertain failure keeps the claim; only an explicit \"not committed\" releases it",
+      "covers": ["N2", "reconciliation"],
+      "issued": ["c1", "c2", "c3", "c4"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "fail", "attempt": "a1", "how": "uncertain", "expect": { "kept": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.operation_in_progress" } }, "client": "unknown" },
+        { "do": "lookup", "operation": "X", "challenge": "c3", "credential": "current", "expect": { "http": 200, "current": null, "history": [] }, "client": "unknown" },
+        { "do": "reconcile", "operation": "X", "committed": true, "expect": { "error": "invariant_violation" } },
+        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "released": true } },
+        { "do": "attempt", "attempt": "a3", "operation": "X", "fingerprint": "F1", "challenge": "c4", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a3", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-REC2",
+      "title": "a committed outcome is reconciled to its stored receipt, never a new one",
+      "covers": ["N2", "reconciliation"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "delivered": false, "expect": { "http": 201, "receipt": "r1" } },
+        { "do": "reconcile", "operation": "X", "committed": true, "expect": { "receipt": "r1" } },
+        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "error": "invariant_violation" } },
+        { "do": "reconcile", "operation": "Y", "committed": false, "expect": { "absent": true } },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CAS1",
+      "title": "a stale worker can neither settle nor release another worker's claim",
+      "covers": ["compare-and-set storage"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "fail", "attempt": "a1", "how": "uncertain", "expect": { "kept": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "released": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r9", "expect": { "error": "stale_claim" } },
+        { "do": "fail", "attempt": "a1", "how": "rolled-back", "expect": { "error": "stale_claim" } },
+        { "do": "settle", "attempt": "a2", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CAS2",
+      "title": "an accepted operation is resumed by exactly one worker",
+      "covers": ["compare-and-set storage", "resume"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "accepted", "receipt": "r1", "expect": { "http": 202, "receipt": "r1" }, "client": "accepted" },
+        { "do": "resume", "attempt": "w1", "operation": "X", "fingerprint": "F1", "admission": { "deny": "aria.credential_revoked" }, "expect": { "denied": "aria.credential_revoked" } },
+        { "do": "resume", "attempt": "w2", "operation": "X", "fingerprint": "F1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "resume", "attempt": "w3", "operation": "X", "fingerprint": "F1", "admission": "allow", "expect": { "refused": "aria.operation_in_progress" } },
+        { "do": "settle", "attempt": "w3", "outcome": "completed", "receipt": "r9", "delivered": false, "expect": { "error": "stale_claim" } },
+        { "do": "settle", "attempt": "w2", "outcome": "completed", "receipt": "r2", "delivered": false, "expect": { "http": 201, "receipt": "r2" }, "client": "accepted" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1", "r2"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-CAS3",
+      "title": "a final outcome is immutable",
+      "covers": ["compare-and-set storage"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "settle", "attempt": "a1", "outcome": { "rejected": "bank.reversed" }, "receipt": "r9", "delivered": false, "expect": { "error": "stale_claim" } },
+        { "do": "resume", "attempt": "w1", "operation": "X", "fingerprint": "F1", "admission": "allow", "expect": { "error": "not_accepted" } },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-INC1",
+      "title": "two different terminal receipts for one operation are reported as inconsistent",
+      "covers": ["§5.6 selection"],
+      "issued": ["c1"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "client-observe", "operation": "X", "receipt": { "label": "r9", "state": "rejected", "applies": "operation", "http": 422, "code": "bank.insufficient_funds" }, "expect": { "observed": "r9" }, "client": "inconsistent" }
+      ]
+    }
+  ]
+}

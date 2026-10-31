@@ -27,6 +27,8 @@ vectors/
   canonical-json.json            canonical serialisation and identity commitment, byte for byte
   abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
   context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
+ap/                              ARIA AP vectors and their independent checker: provisional,
+                                 a package of its own (see ap/README.md)
 ```
 
 Run it against an implementation:

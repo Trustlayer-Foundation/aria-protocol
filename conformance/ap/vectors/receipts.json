@@ -1,0 +1,1590 @@
+{
+  "status": "provisional — pending owner/TLF decisions D3 (transport), D4 (receipt), D5 (scopes), D8 (human approval); not an adopted profile",
+  "generatedBy": "conformance/ap/generate.mjs",
+  "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
+  "vectors": [
+    {
+      "id": "RCP-01",
+      "title": "completed, decision mode",
+      "covers": [
+        "§5.9 #1"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "completed",
+        "applies": "operation",
+        "status": 201,
+        "code": "aria.completed",
+        "attempt": "REQ-001"
+      }
+    },
+    {
+      "id": "RCP-02",
+      "title": "fresh 403 refusal of an attempt",
+      "covers": [
+        "§5.9 #2",
+        "O3: signed after authentication"
+      ],
+      "note": "Kept as evidence of that attempt; the operation stays as it was.",
+      "mode": "decision",
+      "transportStatus": 403,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          },
+          {
+            "request": "REQ-002",
+            "requestDigest": "sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:c69f8576-436b-4394-a98d-020a35912f43\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"attempt\",\"status\":403,\"code\":\"aria.credential_revoked\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"Svu9uI4zg4ui9m7eCgBGqXE7bBV2jYt1zhOBa7ZbridpO1j2c9yFN4t1qFO3hMXeWT0Gn4xnbw1ogwUOMJ-YAQ\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "rejected",
+        "applies": "attempt",
+        "status": 403,
+        "code": "aria.credential_revoked",
+        "attempt": "REQ-002"
+      }
+    },
+    {
+      "id": "RCP-03",
+      "title": "operation rejected with 422, retrieved with 200",
+      "covers": [
+        "§5.9 #3",
+        "§5.5"
+      ],
+      "mode": "retrieval",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:99c30308-25a0-453b-99a0-1002eb0cce61\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"operation\",\"status\":422,\"code\":\"bank.insufficient_funds\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"BDzsPS6t7aw0dY_wwW_arnnE09fEeY5qM3WfwL8Jhta6ZDUDV5Gd4zB6KgfP8CtLHu0Zlj5zvPi9PbNyI7qDBw\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "rejected",
+        "applies": "operation",
+        "status": 422,
+        "code": "bank.insufficient_funds",
+        "attempt": "REQ-001"
+      }
+    },
+    {
+      "id": "RCP-04",
+      "title": "transport 201 carrying a rejected receipt, decision mode",
+      "covers": [
+        "§5.9 #4"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:99c30308-25a0-453b-99a0-1002eb0cce61\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"operation\",\"status\":422,\"code\":\"bank.insufficient_funds\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"BDzsPS6t7aw0dY_wwW_arnnE09fEeY5qM3WfwL8Jhta6ZDUDV5Gd4zB6KgfP8CtLHu0Zlj5zvPi9PbNyI7qDBw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "status_mismatch"
+      }
+    },
+    {
+      "id": "RCP-05a",
+      "title": "outcome.code altered",
+      "covers": [
+        "§5.9 #5"
+      ],
+      "mode": "decision",
+      "transportStatus": 202,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"accepted\",\"applies\":\"operation\",\"status\":202,\"code\":\"aria.accepted\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "RCP-05b",
+      "title": "outcome.status altered (201 to 200)",
+      "covers": [
+        "§5.9 #5"
+      ],
+      "mode": "decision",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":200,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "RCP-05c",
+      "title": "signed without its proof metadata, as aria-receipt/0.1 did",
+      "covers": [
+        "§5.9 #5",
+        "proof.alg and proof.keyid are signed"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"U6hNiAjTeSyvv7v_eDTltofmkUjkoyq53LKuCJI6TNC-QBMRtupTSQH4ehmMxLTsAYRbCpwXsakDQeKlY1sDBA\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "RCP-05d",
+      "title": "issuedAt altered",
+      "covers": [
+        "§5.9 #5"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T11:00:00Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "RCP-06a",
+      "title": "names another credential of the same receiver DID",
+      "covers": [
+        "§5.9 #6"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:c0d0f202-b386-45b0-bced-d7bd2c15c351\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-2\",\"value\":\"U_Aaqg0YXWJhPm7u3CwUGT4AiMDQq1QRPfIBdMqRLv_oJ985R1IraDM5aMolgNg5h7_6ryRUWe_VI057CvbYDA\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "receiver_mismatch"
+      }
+    },
+    {
+      "id": "RCP-06b",
+      "title": "names the expected credential, signed with another credential's key",
+      "covers": [
+        "§5.9 #6"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"3ZQPwWIEQrEFLmkV--I7dnip_biEQ3z9rerhjwZoG691SgA_n70yERWU8BV1bYbxlIOCy7qdKp8vbb8RVL9OBQ\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "signature_invalid"
+      }
+    },
+    {
+      "id": "RCP-06c",
+      "title": "from another receiver DID",
+      "covers": [
+        "§5.9 #6"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:5acd064b-1f73-4ebd-83c6-eb9a03c2ee7c\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:other.example.test:service\",\"credential\":\"https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:other.example.test:service#holder-key-1\",\"value\":\"Hy9cNxqFtZzSUaEoHfuYKmikDdISqHFQugEfQchPZobO1pVjH4iByqx1W1UvY1O_txLGj8EVeIYFmp-OTQziBA\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "receiver_mismatch"
+      }
+    },
+    {
+      "id": "RCP-06d",
+      "title": "signed with the expected key and keyid, naming another credential document",
+      "covers": [
+        "§5.9 #6",
+        "exact receiver instance"
+      ],
+      "note": "Only the named instance differs; a historical verifier would otherwise fetch the wrong document.",
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:713d7b0d-bc03-409d-a506-75ea1dc4e80e\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/03cd2bc7-bb85-4f69-ade1-675f1d3a577a\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"KutyxdHA_f_DsYqwfqKnp8c6QwGqLD3BlNgZwTiwa06PACC_jp4J87zYvz31IXgxOWcrhe-7RvsfqAyvcYGOBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "receiver_mismatch"
+      }
+    },
+    {
+      "id": "RCP-07a",
+      "title": "for a request this client never sent",
+      "covers": [
+        "§5.9 #7"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:db32014c-7e94-4024-813f-eb68a6cddfd5\",\"request\":{\"id\":\"aaab8d50-8485-4497-ae7f-b44d257fc8d8\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:DkbUY+G0e1/BIPpLAJKJHQ5U/q945yOks6jb8yqGBeg=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"jWt9EO9ikaphMtWmd_gdNrlsKPsn9XvAmmDe9ZAzwySV95HKj7gGYIKnMZ_jjetiItPE5PmAY83sqemSjqfoCw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "binding"
+      }
+    },
+    {
+      "id": "RCP-07b",
+      "title": "binds a kept attempt but names another sender",
+      "covers": [
+        "§5.9 #7"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:d7d8235c-bd81-4605-a2fd-6db6965a1629\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:other-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"pXMNLdwA4HlsbZR4TnYFVMOeZ3cyYWNVE2FkwkyySxDur7gJphwSKAOJLBTtkJDsgafWFyEstCgXvQd0u9rDAg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "binding"
+      }
+    },
+    {
+      "id": "RCP-07c",
+      "title": "binds a kept attempt but names another operation",
+      "covers": [
+        "§5.9 #7"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:a1771d98-7669-49e0-91a6-4a3e7e7faf38\",\"request\":{\"id\":\"d0196b88-7579-4482-a4c2-721a8ffa210a\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"RrJhvI2SI-BGyLrhYK51fLE_CupYjykdG20sdu164cdMdw2orvjFtz1noY84OJTlE7Uu61GoCef0BqmDkb8sCw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "binding"
+      }
+    },
+    {
+      "id": "RCP-08a",
+      "title": "retry answered with the original receipt, original attempt kept",
+      "covers": [
+        "§5.9 #8",
+        "§5.9 #22"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          },
+          {
+            "request": "REQ-002",
+            "requestDigest": "sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "completed",
+        "applies": "operation",
+        "status": 201,
+        "code": "aria.completed",
+        "attempt": "REQ-001"
+      }
+    },
+    {
+      "id": "RCP-08b",
+      "title": "retry answered with the original receipt, checked only against the retry",
+      "covers": [
+        "§5.9 #8"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-002",
+            "requestDigest": "sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "binding"
+      }
+    },
+    {
+      "id": "RCP-08c",
+      "title": "no attempt kept at all",
+      "covers": [
+        "§5.6 client rule 2"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": []
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "binding_unverifiable"
+      }
+    },
+    {
+      "id": "RCP-09",
+      "title": "accepted without completion",
+      "covers": [
+        "§5.9 #9"
+      ],
+      "note": "An operation state of accepted, never shown as completed.",
+      "mode": "decision",
+      "transportStatus": 202,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:1e2d50fa-d29b-4ad0-9c36-acc7d2689cf2\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"accepted\",\"applies\":\"operation\",\"status\":202,\"code\":\"aria.accepted\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"jR-Z_1xL1yO_eBX5-KGyblX9iB9Pdl9c2GcFpBzs_vmrkGCjbvq6xerRll80itvTti9gLPXqf9rKfO_APSsECg\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "accepted",
+        "applies": "operation",
+        "status": 202,
+        "code": "aria.accepted",
+        "attempt": "REQ-001"
+      }
+    },
+    {
+      "id": "RCP-10a",
+      "title": "duplicate key whose last value is the signed one",
+      "covers": [
+        "§5.9 #10"
+      ],
+      "note": "A parser keeping the last value would verify the signature.",
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"bank.reversed\",\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-10b",
+      "title": "unknown member, signed",
+      "covers": [
+        "§5.9 #10"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"note\":\"signed but not in the profile\",\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"XzpP_Fbo3Ptinxk6EZrfMpjICa1a_jSFVuuyNFGUtNqQmV1FqEkV4HX-bmbb4H-fwKI59CKzYmqj1cgNhjV-Aw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-10c",
+      "title": "number written with a fraction",
+      "covers": [
+        "§5.9 #10"
+      ],
+      "note": "JSON.parse yields 201 and the signature would verify.",
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201.0,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-10d",
+      "title": "larger than 4 KiB, signed",
+      "covers": [
+        "§5.9 #10"
+      ],
+      "mode": "retrieval",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:9e2d1b79-b649-4c3c-9168-473d3be0da5c\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"operation\",\"status\":422,\"code\":\"bank.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"9l2agQrVBSJS99FuLc9royZ88OVXkagBcqRF-i9Aw1ol3j9l1fzEo6nDTTpK1T9YgaONNd7fGZFQtOLB65CKAw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-11a",
+      "title": "after the receiver renewed: verified against the exact instance",
+      "covers": [
+        "§5.9 #11"
+      ],
+      "mode": "retrieval",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "completed",
+        "applies": "operation",
+        "status": 201,
+        "code": "aria.completed",
+        "attempt": "REQ-001"
+      }
+    },
+    {
+      "id": "RCP-11b",
+      "title": "after the receiver renewed: checked against the DID's current document",
+      "covers": [
+        "§5.9 #11"
+      ],
+      "mode": "retrieval",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "digest": "sha-256=:4b8dOi0TjoDbLBqmisXexCR7+fbMKMMjaao49wCcKlM=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-2",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zH42a5iR1drzqkb73AQGnvBkXriwg2DCGpud3JHerFMuU"
+          },
+          "validFrom": "2026-11-05T00:00:00Z",
+          "validUntil": "2027-11-05T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "receiver_mismatch"
+      }
+    },
+    {
+      "id": "RCP-12a",
+      "title": "historical: receiver credential revoked after issuedAt",
+      "covers": [
+        "§5.9 #12",
+        "historical evidence"
+      ],
+      "mode": "historical",
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "credential": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "status": {
+          "state": "revoked",
+          "observedAt": "2026-12-01T00:00:00Z"
+        }
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "completed",
+        "applies": "operation",
+        "status": 201,
+        "code": "aria.completed",
+        "attempt": "REQ-001",
+        "findings": {
+          "issuedAtWithinValidity": true,
+          "retainedStatus": "revoked",
+          "signingTime": "receiver_claim"
+        }
+      }
+    },
+    {
+      "id": "RCP-12b",
+      "title": "historical without the exact receiver credential",
+      "covers": [
+        "historical evidence"
+      ],
+      "mode": "historical",
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "evidence_missing"
+      }
+    },
+    {
+      "id": "RCP-12c",
+      "title": "historical with the DID's current document instead of the named one",
+      "covers": [
+        "historical evidence"
+      ],
+      "mode": "historical",
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "credential": {
+          "url": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "digest": "sha-256=:4b8dOi0TjoDbLBqmisXexCR7+fbMKMMjaao49wCcKlM=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-2",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zH42a5iR1drzqkb73AQGnvBkXriwg2DCGpud3JHerFMuU"
+          },
+          "validFrom": "2026-11-05T00:00:00Z",
+          "validUntil": "2027-11-05T00:00:00Z"
+        }
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:682c2a4a-fd4b-437b-9bc4-d010352789d4\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"QirH1tr9cZX9a7wx7MezKTx0M_HXuUVoHCjHHNQ1blly1aDN9O9Oo8kINf1IBHyK4l7I1r3-bwdYfr97AmRBBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "evidence_missing"
+      }
+    },
+    {
+      "id": "RCP-12d",
+      "title": "historical: issuedAt outside the named credential's validity",
+      "covers": [
+        "historical evidence"
+      ],
+      "note": "The statement verifies; its claimed time does not fall in the credential's validity, and that is reported, not hidden.",
+      "mode": "historical",
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "credential": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        }
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:857bb273-3850-4a96-9c27-fb05e80b2ca8\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2027-12-01T00:00:00Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"Wu5coiC5ISdJRShYabOtPxOpQ2MK-Hq-czAmzicAlymP-Jnc0X-8tAlzexZVLqbD7RpLnhwFl4Rz1QjC9GCKDQ\"}}",
+      "expect": {
+        "result": "valid",
+        "state": "completed",
+        "applies": "operation",
+        "status": 201,
+        "code": "aria.completed",
+        "attempt": "REQ-001",
+        "findings": {
+          "issuedAtWithinValidity": false,
+          "retainedStatus": "not_retained",
+          "signingTime": "receiver_claim"
+        }
+      }
+    },
+    {
+      "id": "RCP-13",
+      "title": "an attempt refusal presented as a retrieval result",
+      "covers": [
+        "§5.5"
+      ],
+      "mode": "retrieval",
+      "transportStatus": 200,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          },
+          {
+            "request": "REQ-002",
+            "requestDigest": "sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:c69f8576-436b-4394-a98d-020a35912f43\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:eihrWdC1MNZlmNyUtIF/oTbZ8PyW5nwNUfcl0vUI6kM=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"attempt\",\"status\":403,\"code\":\"aria.credential_revoked\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"Svu9uI4zg4ui9m7eCgBGqXE7bBV2jYt1zhOBa7ZbridpO1j2c9yFN4t1qFO3hMXeWT0Gn4xnbw1ogwUOMJ-YAQ\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "not_operation"
+      }
+    },
+    {
+      "id": "RCP-14",
+      "title": "another receipt type",
+      "covers": [
+        "type"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-receipt/0.1\",\"id\":\"urn:uuid:ffe433ee-14dc-4cf4-a14c-1eecf90b1158\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"operation\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"3p2QAM_2yE5OwDRnGjPFW1LGxfYZsZwBSOtsNDkU9Tco1-luL5-cbLraJhIj9ApYxdohfytzPW8bkdI26NCnBg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "unsupported_type"
+      }
+    },
+    {
+      "id": "RCP-15a",
+      "title": "completed that applies to an attempt",
+      "covers": [
+        "§5.2 outcome.applies"
+      ],
+      "mode": "decision",
+      "transportStatus": 201,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:e5b568a5-6be3-4dee-bbaa-9d0189fe2063\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"completed\",\"applies\":\"attempt\",\"status\":201,\"code\":\"aria.completed\",\"result\":{\"digest\":\"sha-256=:MSM9cQdME8Ca8ospEBcTf167MaKpriBwnGFHi2LIHUk=:\"}},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"U7E_ph85BArNcRDSU0L_QJBqcSqgbYzra15wGj2vtd4gn5HGB6TkHf7jTYeNqNaMBZMahrwXzIYdncHK4p94Bw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-15b",
+      "title": "rejected operation with a protocol code",
+      "covers": [
+        "§5.4"
+      ],
+      "mode": "decision",
+      "transportStatus": 422,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:7adaad82-79b8-4cec-ae48-91b774b8d3a1\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"operation\",\"status\":422,\"code\":\"aria.scope_missing\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"hr0cYZMtUbx18mhx7_uhxq03LdLbkYM_pZ02rmvy1Yjn1217wEcCJpfrsfHylMTdBFOZSkGUI5GK-hJTuHkZCg\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "RCP-15c",
+      "title": "rejected attempt with status 422",
+      "covers": [
+        "§5.4"
+      ],
+      "mode": "decision",
+      "transportStatus": 422,
+      "client": {
+        "receiver": {
+          "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          },
+          "validFrom": "2026-10-01T00:00:00Z",
+          "validUntil": "2027-10-01T00:00:00Z"
+        },
+        "attempts": [
+          {
+            "request": "REQ-001",
+            "requestDigest": "sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:",
+            "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+            "sender": {
+              "did": "did:aria:customer.example.test:payments-agent",
+              "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+            },
+            "receiver": {
+              "did": "did:aria:bank.example.test:transfers",
+              "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841"
+            }
+          }
+        ]
+      },
+      "receipt": "{\"type\":\"aria-ap-receipt/1\",\"id\":\"urn:uuid:8de37dcd-1c7e-43d4-aa1e-19d9ea6a719a\",\"request\":{\"id\":\"55ee2e26-ffcc-40ca-b388-d12966453e48\",\"sender\":{\"did\":\"did:aria:customer.example.test:payments-agent\",\"credential\":\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\"},\"digest\":\"sha-256=:1i2uYvApj7S7cMSfmnYRRXZVqhnK9iyXtd2zjrbgU30=:\"},\"receiver\":{\"did\":\"did:aria:bank.example.test:transfers\",\"credential\":\"https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841\"},\"issuedAt\":\"2026-11-01T12:00:01Z\",\"outcome\":{\"state\":\"rejected\",\"applies\":\"attempt\",\"status\":422,\"code\":\"aria.credential_revoked\"},\"proof\":{\"alg\":\"ed25519\",\"keyid\":\"did:aria:bank.example.test:transfers#holder-key-1\",\"value\":\"vBfywsE4SkTF4b2YoDZ41WmQNGmDXRWD6NAfyOh1EyiS6pvPyBbgTuT00n5rwiqKp73vQ4cQ2PRAqXQhLDKxAw\"}}",
+      "expect": {
+        "result": "invalid",
+        "reason": "malformed"
+      }
+    }
+  ]
+}

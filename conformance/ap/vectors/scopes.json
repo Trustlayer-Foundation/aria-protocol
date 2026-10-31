@@ -1,0 +1,34 @@
+{
+  "status": "provisional — pending owner/TLF decision D5; C2 settles reading of already signed documents",
+  "about": "Scope grammar and matching. `newGrant`: acceptable for new issuance (namespace:resource:action, three lowercase segments, no version). `document10`: acceptable inside an AID 1.0 document under that schema's own pattern. Credential scopes compare exactly; only a receiver's policy uses patterns, and a matching deny wins.",
+  "grants": [
+    { "value": "payments:transfer:create", "newGrant": true, "document10": true },
+    { "value": "payments:transfer_v2:create", "newGrant": true, "document10": true },
+    { "value": "payments:transfer", "newGrant": false, "document10": true, "note": "two segments: readable in a signed 1.0 document, not issued anew" },
+    { "value": "payments:transfer:create:eu", "newGrant": false, "document10": true, "note": "four segments: readable in a signed 1.0 document, not issued anew" },
+    { "value": "payments:transfer:create@v1", "newGrant": false, "document10": false },
+    { "value": "Payments:transfer:create", "newGrant": false, "document10": false },
+    { "value": "payments.transfer.create", "newGrant": false, "document10": false },
+    { "value": "payments:transfer:*", "newGrant": false, "document10": false, "note": "a pattern is never a credential scope" },
+    { "value": "payments", "newGrant": false, "document10": false },
+    { "value": "payments::create", "newGrant": false, "document10": false },
+    { "value": "9pay:transfer:create", "newGrant": false, "document10": false }
+  ],
+  "admission": [
+    { "id": "SCP-A1", "credentialScopes": ["payments:transfer:create"], "required": "payments:transfer:create", "expect": "allow" },
+    { "id": "SCP-A2", "credentialScopes": ["payments:transfer:read"], "required": "payments:transfer:create", "expect": "aria.scope_missing" },
+    { "id": "SCP-A3", "credentialScopes": ["payments:transfer"], "required": "payments:transfer:create", "expect": "aria.scope_missing", "note": "no prefix matching" },
+    { "id": "SCP-A4", "credentialScopes": ["payments:transfer:create:eu"], "required": "payments:transfer:create", "expect": "aria.scope_missing", "note": "no prefix matching" },
+    { "id": "SCP-A5", "credentialScopes": ["payments:transfer"], "required": "payments:transfer", "expect": "allow", "note": "a two-segment scope of a signed 1.0 document is still compared exactly" }
+  ],
+  "policy": [
+    { "id": "SCP-P1", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }, { "effect": "deny", "pattern": "payments:transfer:delete" }], "scope": "payments:transfer:create", "expect": "allow" },
+    { "id": "SCP-P2", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }, { "effect": "deny", "pattern": "payments:transfer:delete" }], "scope": "payments:transfer:delete", "expect": "aria.scope_denied", "note": "a matching deny wins, whatever the order" },
+    { "id": "SCP-P3", "rules": [{ "effect": "deny", "pattern": "payments:transfer:delete" }, { "effect": "allow", "pattern": "payments:transfer:*" }], "scope": "payments:transfer:delete", "expect": "aria.scope_denied" },
+    { "id": "SCP-P4", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }], "scope": "payments:account:read", "expect": "aria.scope_denied", "note": "nothing allows it" },
+    { "id": "SCP-P5", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }], "scope": "payments:transfer", "expect": "aria.scope_denied", "note": "a pattern matches exactly three segments" },
+    { "id": "SCP-P6", "rules": [{ "effect": "allow", "pattern": "payments:*:create" }], "scope": "payments:transfer:create", "expect": "invalid_policy", "note": "only the last segment may be *" },
+    { "id": "SCP-P7", "rules": [{ "effect": "allow", "pattern": "*" }], "scope": "payments:transfer:create", "expect": "invalid_policy" },
+    { "id": "SCP-P8", "rules": [{ "effect": "allow", "pattern": "payments:transfer:cre*" }], "scope": "payments:transfer:create", "expect": "invalid_policy" }
+  ]
+}

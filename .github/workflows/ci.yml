@@ -54,6 +54,14 @@ jobs:
         working-directory: conformance
       - run: node run.mjs --strict
         working-directory: conformance
+      # ARIA AP (provisional): the committed vectors must be what the generator
+      # produces, and the independent checker must pass them with its controls.
+      - run: npm install --no-audit --no-fund
+        working-directory: conformance/ap
+      - run: npm run generate && git diff --exit-code -- vectors
+        working-directory: conformance/ap
+      - run: npm test
+        working-directory: conformance/ap
 
   identity-guard:
     runs-on: ubuntu-latest
