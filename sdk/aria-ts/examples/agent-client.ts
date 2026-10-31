@@ -11,6 +11,7 @@ import {
   type ReceiverPin,
   type Signer,
   type Verifier,
+  type VerifiedReceiver,
 } from '@aria-registry/sdk';
 
 declare const verifier: Verifier;
@@ -25,26 +26,31 @@ declare function lookup(request: HttpRequestLike): Promise<{ current?: Receipt }
 
 const bank: ReceiverPin = { origin: 'https://bank.example', did: 'did:aria:bank.example:transfers' };
 
+/** A freshly authenticated receiver with a new single-use challenge: one per request, never reused. */
+async function freshReceiver(): Promise<VerifiedReceiver | string> {
+  const nonce = newNonce();
+  const identity = await verifier.verifyReceiverIdentity(await fetchIdentity(bank.origin, nonce), bank, nonce);
+  return identity.ok ? identity.receiver : `receiver ${identity.reason}`;
+}
+
 export async function transfer(body: Uint8Array): Promise<{ state: string; lastAttemptError?: string }> {
   // One id per logical operation, reused by every retry; the tracker keeps every attempt.
   const tracker = new OperationTracker({ operationId: newOperationId(), sender: me, receiver: bank });
   let lastAttemptError: string | undefined;
 
   for (let attempt = 0; attempt < 3 && (tracker.state === 'unknown' || tracker.state === 'accepted'); attempt++) {
-    const nonce = newNonce();
-    const identity = await verifier.verifyReceiverIdentity(await fetchIdentity(bank.origin, nonce), bank, nonce);
-    if (!identity.ok) {
-      // This attempt could not be sent; an earlier one may have run. Not "not sent".
-      lastAttemptError = `receiver ${identity.reason}`;
-      continue;
-    }
-
-    // Once an attempt has been sent, ask for the operation's stored outcome first.
+    // Once an attempt has been sent, ask for the operation's stored outcome first, under its own challenge.
     if (tracker.everSent) {
+      const receiver = await freshReceiver();
+      if (typeof receiver === 'string') {
+        // This lookup could not be sent; an earlier attempt may have run. Not "not sent".
+        lastAttemptError = receiver;
+        continue;
+      }
       const { request: signedLookup } = await signRequest({
         request: { method: 'GET', target: `/v1/transfers?operation=${tracker.operation.operationId}`, headers: {} },
         class: 'retrieval',
-        receiver: identity.receiver,
+        receiver,
         credential,
         signer,
       });
@@ -55,11 +61,17 @@ export async function transfer(body: Uint8Array): Promise<{ state: string; lastA
       }
     }
 
+    // The mutation gets a new challenge: the lookup consumed the previous one.
+    const receiver = await freshReceiver();
+    if (typeof receiver === 'string') {
+      lastAttemptError = receiver;
+      continue;
+    }
     const { request: signed, sent } = await signRequest({
       request: { method: 'POST', target: '/v1/transfers', headers: { 'content-type': 'application/json' }, body },
       class: 'unsafe-body',
       operationId: tracker.operation.operationId,
-      receiver: identity.receiver,
+      receiver,
       credential,
       signer,
     });

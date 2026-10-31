@@ -24,6 +24,8 @@ export type StoredOperation =
       readonly revision: number;
       /** Who holds the claim, and since when (RFC 3339). */
       readonly claim: { readonly id: string; readonly at: string };
+      /** The authenticated attempt that claimed it: the binding its receipt must name. A fingerprint cannot rebuild a signature-base digest. */
+      readonly attempt: { readonly requestDigest: string; readonly sender: { readonly did: Did; readonly credential: string } };
       /** Operation receipts already issued: an `accepted` one when this claim continues it. */
       readonly receipts: readonly Receipt[];
     }
@@ -166,11 +168,15 @@ export class OperationLedger {
   }
 
   /**
-   * Decides a claim left `uncertain` or abandoned past the timeout, from the
-   * adopter's own record of whether the effect committed: settles it, or
-   * releases it when the effect is known absent.
+   * Decides a claim left `uncertain`, or abandoned past the timeout, from the
+   * adopter's own record of whether the effect committed. Because the effect and
+   * its signed outcome commit in one transaction, a committed effect already has
+   * its stored receipt: that receipt is returned, never regenerated. A claim still
+   * open while the adopter reports the effect committed breaks that invariant and
+   * fails. Only an explicit `committed: false` releases the claim; a timeout alone
+   * never proves the effect absent.
    */
-  reconcile(key: OperationKey, effect: { readonly committed: false } | { readonly committed: true; readonly settlement: Settlement }): Promise<RecordedOperationOutcome | null> {
+  reconcile(key: OperationKey, effect: { readonly committed: boolean }): Promise<{ readonly current: Receipt } | null> {
     void key;
     void effect;
     return pending('AP2');

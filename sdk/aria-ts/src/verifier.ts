@@ -85,7 +85,8 @@ function snapshotProfiles(trust: readonly TrustProfile[]): readonly ProfileSnaps
       id: String(p.id),
       issuer: String(p.issuer),
       verificationMethod: String(p.verificationMethod),
-      keys: Object.freeze({ mldsa65: p.keys.mldsa65.slice(), ed25519: p.keys.ed25519.slice() }),
+      // Uint8Array.from always allocates: a Buffer's slice() would alias the caller's bytes.
+      keys: Object.freeze({ mldsa65: Uint8Array.from(p.keys.mldsa65), ed25519: Uint8Array.from(p.keys.ed25519) }),
       maxLevel: p.maxLevel,
       statusLists: Object.freeze([...p.statusLists].map(String)),
       onlineStatus: p.onlineStatus ?? null,
@@ -167,7 +168,7 @@ export function createVerifier(config: VerifierConfig): Verifier {
 
     async checkStatus(credential, options) {
       const snapshot = recall<CredentialSnapshot>(verifier, 'credential', credential);
-      const context = { bounds, now: now(), skewMs, maxAgeMs: statusMaxAgeMs };
+      const context = { bounds, now, skewMs, maxAgeMs: statusMaxAgeMs };
       const status = options?.via === 'online' ? await fromOnline(snapshot, context) : await fromStatusList(snapshot, context);
       return issue(verifier, 'status', statusView(status), status);
     },

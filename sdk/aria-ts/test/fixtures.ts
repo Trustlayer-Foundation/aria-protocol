@@ -111,18 +111,22 @@ export function sign(document: Record<string, any>, issuer: Issuer, corrupt?: 'p
 }
 
 /** A signed status list with `revoked` indexes set, signed `ageMs` ago and valid for `validityMs`. */
-export function statusList(issuer: Issuer, revoked: number[], { ageMs = 10 * 60_000, validityMs = 24 * HOUR, entries = 131_072 } = {}): Record<string, any> {
+export function statusList(
+  issuer: Issuer,
+  revoked: number[],
+  { ageMs = 10 * 60_000, validityMs = 24 * HOUR, entries = 131_072, id = LIST_URL, subject = {} as Record<string, unknown> } = {},
+): Record<string, any> {
   const bits = Buffer.alloc(entries / 8);
   for (const i of revoked) bits[i >> 3]! |= 0x80 >> (i & 7);
   return sign(
     {
       '@context': ['https://www.w3.org/ns/credentials/v2'],
-      id: LIST_URL,
+      id,
       type: ['VerifiableCredential', 'BitstringStatusListCredential'],
       issuer: ISSUER,
       validFrom: iso(-ageMs),
       validUntil: iso(-ageMs + validityMs),
-      credentialSubject: { id: `${LIST_URL}#list`, type: 'BitstringStatusList', statusPurpose: 'revocation', encodedList: 'u' + gzipSync(bits).toString('base64url') },
+      credentialSubject: { id: `${id}#list`, type: 'BitstringStatusList', statusPurpose: 'revocation', encodedList: 'u' + gzipSync(bits).toString('base64url'), ...subject },
     },
     issuer,
   );

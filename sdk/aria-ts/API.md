@@ -77,7 +77,10 @@ private copy, and returns the first failure in this order:
 6. strict RFC 3339 validity, ordered, current within the skew (`invalid_validity`,
    `not_yet_valid`, `expired`);
 7. the holder key: exactly 32 raw Ed25519 bytes under the ARIA 1.0 compatibility
-   encoding, a point on the curve, under the subject's DID (`holder_key_invalid`);
+   encoding, under the subject's DID, and acceptable by the authority's own rule —
+   the canonical encoding of a point, not of small order, torsion free
+   (`holder_key_invalid`). The identity point and other weak keys cannot establish
+   possession, so they are refused here, not only at issuance;
 8. rules the schema cannot express: `hitlRequired` within `scope` (`semantic_invalid`);
 9. a level above the profile's maximum (`level_not_trusted`);
 10. a status list the profile does not publish (`status_list_untrusted`).
@@ -91,14 +94,20 @@ The result has no issuance time: `validFrom` and `validUntil` are the signed bou
 
 - **`status-list`** (default) fetches the list the credential names, from an allowed
   origin, and reads it only after it verifies under the same profile: issuer, proof
-  profile, both signatures, a validity window of at most 24 hours that holds now, and an
-  age from its own signed `validFrom` within `statusMaxAgeSeconds` (default 3600);
-  `encodedList` is multibase `u` + base64url GZIP, decompressed within 2 MiB and at least
-  131,072 entries. Its signed times are reported apart from `fetchedAt`.
-- **`online`** asks the profile's `onlineStatus` endpoint for the DID. The answer has no
-  signed time and is only as strong as TLS to that configured endpoint; it is reusable at
-  admission for `onlineStatusMaxAgeSeconds` (default 60). An answer naming another
-  current document makes the presented one `superseded`; a revocation bit never does.
+  profile, both signatures, its signed `id` equal to the list the credential names
+  (another genuine list of the same issuer is refused), the supported subject
+  (`BitstringStatusList`, purpose `revocation`, one bit per entry), and `encodedList` as
+  multibase `u` + base64url GZIP, decompressed within 2 MiB and at least 131,072 entries.
+  Its times are then judged at completion, not when the request started: a validity
+  window of at most 24 hours that holds now, and an age from its own signed `validFrom`
+  within `statusMaxAgeSeconds` (default 3600). `fetchedAt` is that completion time,
+  reported apart from the list's signed times.
+- **`online`** asks the profile's `onlineStatus` endpoint for the DID. Only a complete
+  answer counts — the DID, an exact document reference and a status; anything less is
+  `unavailable`. It has no signed time, is stamped when observed, is only as strong as
+  TLS to that configured endpoint, and is reusable at admission for
+  `onlineStatusMaxAgeSeconds` (default 60). A complete answer naming another current
+  document makes the presented one `superseded`; a revocation bit never does.
 - Anything not established is `unavailable` with a reason (`offline`, `origin_not_allowed`,
   `fetch_failed`, `too_large`, `malformed`, `signature_invalid`, `wrong_issuer`,
   `not_valid_now`, `stale`, `no_online_endpoint`), which admission treats as `indeterminate`.
@@ -130,10 +139,14 @@ operation, a stale worker cannot replace a final outcome, and a late failure can
 release another worker's claim.
 
 **When a handler throws**, `ledger.fail(claim, 'rolled-back')` releases the claim only
-when the adopter knows its transaction did not commit; `'uncertain'` keeps it, retries
-get `operation_in_progress`, and `ledger.reconcile` later settles or releases it from the
-adopter's own record of the effect (a claim older than `claimTimeoutSeconds` can also be
-reconciled).
+when the adopter knows its transaction did not commit; `'uncertain'` keeps it, and retries
+get `operation_in_progress`. `ledger.reconcile` later decides it from the adopter's own
+record of the effect. Since the effect and its signed outcome commit together, a
+committed effect already has its stored receipt, which is returned and never regenerated;
+an open claim reported as committed breaks that invariant and fails; only an explicit
+«not committed» releases the claim, never a timeout alone. The claimed record keeps the
+authenticated attempt that claimed it, because a fingerprint cannot rebuild a signature
+base.
 
 **`accepted` continues after a restart** through `ledger.resume(key, admission)`: a fresh
 admission of the same operation and fingerprint (current status, policy and approval),
@@ -149,7 +162,9 @@ authentication are unsigned.
 (operation id, sender, receiver) and every `SentAttempt`. A receipt's request digest only
 selects the kept attempt; signature, receiver, sender and every binding are then checked
 against it, so the original receipt returned to a retry with a fresh challenge is
-recognised. It moves only on a verified operation receipt of this operation; an attempt
+recognised. Every request, a lookup included, uses a new challenge from a fresh receiver
+authentication: a lookup consumes its challenge, so the mutation after it needs another.
+It moves only on a verified operation receipt of this operation; an attempt
 refusal is kept as evidence and leaves the state; an unverifiable binding or another
 sender or receiver changes nothing. Failing to send a retry is that retry's error: once
 an attempt was sent (`everSent`) the operation is not «not sent».

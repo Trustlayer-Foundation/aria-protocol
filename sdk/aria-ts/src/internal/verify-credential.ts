@@ -100,7 +100,7 @@ export function verifyCredentialDocument(input: unknown, profiles: readonly Prof
   const did = subject.id as Did;
   const holder = subject.holderKey as { id: string; publicKeyMultibase: string };
   const key = holder.publicKeyMultibase.startsWith('z') ? fromBase58btc(holder.publicKeyMultibase.slice(1)) : null;
-  if (!key || key.length !== 32 || !holder.id.startsWith(`${did}#holder-key-`) || !onCurve(key)) return fail('holder_key_invalid', '/credentialSubject/holderKey');
+  if (!key || key.length !== 32 || !holder.id.startsWith(`${did}#holder-key-`) || !acceptableEd25519Key(key)) return fail('holder_key_invalid', '/credentialSubject/holderKey');
 
   const scopes = subject.scope as string[];
   const hitl = (subject.hitlRequired as string[] | undefined) ?? [];
@@ -147,10 +147,18 @@ export function verifyCredentialDocument(input: unknown, profiles: readonly Prof
   };
 }
 
-function onCurve(key: Uint8Array): boolean {
+/**
+ * The authority's rule for a party's Ed25519 key (`ed25519_key_is_acceptable`):
+ * the canonical encoding of a point, not of small order, without a torsion
+ * component. An honestly generated key meets all of these; the identity point, a
+ * second spelling of a key or a mixed-torsion key does not.
+ */
+export function acceptableEd25519Key(key: Uint8Array): boolean {
+  if (key.length !== 32) return false;
   try {
-    ed25519.Point.fromBytes(key);
-    return true;
+    const point = ed25519.Point.fromBytes(key);
+    const canonical = point.toBytes();
+    return canonical.every((b, i) => b === key[i]) && !point.isSmallOrder() && point.isTorsionFree();
   } catch {
     return false;
   }
