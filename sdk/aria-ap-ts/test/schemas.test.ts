@@ -243,3 +243,26 @@ describe('instants that exist, on both sides (RL review F2)', () => {
     }
   });
 });
+
+describe('the documented boundaries of the schemas (RL fixes review N3, N4)', () => {
+  it('the API contract\'s schema example is the file check-pair runs, verbatim', () => {
+    const api = readFileSync(new URL('../API.md', import.meta.url), 'utf8');
+    const block = api.slice(api.indexOf('```js\n', api.indexOf('schema-consumer.mjs')) + 6);
+    const example = block.slice(0, block.indexOf('```'));
+    expect(example.length).toBeGreaterThan(200);
+    expect(readFileSync(new URL('../../scripts/pair/schema-consumer.mjs', import.meta.url), 'utf8')).toContain(example);
+  });
+
+  it('an origin that matches the host syntax but is not a valid URL: the schema accepts it, the SDK refuses it on both sides', async () => {
+    const originSchema = ajv.compile({ $ref: 'https://aria.bar/schema/aria-ap-identity-1.json#/properties/statement/properties/origin' });
+    const w = world();
+    const expected = { nonce: 'n'.repeat(22), audience: AGENT };
+    const base = await w.bankAp.identify(w.self, expected, w.challenges);
+    for (const origin of ['https://xn--a.example', 'https://xn--0.example']) {
+      expect([originSchema(origin), isProfileOrigin(origin)], origin).toEqual([true, false]);
+      await expect(w.bankAp.identify({ ...w.self, origin }, expected, w.challenges), origin).rejects.toThrow(AriaUsageError);
+      const signed = await resigned(w, base, (st) => (st.origin = origin));
+      expect(await w.agentAp.verifyReceiverIdentity(signed, { ...BANK, origin }, expected), origin).toEqual({ ok: false, reason: 'malformed' });
+    }
+  });
+});

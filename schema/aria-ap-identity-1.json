@@ -17,7 +17,7 @@
         "subject": { "description": "The receiver's DID.", "type": "string", "pattern": "^did:aria:" },
         "credential": { "description": "The exact credential instance whose holder key signs.", "type": "string", "pattern": "^https://[^\\s?#@]+$" },
         "origin": {
-          "description": "The origin the receiver is reached at, in canonical form: https://host[:port], or http:// on a loopback host for local use; a lower-case DNS name whose last label starts with a letter, or a dotted-quad IPv4 address; no default port, path, query, fragment or user information.",
+          "description": "The origin the receiver is reached at, in canonical form: https://host[:port], or http:// on a loopback host for local use; a lower-case DNS name whose last label starts with a letter, or a dotted-quad IPv4 address; no default port, path, query, fragment or user information. The pattern is syntax only: the value must also parse as a URL whose serialization is the value itself, valid IDNA included (https://xn--a.example matches the pattern and is not an origin); the ARIA AP SDK checks this.",
           "type": "string",
           "anyOf": [
             { "pattern": "^https://(?:(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?|(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))(?::(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$", "not": { "pattern": ":443$" } },

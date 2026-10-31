@@ -182,22 +182,37 @@ One JSON Schema (draft 2020-12) per wire document, in the protocol's
 | `aria-ap-identity-1.json` | The identity response: the receiver's AID 1.0 document (by reference to `aid-1.0.json`) and its `aria-ap-identity/1` statement |
 | `aria-ap-lookup-1.json` | A retrieval's answer: `current` and `history`, operation receipts only |
 
-`aria-ap-identity-1.json` refers to `https://aria.bar/schema/aid-1.0.json`; outside this
-repository, load it from `@aria-registry/sdk/schemas/aid-1.0.json`, which the ARIA SDK
-exports byte for byte, and assert formats (for example Ajv with `ajv-formats`), since the
-instants rely on `date-time`:
+`aria-ap-identity-1.json` refers to `https://aria.bar/schema/aid-1.0.json`, and
+`aria-ap-lookup-1.json` to the receipt schema. Outside this repository, load the AID
+schema from `@aria-registry/sdk/schemas/aid-1.0.json`, which the ARIA SDK exports byte
+for byte, register its two annotation keywords, and assert formats, since the instants
+rely on `date-time`. This is
+[`../scripts/pair/schema-consumer.mjs`](../scripts/pair/schema-consumer.mjs), which
+`check-pair` runs against the installed packages:
 
-```ts
+```js
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import aid from '@aria-registry/sdk/schemas/aid-1.0.json' with { type: 'json' };
+import receipt from '@aria-registry/ap/schemas/aria-ap-receipt-1.json' with { type: 'json' };
 import identity from '@aria-registry/ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
+import lookup from '@aria-registry/ap/schemas/aria-ap-lookup-1.json' with { type: 'json' };
 
 const ajv = new Ajv2020();
-addFormats(ajv);
-ajv.addSchema(aid);
-const validIdentity = ajv.compile(identity);
+ajv.addKeyword('_comment'); // annotations in aid-1.0.json, not validation keywords
+ajv.addKeyword('_status');
+addFormats(ajv); // the instants are date-time: formats must be asserted
+ajv.addSchema([aid, receipt]);
+
+export const validReceipt = ajv.getSchema(receipt.$id);
+export const validIdentity = ajv.compile(identity);
+export const validLookup = ajv.compile(lookup);
 ```
+
+The origin's host expression is syntax only. The SDK also requires an origin to parse as
+a URL whose serialization is the value itself, which includes valid IDNA:
+`https://xn--a.example` matches the schema's pattern but is refused by the SDK, both when
+emitting and when receiving.
 
 They are provisional with D3 and D4. Conforming to a schema is neither a valid signature
 nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers

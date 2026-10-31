@@ -3,8 +3,6 @@
 // minimum level through public admission, and the recovery of the original receipt.
 import * as ap from '@aria-registry/ap';
 import * as sdk from '@aria-registry/sdk';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { checks, fetchServing, holder, NOW, ORIGIN, profile, rejects, statusList } from './fixtures.mjs';
 
 const c = checks('ap-exchange');
@@ -114,19 +112,11 @@ await c.check('the exported level list cannot change that decision', async () =>
   return sdk.TRUST_LEVELS.join() === 'L0,L1,L2,L3' && r.receipt.outcome.code === 'aria.level_insufficient';
 });
 
-// The exported schemas compile outside the repository, the AID one from the credential package.
+// The exported schemas compile outside the repository with the API contract's example itself.
 await c.check('the identity response, receipts and lookup answer conform to the schemas the installed packages export', async () => {
-  const require = createRequire(import.meta.url);
-  const { default: Ajv2020 } = await import('ajv/dist/2020.js');
-  const { default: addFormats } = await import('ajv-formats');
-  const load = (spec) => JSON.parse(readFileSync(require.resolve(spec), 'utf8'));
-  const ajv = new Ajv2020({ strict: false });
-  addFormats(ajv);
-  ajv.addSchema(load('@aria-registry/sdk/schemas/aid-1.0.json'));
-  for (const n of ['receipt', 'identity', 'lookup']) ajv.addSchema(load(`@aria-registry/ap/schemas/aria-ap-${n}-1.json`));
-  const get = (n) => ajv.getSchema(`https://aria.bar/schema/aria-ap-${n}-1.json`);
+  const { validIdentity, validReceipt, validLookup } = await import('./schema-consumer.mjs');
   const statement = JSON.parse(JSON.stringify(await bankAp.identify(self, { nonce: 'schema-nonce-0000000001', audience: AGENT }, challenges)));
-  return get('identity')(statement) && get('receipt')(JSON.parse(JSON.stringify(original.receipt))) && get('lookup')(JSON.parse(JSON.stringify({ current: found.current, history: found.history })));
+  return validIdentity(statement) && validReceipt(JSON.parse(JSON.stringify(original.receipt))) && validLookup(JSON.parse(JSON.stringify({ current: found.current, history: found.history })));
 });
 
 // A revoked credential reads nothing.
