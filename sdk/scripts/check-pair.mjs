@@ -1,18 +1,22 @@
 #!/usr/bin/env node
 // Acceptance of the two SDK packages as distribution artifacts, alone and as a pair.
 //
-// Builds and packs @aria-registry/sdk and @aria-registry/ap, then installs the
-// tarballs with npm in fresh directories outside the repository: no workspace link,
-// no source alias, nothing from ops/ or a sibling repository. Runs the consumer
-// scenarios in scripts/pair/ against them. Exits 1 on any failure.
+// Builds and packs @aria-registry/sdk and @aria-registry/ap, or takes two archives
+// already packed, then installs them with npm in fresh directories outside the
+// repository: no workspace link, no source alias, nothing from ops/ or a sibling
+// repository. Runs the consumer scenarios in scripts/pair/ against them. Exits 1 on
+// any failure.
 //
-//   node sdk/scripts/check-pair.mjs [--report <file>]
+//   node sdk/scripts/check-pair.mjs [--archives <sdk.tgz> <ap.tgz>] [--report <file>]
+//
+// With --archives nothing is built or packed: the checks run on exactly those files,
+// which is how a release accepts the archives it then publishes.
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SDK = fileURLToPath(new URL('..', import.meta.url));
@@ -24,6 +28,11 @@ const PACKAGES = [
 const FIXTURE_DEPS = ['@noble/curves@2.4.0', '@noble/post-quantum@0.5.4'];
 const args = process.argv.slice(2);
 const reportPath = args.includes('--report') ? args[args.indexOf('--report') + 1] : null;
+const given = args.includes('--archives') ? args.slice(args.indexOf('--archives') + 1, args.indexOf('--archives') + 3).map((f) => resolve(f)) : null;
+if (given && (given.length !== 2 || given.some((f) => !f.endsWith('.tgz')))) {
+  console.error('--archives takes the credential package archive, then the ARIA AP archive');
+  process.exit(2);
+}
 
 const run = (cmd, argv, cwd, options = {}) => execFileSync(cmd, argv, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...options });
 const digest = (file, algorithm, encoding) => createHash(algorithm).update(readFileSync(file)).digest(encoding);
@@ -42,22 +51,31 @@ function pack(pkg, into) {
 const work = mkdtempSync(join(tmpdir(), 'aria-sdk-pair-'));
 const artifacts = {};
 
-// Build, then pack twice: the same sources must give the same bytes.
-for (const pkg of PACKAGES) {
-  run('pnpm', ['build'], join(SDK, pkg.dir));
-  const first = pack(pkg, join(work, 'pack-1'));
-  const second = pack(pkg, join(work, 'pack-2'));
-  const manifest = JSON.parse(readFileSync(join(SDK, pkg.dir, 'package.json'), 'utf8'));
+// Build, then pack twice: the same sources must give the same bytes. Given archives
+// are taken as they are.
+for (const [i, pkg] of PACKAGES.entries()) {
+  let first;
+  let reproducible = null;
+  if (given) {
+    first = given[i];
+  } else {
+    run('pnpm', ['build'], join(SDK, pkg.dir));
+    first = pack(pkg, join(work, 'pack-1'));
+    const second = pack(pkg, join(work, 'pack-2'));
+    reproducible = digest(first, 'sha512', 'base64') === digest(second, 'sha512', 'base64');
+    if (!reproducible) fail('pack is not reproducible', { package: pkg.name });
+  }
+  const manifest = JSON.parse(run('tar', ['-xzOf', first, 'package/package.json'], work));
+  if (manifest.name !== pkg.name) fail('an archive is not the package expected in its place', { expected: pkg.name, got: manifest.name });
   const files = run('tar', ['-tzf', first], work).trim().split('\n').sort();
   artifacts[pkg.name] = {
     version: manifest.version,
     tarball: first,
     integrity: `sha512-${digest(first, 'sha512', 'base64')}`,
     sha256: digest(first, 'sha256', 'hex'),
-    reproducible: digest(first, 'sha512', 'base64') === digest(second, 'sha512', 'base64'),
+    reproducible,
     files,
   };
-  if (!artifacts[pkg.name].reproducible) fail('pack is not reproducible', { package: pkg.name });
   const unexpected = files.filter((f) => !/^package\/(dist\/index\.(js|js\.map|d\.ts)|schemas\/(?:aria-ap-[a-z]+-1|aid-1\.0)\.json|README\.md|API\.md|MIGRATION\.md|LICENSE|package\.json)$/.test(f));
   if (unexpected.length) fail('unexpected files in the tarball', { package: pkg.name, unexpected });
   // A packed manifest names registry versions, ranges or tags only: no path, link,
@@ -191,7 +209,7 @@ try {
 }
 const report = {
   checked: 'the two SDK packages as packed artifacts, installed with npm outside the repository',
-  source: { repository: 'aria-protocol', revision, uncommittedChangesUnderSdk: dirty },
+  source: { repository: 'aria-protocol', revision, uncommittedChangesUnderSdk: dirty, archives: given ? 'given' : 'packed here' },
   runtime: { node: process.version, npm: run('npm', ['--version'], work).trim(), pnpm: run('pnpm', ['--version'], work).trim() },
   pair: Object.fromEntries(Object.entries(artifacts).map(([name, a]) => [name, { version: a.version, integrity: a.integrity, sha256: a.sha256, reproducible: a.reproducible, files: a.files }])),
   compatibility: { '@aria-registry/ap': { peerDependencies: apManifest.peerDependencies } },
@@ -200,7 +218,10 @@ const report = {
 };
 if (reportPath) writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
 for (const s of scenarios) console.log(`${s.failed ? 'FAIL' : 'ok  '} ${s.scenario}: ${s.passed} passed, ${s.failed} failed`);
-for (const [name, a] of Object.entries(artifacts)) console.log(`${a.reproducible ? 'ok  ' : 'FAIL'} ${name}@${a.version} ${a.integrity}`);
+for (const [name, a] of Object.entries(artifacts)) {
+  const how = a.reproducible === null ? 'given' : a.reproducible ? 'reproducible' : 'not reproducible';
+  console.log(`${a.reproducible === false ? 'FAIL' : 'ok  '} ${name}@${a.version} ${a.integrity} (${how})`);
+}
 for (const f of failures) console.log(`FAIL ${f.what}\n${JSON.stringify(f, null, 2)}`);
 console.log(failures.length ? `\n${failures.length} failure(s)` : '\nboth packages hold, alone and as a pair');
 process.exit(failures.length ? 1 : 0);
