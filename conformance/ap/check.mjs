@@ -10,10 +10,12 @@
 
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import canonicalize from 'canonicalize';
 import { httpbis } from 'http-message-signatures';
 import { parseDictionary, parseItem } from 'structured-headers';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { createReference, MUTANTS, runSequence } from './model.mjs';
 
 const args = process.argv.slice(2);
@@ -28,6 +30,7 @@ const receipts = load('./vectors/receipts.json');
 const sequences = load('./vectors/sequences.json');
 const scopes = load('./vectors/scopes.json');
 const identity = load('./vectors/identity.json');
+const historical = load('./vectors/historical.json');
 const identitySchema = load('../../schema/aria-ap-identity-1.json');
 const aid10 = load('../../schema/aid-1.0.json');
 
@@ -487,12 +490,8 @@ function verifyReceipt(vector) {
   if (typeof r.type === 'string' && r.type !== profile.receipt.type) return invalid('unsupported_type');
   if (!wellFormed(r)) return invalid('malformed');
 
-  // The receiver: the exact credential instance the client authenticated, or retained.
-  let expected = vector.client.receiver;
-  if (vector.mode === 'historical') {
-    expected = vector.evidence?.credential;
-    if (!expected || expected.url !== r.receiver.credential) return invalid('evidence_missing');
-  }
+  // The receiver: the exact credential instance the client authenticated.
+  const expected = vector.client.receiver;
   if (r.receiver.did !== expected.did || r.receiver.credential !== expected.url || r.proof.keyid !== expected.holderKey.id) {
     return invalid('receiver_mismatch');
   }
@@ -520,14 +519,104 @@ function verifyReceipt(vector) {
     if (vector.transportStatus !== 200) return invalid('status_mismatch');
     if (r.outcome.applies !== 'operation') return invalid('not_operation');
   }
-  const out = { result: 'valid', state: r.outcome.state, applies: r.outcome.applies, status: r.outcome.status, code: r.outcome.code, attempt: attempt.request };
-  if (vector.mode !== 'historical') return out;
+  return { result: 'valid', state: r.outcome.state, applies: r.outcome.applies, status: r.outcome.status, code: r.outcome.code, attempt: attempt.request };
+}
+
+// ---------------------------------------------------------------- historical receipts
+
+// Retained evidence is judged here without the current time. The composite proof is
+// decoded and both halves verified with the same libraries as the SDK; the rules,
+// the decoding and the list reading (node:zlib) are this file's. Schema conformance of
+// the retained documents is the credential verifier's and S1's vectors'.
+const ML_DSA_65_SIGNATURE = 3309;
+
+function issuerSignatureHolds(doc, issuer) {
+  const p = doc?.proof;
+  if (doc?.issuer !== issuer.did || !p || p.type !== 'DataIntegrityProof' || p.cryptosuite !== 'mldsa65-ed25519-2026' || p.proofPurpose !== 'assertionMethod' || p.verificationMethod !== issuer.verificationMethod) return false;
+  if (typeof p.proofValue !== 'string' || !p.proofValue.startsWith('u')) return false;
+  const bytes = Buffer.from(p.proofValue.slice(1), 'base64url');
+  if (bytes.toString('base64url') !== p.proofValue.slice(1) || bytes.length !== 4 + ML_DSA_65_SIGNATURE + 64 || bytes.readUInt32BE(0) !== ML_DSA_65_SIGNATURE) return false;
+  const { proof: _, ...unsigned } = doc;
+  const payload = jcs(unsigned);
+  const keys = { mldsa65: new Uint8Array(Buffer.from(issuer.keys.mldsa65, 'base64')), ed25519: new Uint8Array(Buffer.from(issuer.keys.ed25519, 'base64')) };
+  try {
+    return ml_dsa65.verify(bytes.subarray(4, 4 + ML_DSA_65_SIGNATURE), payload, keys.mldsa65) && ed25519.verify(bytes.subarray(4 + ML_DSA_65_SIGNATURE), payload, keys.ed25519, { zip215: false });
+  } catch {
+    return false;
+  }
+}
+
+const exactInstant = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(v) && new Date(Date.parse(v)).toISOString() === v.replace('Z', '.000Z') ? Date.parse(v) : null);
+
+// The document is authentic: signed by the trusted issuer, a validity interval, a
+// holder key of its subject, a status entry in a list the issuer publishes. Never judged against now.
+function authenticDocument(doc, issuer) {
+  if (!issuerSignatureHolds(doc, issuer)) return null;
+  const s = doc.credentialSubject;
+  const validFrom = exactInstant(doc.validFrom);
+  const validUntil = exactInstant(doc.validUntil);
+  if (validFrom === null || validUntil === null || validFrom >= validUntil) return null;
+  const key = holderKeyBytes(s?.holderKey?.publicKeyMultibase);
+  if (!key || !acceptableKey(key) || typeof s.id !== 'string' || !s.holderKey.id.startsWith(`${s.id}#holder-key-`)) return null;
+  const st = doc.credentialStatus;
+  if (!issuer.statusLists.includes(st?.statusListCredential) || !/^(0|[1-9]\d*)$/.test(st.statusListIndex)) return null;
+  return { id: doc.id, did: s.id, keyId: s.holderKey.id, key, validFrom, validUntil, list: st.statusListCredential, index: Number(st.statusListIndex) };
+}
+
+// What a retained list said about the credential, or null when it is not that credential's list or does not verify.
+function retainedState(list, credential, issuer) {
+  const subject = list?.credentialSubject;
+  if (list?.id !== credential.list || !Array.isArray(list.type) || !list.type.includes('BitstringStatusListCredential') || !issuerSignatureHolds(list, issuer)) return null;
+  if (subject?.type !== 'BitstringStatusList' || subject.statusPurpose !== 'revocation' || (subject.statusSize ?? 1) !== 1 || typeof subject.encodedList !== 'string' || !subject.encodedList.startsWith('u')) return null;
+  let bits;
+  try {
+    bits = gunzipSync(Buffer.from(subject.encodedList.slice(1), 'base64url'));
+  } catch {
+    return null;
+  }
+  const validFrom = exactInstant(list.validFrom);
+  const validUntil = exactInstant(list.validUntil);
+  if (bits.length < 131_072 / 8 || credential.index >= bits.length * 8 || validFrom === null || validUntil === null || validUntil <= validFrom || validUntil - validFrom > 24 * 3_600_000) return null;
+  const revoked = (bits[credential.index >> 3] >> (7 - (credential.index & 7))) & 1;
+  return { state: revoked ? 'revoked' : 'active', period: { validFrom: list.validFrom, validUntil: list.validUntil } };
+}
+
+function verifyHistorical(vector, context) {
+  const invalid = (reason) => ({ result: 'invalid', reason });
+  if (Buffer.byteLength(vector.receipt, 'utf8') > profile.receipt.maxBytes) return invalid('malformed');
+  let r;
+  try {
+    r = parseReceiptJson(vector.receipt);
+  } catch {
+    return invalid('malformed');
+  }
+  if (typeof r.type === 'string' && r.type !== profile.receipt.type) return invalid('unsupported_type');
+  if (!wellFormed(r)) return invalid('malformed');
+
+  // Evidence: an authentic document of the exact credential the receipt names.
+  const named = vector.evidence.document ? authenticDocument(context.documents[vector.evidence.document].document, context.issuer) : null;
+  if (!named || named.id !== r.receiver.credential) return invalid('evidence_missing');
+  if (r.receiver.did !== named.did || r.proof.keyid !== named.keyId) return invalid('receiver_mismatch');
+  const { value, ...proof } = r.proof;
+  if (!strictVerify(new Uint8Array(Buffer.from(value, 'base64url')), jcs({ ...r, proof }), named.key)) return invalid('signature_invalid');
+  const attempts = vector.attempts;
+  if (attempts.length === 0) return invalid('binding_unverifiable');
+  const attempt = attempts.find((a) => a.requestDigest === r.request.digest);
+  if (!attempt || attempt.operation !== r.request.id || !equal(attempt.sender, r.request.sender) || !equal(attempt.receiver, r.receiver)) return invalid('binding');
+
   const t = Date.parse(r.issuedAt);
+  const retained = vector.evidence.statusList ? retainedState(context.statusLists[vector.evidence.statusList].document, named, context.issuer) : null;
   return {
-    ...out,
+    result: 'valid',
+    state: r.outcome.state,
+    applies: r.outcome.applies,
+    status: r.outcome.status,
+    code: r.outcome.code,
+    attempt: attempt.request,
     findings: {
-      issuedAtWithinValidity: Date.parse(expected.validFrom) <= t && t <= Date.parse(expected.validUntil),
-      retainedStatus: vector.evidence.status?.state ?? 'not_retained',
+      issuedAtWithinValidity: named.validFrom <= t && t < named.validUntil,
+      retainedStatus: retained?.state ?? 'not_retained',
+      retainedStatusPeriod: retained?.period ?? null,
       signingTime: 'receiver_claim',
     },
   };
@@ -694,6 +783,32 @@ for (const v of receipts.vectors) {
     sig[40] ^= 0x01;
     parsed.proof.value = sig.toString('base64url');
     const t = verifyReceipt({ ...v, receipt: JSON.stringify(parsed) });
+    record('controls: signature bit flipped', v.id, equal(t, { result: 'invalid', reason: 'signature_invalid' }), { got: t });
+  }
+}
+
+// Historical receipts: the evidence first, then each receipt.
+for (const [name, d] of Object.entries(historical.context.documents)) {
+  const got = authenticDocument(d.document, historical.context.issuer) !== null;
+  record('historical: evidence', `document ${name}`, got === d.authentic, { expected: d.authentic, got });
+}
+{
+  const r1 = authenticDocument(historical.context.documents.r1.document, historical.context.issuer);
+  for (const [name, l] of Object.entries(historical.context.statusLists)) {
+    const got = retainedState(l.document, r1, historical.context.issuer);
+    record('historical: evidence', `list ${name}`, l.read.state ? got?.state === l.read.state : got === null, { expected: l.read, got });
+  }
+}
+for (const v of historical.vectors) {
+  const got = verifyHistorical(v, historical.context);
+  record('historical', v.id, equal(got, v.expect), { expected: v.expect, got });
+  record('controls: expectation mutated', v.id, !equal(got, mutateExpectation(v.expect)), { note: 'a mutated expectation still matched' });
+  if (v.expect.result === 'valid') {
+    const parsed = JSON.parse(v.receipt);
+    const sig = Buffer.from(parsed.proof.value, 'base64url');
+    sig[40] ^= 0x01;
+    parsed.proof.value = sig.toString('base64url');
+    const t = verifyHistorical({ ...v, receipt: JSON.stringify(parsed) }, historical.context);
     record('controls: signature bit flipped', v.id, equal(t, { result: 'invalid', reason: 'signature_invalid' }), { got: t });
   }
 }

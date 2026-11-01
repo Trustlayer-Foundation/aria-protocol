@@ -6,17 +6,19 @@
 > the vectors to change when the decisions are made.
 
 ARIA AP is the profile an agent uses to call a receiver with its ARIA credential: the
-receiver's identity, a signed request, an admission decision, and a signed receipt. This
-package holds its vectors and a checker that judges them without the generator's code.
+receiver's identity, a signed request, an admission decision, a signed receipt, and that
+receipt checked later against retained evidence. This package holds its vectors and a
+checker that judges them without the generator's code.
 
 ```
 profile.json            the provisional profile: identity, classes, components, order, reasons, ATP mapping
-generate.mjs            builds the request, fingerprint, receipt and identity vectors (deterministic)
+generate.mjs            builds the request, fingerprint, receipt, identity and historical vectors (deterministic)
 check.mjs               the independent checker; exits 1 on any failure
 model.mjs               reference state machine for the sequences, with deliberate mutants
 vectors/requests.json   67 requests and the receiver's expected answer
 vectors/fingerprints.json  operation fingerprints and which ones must match
-vectors/receipts.json   34 receipts, each with the client's kept evidence and a mode
+vectors/receipts.json   30 receipts, each with the client's kept evidence and a mode
+vectors/historical.json 14 receipts checked later, with real AID 1.0 documents and status lists
 vectors/sequences.json  23 sequences of attempts, outcomes, lookups and client state
 vectors/scopes.json     scope grammar, exact admission and policy patterns
 vectors/identity.json   34 receiver identity statements and what the client concludes
@@ -44,8 +46,15 @@ npm run generate && git diff --exit-code -- vectors   # the committed vectors ar
   receipt rules and the scope rules are written in `check.mjs`, not imported. The AID 1.0
   scope pattern is read from `schema/aid-1.0.json`, and the identity statement's syntax
   (origin, created, nonce, challenge) from `schema/aria-ap-identity-1.json`.
+- **Historical evidence:** real AID 1.0 documents and status lists, signed by a synthetic
+  issuer with the composite suite. The checker decodes the composite proof, verifies both
+  halves, reads the list with `node:zlib` and applies the historical rules itself. ML-DSA-65
+  and Ed25519 are the same libraries as the SDK's. Schema conformance of the documents is
+  the credential verifier's (the SDK adapter checks it) and S1's vectors'.
 - **Keys:** synthetic. Each seed is SHA-256 of a public label in `generate.mjs`; the
-  vectors carry public keys only. They are test material and trusted nowhere.
+  vectors carry public keys only. They are test material and trusted nowhere. ML-DSA-65
+  signs without extra entropy and status lists use stored deflate blocks, so the output
+  is the same on every run and platform.
 
 Ed25519 is the same library on both sides; the strict rule is applied by the checker:
 the holder key and `R` canonical, not small order and torsion free, and `S < L`. With
@@ -84,7 +93,7 @@ agree, so implementations cannot diverge on a valid vector.
 | 9 | RCP-09, SEQ-R2d |
 | 10 | RCP-10a–d |
 | 11 | RCP-11a–b |
-| 12 | RCP-12a–d (historical evidence) |
+| 12 | RCP-12a–n (`historical.json`: missing, foreign and non-authentic evidence; validity at `issuedAt` and its boundaries; bindings; retained lists that hold, fail or are another list) |
 | 13 | SEQ-R1a–d |
 | 14–18 | SEQ-R2a, SEQ-R2b, SEQ-R2c, SEQ-R2d, SEQ-R2e |
 | 19 | REQ-008, REQ-009, REQ-012–REQ-017 |
@@ -113,7 +122,8 @@ SEQ-CAS1–CAS3), a business rejection
 |---|---|---|
 | requests | `check.mjs` | `vectors-requests.test.ts`: the request rules through `MemoryChallengeStore`, with each vector's timeline |
 | fingerprints | `check.mjs` | `vectors-requests.test.ts` |
-| receipts | `check.mjs` | `vectors-receipts.test.ts`; RCP-12a–d (historical) are skipped until the SDK verifies historical receipts |
+| receipts | `check.mjs` | `vectors-receipts.test.ts` |
+| historical | `check.mjs` | `vectors-historical.test.ts`: `verifyAuthenticity` and `readRetainedStatus` of the credential verifier, at a time when the receiver credential has expired, then `verifyHistoricalReceipt` |
 | identity | `check.mjs` | `vectors-identity.test.ts`: the identity core that `verifyReceiverIdentity` runs |
 | scopes: grammar | `check.mjs` | `document10`: the credential verifier, over signed AID 1.0 documents; `newGrant` is issuance's rule (C2), reused by ARIA AP only as the grammar of exact policy patterns |
 | scopes: admission, policy | `check.mjs` | `vectors-scopes.test.ts`: the admission rules and the receiver's scope policy |

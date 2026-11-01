@@ -1,6 +1,5 @@
-// AP1 receipt vectors against ARIA AP's receipt rules. Historical mode (RCP-12a–d)
-// is not run: it needs the credential package to establish a retained credential's
-// authenticity without its current validity, which it does not offer yet.
+// AP1 receipt vectors against ARIA AP's receipt rules. Historical receipts have their
+// own vectors (vectors-historical.test.ts).
 import { describe, expect, it } from 'vitest';
 import { checkReceipt } from '../src/internal/receipt';
 import { holderOf, load, type View } from './conformance';
@@ -24,13 +23,12 @@ function answer(vector: any): Record<string, unknown> {
 
 describe('AP1 receipt vectors', () => {
   for (const vector of receipts.vectors) {
-    const run = vector.mode === 'historical' ? it.skip : it;
-    run(`${vector.id}: ${vector.title}`, () => {
+    it(`${vector.id}: ${vector.title}`, () => {
       expect(answer(vector)).toEqual(vector.expect);
     });
   }
 
-  it('leaves out only the historical vectors', () => {
-    expect(receipts.vectors.filter((v: any) => v.mode === 'historical').map((v: any) => v.id)).toEqual(['RCP-12a', 'RCP-12b', 'RCP-12c', 'RCP-12d']);
+  it('holds no historical vectors', () => {
+    expect(receipts.vectors.filter((v: any) => v.mode === 'historical')).toEqual([]);
   });
 });

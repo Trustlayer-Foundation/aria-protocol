@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Generates the ARIA AP request, fingerprint, receipt and receiver identity vectors
-// (provisional profile).
+// Generates the ARIA AP request, fingerprint, receipt, receiver identity and historical
+// receipt vectors (provisional profile).
 //
 // Keys are synthetic: each seed is SHA-256 of a public label below, so anyone can
 // rebuild them. They exist only to make these vectors and are never trusted anywhere.
@@ -12,6 +12,7 @@
 
 import { ed25519, ED25519_TORSION_SUBGROUP } from '@noble/curves/ed25519.js';
 import { sha256, sha512 } from '@noble/hashes/sha2.js';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const profile = JSON.parse(readFileSync(new URL('./profile.json', import.meta.url), 'utf8'));
@@ -483,7 +484,7 @@ const ATTEMPT = {
 const RESULT = digest(utf8('{"state":"booked","transfer":"t-1001"}'));
 
 function receipt(spec) {
-  const receiver = RECEIVERS[spec.receiver ?? 'r1'];
+  const receiver = spec.receiverView ?? RECEIVERS[spec.receiver ?? 'r1'];
   const attempt = spec.attempt ?? ATTEMPT.a1;
   const body = {
     type: spec.type ?? 'aria-ap-receipt/1',
@@ -543,10 +544,6 @@ const RECEIPTS = [
   { id: 'RCP-10d', title: 'larger than 4 KiB, signed', covers: ['§5.9 #10'], receipt: { label: 'large', outcome: { ...refusedOperation, code: `bank.${'x'.repeat(4096)}` } }, mode: 'retrieval', transportStatus: 200, client: client(['a1']), expect: invalid('malformed') },
   { id: 'RCP-11a', title: 'after the receiver renewed: verified against the exact instance', covers: ['§5.9 #11'], receipt: { label: 'completed', outcome: completed }, mode: 'retrieval', transportStatus: 200, client: client(['a1'], 'r1'), expect: valid(completed, ATTEMPT.a1) },
   { id: 'RCP-11b', title: 'after the receiver renewed: checked against the DID\'s current document', covers: ['§5.9 #11'], receipt: { label: 'completed', outcome: completed }, mode: 'retrieval', transportStatus: 200, client: client(['a1'], 'r2'), expect: invalid('receiver_mismatch') },
-  { id: 'RCP-12a', title: 'historical: receiver credential revoked after issuedAt', covers: ['§5.9 #12', 'historical evidence'], receipt: { label: 'completed', outcome: completed }, mode: 'historical', client: client(['a1']), evidence: { credential: RECEIVERS.r1, status: { state: 'revoked', observedAt: '2026-12-01T00:00:00Z' } }, expect: valid(completed, ATTEMPT.a1, { findings: { issuedAtWithinValidity: true, retainedStatus: 'revoked', signingTime: 'receiver_claim' } }) },
-  { id: 'RCP-12b', title: 'historical without the exact receiver credential', covers: ['historical evidence'], receipt: { label: 'completed', outcome: completed }, mode: 'historical', client: client(['a1']), expect: invalid('evidence_missing') },
-  { id: 'RCP-12c', title: 'historical with the DID\'s current document instead of the named one', covers: ['historical evidence'], receipt: { label: 'completed', outcome: completed }, mode: 'historical', client: client(['a1']), evidence: { credential: RECEIVERS.r2 }, expect: invalid('evidence_missing') },
-  { id: 'RCP-12d', title: 'historical: issuedAt outside the named credential\'s validity', covers: ['historical evidence'], receipt: { label: 'completed late', outcome: completed, issuedAt: '2027-12-01T00:00:00Z' }, mode: 'historical', client: client(['a1']), evidence: { credential: RECEIVERS.r1 }, expect: valid(completed, ATTEMPT.a1, { findings: { issuedAtWithinValidity: false, retainedStatus: 'not_retained', signingTime: 'receiver_claim' } }), note: 'The statement verifies; its claimed time does not fall in the credential\'s validity, and that is reported, not hidden.' },
   { id: 'RCP-13', title: 'an attempt refusal presented as a retrieval result', covers: ['§5.5'], receipt: { label: 'refused attempt', outcome: refusedAttempt, attempt: ATTEMPT.a2 }, mode: 'retrieval', transportStatus: 200, client: client(['a1', 'a2']), expect: invalid('not_operation') },
   { id: 'RCP-14', title: 'another receipt type', covers: ['type'], receipt: { label: 'old type', outcome: completed, type: 'aria-receipt/0.1' }, mode: 'decision', transportStatus: 201, client: client(['a1']), expect: invalid('unsupported_type') },
   { id: 'RCP-15a', title: 'completed that applies to an attempt', covers: ['§5.2 outcome.applies'], receipt: { label: 'completed attempt', outcome: { ...completed, applies: 'attempt' } }, mode: 'decision', transportStatus: 201, client: client(['a1']), expect: invalid('malformed') },
@@ -562,7 +559,6 @@ const receiptVectors = RECEIPTS.map((c) => ({
   mode: c.mode,
   ...(c.transportStatus ? { transportStatus: c.transportStatus } : {}),
   client: c.client,
-  ...(c.evidence ? { evidence: c.evidence } : {}),
   receipt: receipt(c.receipt),
   expect: c.expect,
 }));
@@ -677,6 +673,163 @@ const identityVectors = IDENTITY_CASES.map((c) => ({
   expect: typeof c.expect === 'function' ? c.expect(c.id) : c.expect,
 }));
 
+// ---------------------------------------------------------------- historical receipts
+
+// Receipts checked long after the exchange against retained evidence: real AID 1.0
+// documents and status lists, signed by a synthetic issuer with the composite suite.
+// ML-DSA-65 signs deterministically (no extra entropy); status lists use stored deflate
+// blocks, so their bytes do not depend on a zlib build.
+const ISSUER_DID = 'did:aria:registry.example.test';
+const ISSUER_METHOD = `${ISSUER_DID}#key-1`;
+const STATUS_LIST = 'https://registry.example.test/v1/status/1';
+const ISSUER_PQ = ml_dsa65.keygen(sha256(utf8('aria-ap-1 synthetic issuer ML-DSA-65 seed')));
+const ISSUER_ED = key('synthetic issuer Ed25519 key');
+const HISTORICAL_AT = '2028-01-01T00:00:00Z';
+
+function issuerSigned(document, created, corrupt) {
+  const payload = utf8(canonical(document));
+  const pq = ml_dsa65.sign(payload, ISSUER_PQ.secretKey, { extraEntropy: false });
+  const ed = Uint8Array.from(ed25519.sign(payload, ISSUER_ED.seed));
+  if (corrupt === 'classical') ed[0] ^= 0x01;
+  const header = new Uint8Array(4);
+  new DataView(header.buffer).setUint32(0, pq.length, false);
+  const proofValue = `u${b64url(Buffer.concat([header, pq, ed]))}`;
+  return { ...document, proof: { type: 'DataIntegrityProof', cryptosuite: 'mldsa65-ed25519-2026', created, verificationMethod: ISSUER_METHOD, proofPurpose: 'assertionMethod', proofValue } };
+}
+
+function uuid7(label) {
+  const b = sha256(utf8(`aria-ap-1 vector uuid7: ${label}`)).slice(0, 16);
+  b[6] = (b[6] & 0x0f) | 0x70;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Buffer.from(b).toString('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function aid({ label, n, holder, validFrom, validUntil, index }, corrupt) {
+  const document = {
+    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://aria.bar/ns/v1'],
+    id: `https://api.aria.bar/v1/credentials/${uuid7(label)}`,
+    type: ['VerifiableCredential', 'ARIAIdentityDocument'],
+    issuer: ISSUER_DID,
+    validFrom,
+    validUntil,
+    credentialSubject: {
+      id: RECEIVER_DID,
+      agentName: 'transfers',
+      version: '1.0.0',
+      spec_version: '1.0',
+      trustLevel: 'L1',
+      scope: ['payments:transfer:receive'],
+      hitlRequired: [],
+      delegationDepth: 0,
+      maxDelegationDepth: 0,
+      principal: { type: 'Organization', legalName: 'Example Bank', did: 'did:aria:bank.example.test:owner', jurisdiction: 'ES', verificationStatus: 'registry-confirmed' },
+      holderKey: { id: `${RECEIVER_DID}#holder-key-${n}`, type: 'Ed25519VerificationKey2020', publicKeyMultibase: `z${base58(holder.publicKey)}` },
+      enrollmentAttestation: { userAgentAgreement: true, attestedAt: validFrom, termsVersion: '1.0.0', privacyVersion: '1.0.0' },
+    },
+    credentialStatus: { id: `${STATUS_LIST}#${index}`, type: 'BitstringStatusListEntry', statusPurpose: 'revocation', statusListIndex: String(index), statusListCredential: STATUS_LIST },
+  };
+  return issuerSigned(document, validFrom, corrupt);
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+// gzip (RFC 1952) of one stored deflate block (RFC 1951 §3.2.4); `bits` is at most 65535 bytes.
+function gzipStored(bits) {
+  const out = Buffer.alloc(10 + 5 + bits.length + 8);
+  out.set([0x1f, 0x8b, 8, 0, 0, 0, 0, 0, 0, 255]);
+  out.writeUInt8(1, 10);
+  out.writeUInt16LE(bits.length, 11);
+  out.writeUInt16LE(~bits.length & 0xffff, 13);
+  out.set(bits, 15);
+  out.writeUInt32LE(crc32(bits), 15 + bits.length);
+  out.writeUInt32LE(bits.length, 19 + bits.length);
+  return out;
+}
+
+function statusListDocument({ revoked = [], validFrom, id = STATUS_LIST }, corrupt) {
+  const bits = new Uint8Array(131_072 / 8);
+  for (const i of revoked) bits[i >> 3] |= 0x80 >> (i & 7);
+  const document = {
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
+    id,
+    type: ['VerifiableCredential', 'BitstringStatusListCredential'],
+    issuer: ISSUER_DID,
+    validFrom,
+    validUntil: iso(Date.parse(validFrom) / 1000 + 24 * 3600),
+    credentialSubject: { id: `${id}#list`, type: 'BitstringStatusList', statusPurpose: 'revocation', encodedList: `u${b64url(gzipStored(bits))}` },
+  };
+  return issuerSigned(document, validFrom, corrupt);
+}
+
+const R1 = { label: 'receiver 1 (retained)', n: 1, holder: KEYS.r1, validFrom: '2026-10-01T00:00:00Z', validUntil: '2027-10-01T00:00:00Z', index: 21 };
+const R2 = { label: 'receiver 2 (renewed)', n: 2, holder: KEYS.r2, validFrom: '2027-09-01T00:00:00Z', validUntil: '2028-09-01T00:00:00Z', index: 22 };
+const DOCUMENTS = {
+  r1: { document: aid(R1), authentic: true, note: 'expired at the check: verifyCredential refuses it, authenticity holds' },
+  r2: { document: aid(R2), authentic: true, note: 'the same DID\'s current document at the check' },
+  'r1-altered': { document: aid(R1, 'classical'), authentic: false, reason: 'signature_invalid' },
+};
+const STATUS_LISTS = {
+  revoked: { document: statusListDocument({ revoked: [R1.index], validFrom: '2026-12-01T00:00:00Z' }), read: { state: 'revoked' } },
+  active: { document: statusListDocument({ revoked: [R2.index], validFrom: '2026-11-01T00:00:00Z' }), read: { state: 'active' } },
+  forged: { document: statusListDocument({ revoked: [R1.index], validFrom: '2026-12-01T00:00:00Z' }, 'classical'), read: { reason: 'signature_invalid' } },
+  'other-list': { document: statusListDocument({ revoked: [R1.index], validFrom: '2026-12-01T00:00:00Z', id: 'https://registry.example.test/v1/status/2' }), read: { reason: 'malformed' } },
+};
+
+const R1_VIEW = { did: RECEIVER_DID, url: DOCUMENTS.r1.document.id, holderKey: DOCUMENTS.r1.document.credentialSubject.holderKey };
+const H_ATTEMPT = { a1: attemptOf('REQ-001', R1_VIEW), y: attemptOf('REQ-011', R1_VIEW) };
+const findings = (within, retained, period) => ({ issuedAtWithinValidity: within, retainedStatus: retained, retainedStatusPeriod: period ?? null, signingTime: 'receiver_claim' });
+const period = (validFrom) => ({ validFrom, validUntil: iso(Date.parse(validFrom) / 1000 + 24 * 3600) });
+const hist = (spec) => ({ receiverView: R1_VIEW, attempt: H_ATTEMPT.a1, outcome: completed, ...spec });
+
+const HISTORICAL = [
+  { id: 'RCP-12a', title: 'receiver credential revoked after issuedAt, by a retained list', covers: ['§5.9 #12'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r1', statusList: 'revoked' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(true, 'revoked', period('2026-12-01T00:00:00Z')) }), note: 'Valid: authenticity and bindings hold. The list says revoked during its own validity, after issuedAt; that is reported, not turned into invalidity.' },
+  { id: 'RCP-12b', title: 'no retained receiver credential', covers: ['§5.9 #12'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: {}, expect: invalid('evidence_missing') },
+  { id: 'RCP-12c', title: 'the DID\'s current document instead of the named one', covers: ['§5.9 #12'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r2' }, expect: invalid('evidence_missing') },
+  { id: 'RCP-12d', title: 'issuedAt outside the named credential\'s validity', covers: ['§5.9 #12'], receipt: hist({ label: 'historical completed late', issuedAt: '2027-12-01T00:00:00Z' }), attempts: ['a1'], evidence: { document: 'r1' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(false, 'not_retained') }), note: 'The statement verifies; its claimed time does not fall in the credential\'s validity, and that is reported, not hidden.' },
+  { id: 'RCP-12e', title: 'a retained document that is not authentic is no evidence', covers: ['authenticity'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r1-altered' }, expect: invalid('evidence_missing') },
+  { id: 'RCP-12f', title: 'a retained list valid at issuedAt says active', covers: ['retained status'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r1', statusList: 'active' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(true, 'active', period('2026-11-01T00:00:00Z')) }) },
+  { id: 'RCP-12g', title: 'a retained list whose signature fails is not retained status', covers: ['retained status'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r1', statusList: 'forged' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(true, 'not_retained') }) },
+  { id: 'RCP-12h', title: 'another genuine list of the issuer is not this credential\'s', covers: ['retained status'], receipt: hist({ label: 'historical completed' }), attempts: ['a1'], evidence: { document: 'r1', statusList: 'other-list' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(true, 'not_retained') }) },
+  { id: 'RCP-12i', title: 'issuedAt exactly at validFrom', covers: ['boundary'], receipt: hist({ label: 'historical at validFrom', issuedAt: R1.validFrom }), attempts: ['a1'], evidence: { document: 'r1' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(true, 'not_retained') }) },
+  { id: 'RCP-12j', title: 'issuedAt exactly at validUntil', covers: ['boundary'], receipt: hist({ label: 'historical at validUntil', issuedAt: R1.validUntil }), attempts: ['a1'], evidence: { document: 'r1' }, expect: valid(completed, H_ATTEMPT.a1, { findings: findings(false, 'not_retained') }), note: 'validUntil is exclusive, as when a credential is judged now.' },
+  { id: 'RCP-12k', title: 'signed by a key other than the named credential\'s holder key', covers: ['authenticity'], receipt: hist({ label: 'historical forged', signer: 'attacker' }), attempts: ['a1'], evidence: { document: 'r1' }, expect: invalid('signature_invalid') },
+  { id: 'RCP-12l', title: 'bound to no kept attempt', covers: ['binding'], receipt: hist({ label: 'historical other operation', attempt: H_ATTEMPT.y }), attempts: ['a1'], evidence: { document: 'r1' }, expect: invalid('binding') },
+  { id: 'RCP-12m', title: 'keyid of another key of the receiver', covers: ['receiver'], receipt: hist({ label: 'historical other key', keyid: `${RECEIVER_DID}#holder-key-2` }), attempts: ['a1'], evidence: { document: 'r1' }, expect: invalid('receiver_mismatch') },
+  { id: 'RCP-12n', title: 'the digest selects a kept attempt, the receipt names another operation', covers: ['binding'], receipt: hist({ label: 'historical operation swapped', extra: { request: { id: OP.Y, sender: H_ATTEMPT.a1.sender, digest: H_ATTEMPT.a1.requestDigest } } }), attempts: ['a1'], evidence: { document: 'r1' }, expect: invalid('binding') },
+];
+
+const historicalContext = {
+  at: HISTORICAL_AT,
+  issuer: {
+    did: ISSUER_DID,
+    verificationMethod: ISSUER_METHOD,
+    maxLevel: 'L1',
+    statusLists: [STATUS_LIST],
+    keys: { mldsa65: b64(ISSUER_PQ.publicKey), ed25519: b64(ISSUER_ED.publicKey) },
+  },
+  documents: DOCUMENTS,
+  statusLists: STATUS_LISTS,
+};
+const historicalVectors = HISTORICAL.map((c) => ({
+  id: c.id,
+  title: c.title,
+  covers: c.covers,
+  ...(c.note ? { note: c.note } : {}),
+  attempts: c.attempts.map((a) => H_ATTEMPT[a]),
+  evidence: c.evidence,
+  receipt: receipt(c.receipt),
+  expect: c.expect,
+}));
+
 // ---------------------------------------------------------------- write
 
 const header0 = {
@@ -691,4 +844,5 @@ write('requests.json', { ...header0, context: requestContext, vectors: requestVe
 write('fingerprints.json', { ...header0, ...fingerprintVectors });
 write('receipts.json', { ...header0, vectors: receiptVectors });
 write('identity.json', { ...header0, context: identityContext, vectors: identityVectors });
-console.log(`requests ${requestVectors.length}, fingerprints ${fingerprintVectors.cases.length}, receipts ${receiptVectors.length}, identity ${identityVectors.length}`);
+write('historical.json', { ...header0, context: historicalContext, vectors: historicalVectors });
+console.log(`requests ${requestVectors.length}, fingerprints ${fingerprintVectors.cases.length}, receipts ${receiptVectors.length}, identity ${identityVectors.length}, historical ${historicalVectors.length}`);
