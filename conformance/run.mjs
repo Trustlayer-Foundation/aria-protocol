@@ -204,6 +204,67 @@ async function principalKindCheck(strict) {
   report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
 }
 
+// ── 6 · scopes and holder keys, as issued and as read ──────────────────────────
+// The shared cases of vectors/scopes.json and vectors/holder-keys.json, against the
+// schemas that state them. The authority and the SDK run the same cases against
+// their own code: what a schema cannot say (a key's length, order and torsion) is
+// judged there.
+async function scopeAndHolderKeyCheck(strict) {
+  const name = 'scopes and holder keys are accepted and refused as the shared cases say';
+  let Ajv2020, addFormats;
+  try {
+    Ajv2020 = (await import('ajv/dist/2020.js')).default;
+    addFormats = (await import('ajv-formats')).default;
+  } catch {
+    const why = 'ajv not installed — run `npm install` in conformance/';
+    return strict ? report(name, false, why) : skip(name, why);
+  }
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv);
+  const aid = JSON.parse(readFileSync(join(root, 'schema', 'aid-1.0.json'), 'utf8'));
+  const exchange = JSON.parse(readFileSync(join(root, 'federation', 'exchange.schema.json'), 'utf8'));
+  ajv.addSchema(aid);
+  ajv.addSchema(exchange);
+  const subject = aid.properties.credentialSubject.properties;
+  const judges = {
+    issued: ajv.getSchema(`${exchange.$id}#/$defs/scope`),
+    credential: ajv.compile(subject.scope.items),
+    // Decision D5's recommendation, not in force: exactly three segments.
+    proposed_issuance: (s) => /^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/.test(s) && judges.issued(s),
+  };
+  const wrong = [];
+  let total = 0;
+  const scopes = load('scopes.json');
+  for (const [context, judge] of Object.entries(judges)) {
+    for (const [list, expected] of [['accept', true], ['reject', false]]) {
+      for (const s of scopes[context][list]) {
+        total += 1;
+        if (Boolean(judge(s)) !== expected) wrong.push(`${context}: ${s} should be ${expected ? 'accepted' : 'refused'}`);
+      }
+    }
+  }
+  const keys = load('holder-keys.json');
+  const encoding = ajv.compile(subject.holderKey.properties.publicKeyMultibase);
+  const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const base58 = (bytes) => {
+    let n = 0n;
+    for (const b of bytes) n = n * 256n + BigInt(b);
+    let out = '';
+    while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+    for (const b of bytes) { if (b !== 0) break; out = '1' + out; }
+    return out;
+  };
+  for (const k of keys.accept) {
+    total += 1;
+    const raw = Buffer.from(k.raw, 'hex');
+    if (raw.length !== 32 || k.publicKeyMultibase !== 'z' + base58(raw) || k.multikey !== 'z' + base58(Buffer.concat([Buffer.from([0xed, 0x01]), raw])) || !encoding(k.publicKeyMultibase)) {
+      wrong.push(`holder key: ${k.label} is not the z-base58btc of its 32 raw bytes`);
+    }
+  }
+  total += keys.reject.length; // judged by the authority and the SDK, which decode keys
+  report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
+}
+
 // ── run ───────────────────────────────────────────────────────────────────────
 const argSdk = process.argv.indexOf('--sdk');
 let sdkEntry = argSdk > -1 ? process.argv[argSdk + 1] : null;
@@ -220,5 +281,6 @@ await abnfCheck(sdkEntry);
 redefinitionCheck();
 await expansionCheck(process.argv.includes('--strict'));
 await principalKindCheck(process.argv.includes('--strict'));
+await scopeAndHolderKeyCheck(process.argv.includes('--strict'));
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) failed.`}`);
 process.exit(failures === 0 ? 0 : 1);

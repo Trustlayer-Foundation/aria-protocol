@@ -1,0 +1,55 @@
+{
+  "_comment": "Scope strings in ARIA 1.0, by where they are judged. issued: what an authority accepts in an agent statement today (two or more lower-case segments, each starting with a letter, of letters, digits and underscores; at most 64 characters). credential: what a signed 1.0 document may carry (the same segments, no length bound). proposed_issuance: decision D5's recommendation for new issuances, exactly three segments; not in force. Receivers' policy patterns (namespace:resource:*) are ARIA AP's, in conformance/ap.",
+  "issued": {
+    "accept": [
+      "commerce:orders:create",
+      "data:documents:read",
+      "finance:invoices:read",
+      "x1:y_2:z3",
+      "catalog:read",
+      "a:b:c:d",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    ],
+    "reject": [
+      "commerce",
+      "Commerce:orders:create",
+      "commerce.orders.create",
+      "commerce:orders:*",
+      "commerce:orders:create@v0.2",
+      ":orders:create",
+      "commerce::create",
+      "commerce:orders:",
+      "1commerce:orders:create",
+      "commerce:orders:create-now",
+      "commerce:orders: create",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    ]
+  },
+  "credential": {
+    "accept": [
+      "commerce:orders:create",
+      "catalog:read",
+      "a:b:c:d",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    ],
+    "reject": [
+      "commerce",
+      "Commerce:orders:create",
+      "commerce:orders:*",
+      "commerce:orders:create@v0.2",
+      "commerce:orders:create-now"
+    ]
+  },
+  "proposed_issuance": {
+    "accept": [
+      "commerce:orders:create",
+      "x1:y_2:z3"
+    ],
+    "reject": [
+      "catalog:read",
+      "a:b:c:d",
+      "commerce:orders:*"
+    ]
+  }
+}
