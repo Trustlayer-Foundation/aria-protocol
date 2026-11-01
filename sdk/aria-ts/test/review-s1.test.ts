@@ -36,7 +36,7 @@ describe('S1-F1: the list must be the one the credential names, in the supported
 
   it('refuses a subject it does not support', async () => {
     expect(await listStatus(statusList(issuer, [], { subject: { statusSize: 2 } }))).toMatchObject({ state: 'unavailable', reason: 'malformed' });
-    expect(await listStatus(statusList(issuer, [], { subject: { type: 'StatusList2021' } }))).toMatchObject({ state: 'unavailable', reason: 'malformed' });
+    expect(await listStatus(statusList(issuer, [], { subject: { type: 'ExampleStatusList' } }))).toMatchObject({ state: 'unavailable', reason: 'malformed' });
     expect(await listStatus(statusList(issuer, [], { subject: { statusPurpose: 'suspension' } }))).toMatchObject({ state: 'unavailable', reason: 'malformed' });
   });
 });
