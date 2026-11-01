@@ -12,8 +12,10 @@
 // A request refused for its shape must fail the schema where the refusal points.
 // A request refused for anything else must pass it: as far as its payload when
 // the payload is judged, as far as its envelope when the refusal comes before
-// the payload is read. Every answer must match the schema of its status, and every
-// refusal code must travel with the status the contract gives it.
+// the payload is read. Every answer must match the schema of its status, refusals
+// included, and every refusal code must travel with the status the contract gives
+// it. The identifier cases of identifiers.json must be accepted and rejected by the
+// schema exactly as listed; the authority checks the same cases with its parser.
 //
 // Exit 0 when everything holds, 1 otherwise.
 
@@ -32,6 +34,7 @@ const openapi = parseYaml(readFileSync(join(root, 'federation/openapi.yaml'), 'u
 const exchange = json(join(root, 'federation/exchange.schema.json'));
 const aid = json(join(root, 'schema/aid-1.0.json'));
 const exchanges = json(join(here, 'exchanges/vectors/vectors.json'));
+const identifiers = json(join(here, 'identifiers.json'));
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
@@ -134,7 +137,27 @@ function errors(name, instance) {
 const pointsAt = (errs, path) =>
   errs.some((e) => path === e.instancePath || path.startsWith(`${e.instancePath}/`));
 
-const kinds = { accepted: 0, unreadable: 0, shape: 0, beforePayload: 0, judged: 0 };
+const kinds = { accepted: 0, unreadable: 0, shape: 0, beforePayload: 0, judged: 0, refusals: 0, echoed: 0 };
+
+// A refusal's correlation ID is drawn at random; any UUID stands for it here.
+const CORRELATION_ID = '6f0c1c8e-7d8a-4f36-9a51-0b6b8c3e2d10';
+
+/**
+ * The body the authority sends for a refused step, by the contract's rule: its code
+ * and path, a correlation ID, and the request's own request_id once the request
+ * signature has verified. Null when the step cannot be answered that way.
+ */
+function refusalBody(step) {
+  const { code, path, request_id_echo: echoed } = step.expect;
+  if (typeof path !== 'string' || typeof echoed !== 'boolean') return null;
+  const body = { code, path, correlation_id: CORRELATION_ID };
+  if (echoed) {
+    const id = step.body_raw === undefined ? step.body?.assertion?.request_id : undefined;
+    if (id === undefined) return null;
+    body.request_id = id;
+  }
+  return body;
+}
 
 function checkStep(id, i, step) {
   const at = `${id} step ${i} (${step.endpoint})`;
@@ -147,6 +170,12 @@ function checkStep(id, i, step) {
       return fail(`${at}: ${expect.code} with ${status}, the contract gives ${statusOf.get(expect.code)}`);
     }
     if (!answers[op][String(status)]) return fail(`${at}: ${op} has no ${status} response`);
+    const body = refusalBody(step);
+    if (!body) return fail(`${at}: a refusal needs its path, and a request_id to echo when it says so`);
+    const bad = errors(`refusal${status}`, body);
+    if (bad.length) return fail(`${at}: refusal body fails refusal${status}: ${ajv.errorsText(bad)}`);
+    kinds.refusals += 1;
+    if (body.request_id) kinds.echoed += 1;
   }
 
   if (step.body_raw !== undefined) {
@@ -200,55 +229,88 @@ for (const vector of exchanges.vectors) {
   });
 }
 
+// ── Identifiers ─────────────────────────────────────────────────────────────
+
+let cases = 0;
+for (const [definition, { accept, reject }] of Object.entries(identifiers.cases)) {
+  for (const [list, expected] of [[accept, true], [reject, false]]) {
+    for (const value of list) {
+      cases += 1;
+      const ok = errors(definition, value).length === 0;
+      if (ok === expected) pass();
+      else fail(`${definition}: ${value} is ${ok ? 'accepted' : 'rejected'} by the schema`);
+    }
+  }
+}
+
 // ── Controls: the checks above can fail ─────────────────────────────────────
 
 const positive = exchanges.vectors.find((v) => v.id.startsWith('P01-'));
 const mint = positive.steps.find((s) => s.endpoint === 'mint');
+const refusal = (extra) => ({
+  code: 'signature_invalid',
+  path: '/signature/value',
+  correlation_id: CORRELATION_ID,
+  ...extra,
+});
+// Each control names what the schema must do with it.
+const accepted = (name, check) => [name, false, check];
 const controls = [
-  ['an unknown member in an accepted payload', () => {
+  accepted('a refusal before the signature has verified', () => errors('refusal401', refusal()).length > 0),
+  accepted('a refusal echoing the request_id', () =>
+    errors('refusal401', refusal({ code: 'assertion_expired', request_id: CORRELATION_ID })).length > 0),
+  ['a refusal with a member the authority never sends', true, () => errors('refusal401', refusal({ detail: 'x' })).length > 0],
+  ['a refusal without its correlation ID', true, () => {
+    const body = refusal();
+    delete body.correlation_id;
+    return errors('refusal401', body).length > 0;
+  }],
+  ['a refusal whose correlation ID is a number', true, () => errors('refusal401', refusal({ correlation_id: 7 })).length > 0],
+  ['an unknown member in an accepted payload', true, () => {
     const body = structuredClone(mint.body);
     body.payload.attestation.note = 'x';
     return errors('mintRequest', body).length > 0;
   }],
-  ['one signature half missing from an accepted request', () => {
+  ['one signature half missing from an accepted request', true, () => {
     const body = structuredClone(mint.body);
     body.signature.value = body.signature.value.slice(0, 4400);
     return errors('mintRequest', body).length > 0;
   }],
-  ['a mint payload under the reserve operation', () => errors('reserveRequest', mint.body).length > 0],
-  ['an answer without its credential', () => {
+  ['a mint payload under the reserve operation', true, () => errors('reserveRequest', mint.body).length > 0],
+  ['an answer without its credential', true, () => {
     const answer = structuredClone(mint.expect.body);
     delete answer.credential;
     return errors('mintResponse', answer).length > 0;
   }],
-  ['an issued credential with a member AID 1.0 does not define', () => {
+  ['an issued credential with a member AID 1.0 does not define', true, () => {
     const answer = structuredClone(mint.expect.body);
     answer.credential.credentialSubject.email = 'x';
     return errors('mintResponse', answer).length > 0;
   }],
-  ['a refusal code outside the contract', () => errors('refusal422', {
+  ['a refusal code outside the contract', true, () => errors('refusal422', {
     code: 'not_a_code',
     path: '',
     correlation_id: '6f0c1c8e-7d8a-4f36-9a51-0b6b8c3e2d10',
   }).length > 0],
-  ['a refusal code under another status', () => errors('refusal422', {
+  ['a refusal code under another status', true, () => errors('refusal422', {
     code: 'signature_invalid',
     path: '',
     correlation_id: '6f0c1c8e-7d8a-4f36-9a51-0b6b8c3e2d10',
   }).length > 0],
 ];
-for (const [name, rejected] of controls) {
-  if (rejected()) pass();
-  else fail(`control: ${name} is accepted`);
+for (const [name, mustReject, rejected] of controls) {
+  if (rejected() === mustReject) pass();
+  else fail(`control: ${name} is ${mustReject ? 'accepted' : 'rejected'}`);
 }
 
 console.log(
   `${ops.length} operations, ${allCodes.length} refusal codes; ` +
-    `${exchanges.vectors.length} exchanges, ${steps} requests; ${controls.length} controls`,
+    `${exchanges.vectors.length} exchanges, ${steps} requests; ${cases} identifier cases; ${controls.length} controls`,
 );
 console.log(
   `requests: ${kinds.accepted} accepted, ${kinds.unreadable} unreadable, ${kinds.shape} refused for shape, ` +
-    `${kinds.beforePayload} refused before the payload, ${kinds.judged} refused on judgement`,
+    `${kinds.beforePayload} refused before the payload, ${kinds.judged} refused on judgement; ` +
+    `${kinds.refusals} refusal bodies checked, ${kinds.echoed} echoing request_id`,
 );
 console.log(failures ? `${failures} failed, ${passes} passed` : `all ${passes} checks passed`);
 process.exit(failures ? 1 : 0);

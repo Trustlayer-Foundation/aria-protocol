@@ -9,6 +9,7 @@ with the shapes in [`federation/exchange.schema.json`](../../federation/exchange
 
 ```
 check.mjs                    checks the contract against itself and the exchanges against the contract
+identifiers.json             DIDs the schema must accept and reject exactly as the authority's parser does
 exchanges/
   tlf-config.json            the authority parameters the exchanges assume
   fixtures/ra-register.json  accredited RAs and their public test keys
@@ -32,21 +33,29 @@ It checks, with no authority running:
 - a request refused for its shape fails the schema where the refusal points;
 - a request refused for anything else passes the schema: up to the envelope when the
   refusal comes before the payload is read (400, 401, 413), in full otherwise;
-- seven controls show these checks can fail.
+- every refusal's body, as the contract says the authority sends it, passes the
+  schema of its status: `code`, `path`, a `correlation_id` (any UUID stands for
+  the random one), and the request's own `request_id` when the vector says it is
+  echoed; before and after authentication, and for an unreadable body;
+- each DID in `identifiers.json` is accepted or rejected by the schema as listed;
+- twelve controls, accepted and rejected, show these checks can tell the difference.
 
 ## Run it against an authority
 
 Each exchange runs against a fresh authority with the RAs of `ra-register.json`
 accredited, the DIDs of `taken_dids` already issued to another RA, and its clock
 fixed at each step's `now`. Refusals are compared by status, code, path and whether
-`request_id` is echoed; no `sentinels` value may appear in a refusal. A `same_as_step`
-answer must equal that earlier answer. An answer given in full (`expect.body`) is
-compared byte for byte after canonical JSON: that holds only for an authority that
-derives identifiers as the reference authority does in its replay. Another
-implementation compares those answers by schema and by the values the request
-determines.
+`request_id` is echoed (it must then be the request's own), and each refusal body
+must pass the schema of its status; no `sentinels` value may appear in a refusal. A
+`same_as_step` answer must equal that earlier answer. An answer given in full
+(`expect.body`) is compared byte for byte after canonical JSON: that holds only for
+an authority that derives identifiers as the reference authority does in its
+replay. Another implementation compares those answers by schema and by the values
+the request determines.
 
-The ARIA authority replays every exchange in its own tests.
+The ARIA authority replays every exchange in its own tests, checks every refusal it
+sends against the schema of its status, and runs `identifiers.json` through its own
+DID parser.
 
 ## What the exchanges cover
 
@@ -59,6 +68,12 @@ operation, standing and accreditation, DID form and availability, accounts manag
 another RA, bindings between statement, attestation and reservation, check sets, HITL
 scopes, oversized attestations and consumed reservations, with planted values that
 must never be echoed.
+
+**Outside shared exchanges:** a lost database acknowledgement cannot be written as a
+request and an answer. The authority tests it on its own side: a commit whose
+acknowledgement is lost answers 503 `unavailable`, and the same request then returns
+the recorded answer with one credential issued; a connection lost before the commit
+leaves nothing, and the same request then issues once.
 
 **Not covered yet:** exchanges for L1 and L2 issuance and for the domain-binding
 operations (`domain-bind`, `domain-check`, `domain-unbind`). Their shapes, paths and

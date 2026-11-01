@@ -51,10 +51,10 @@
       "pattern": "^did:aria:(?:(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?:u-[A-Za-z0-9]{8}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?):(?!org$)(?![a-z0-9-]*[0-9]{7})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
     },
     "principalDid": {
-      "$comment": "Principal registry form did:aria:u-<8>:org or principal domain form did:aria:<domain>:org (conformance/vectors/abnf-cases.json).",
+      "$comment": "Principal registry form did:aria:u-<8>:org or principal domain form did:aria:<domain>:org. A first component starting with u- is an account, so a domain there is refused (conformance/federation/identifiers.json).",
       "type": "string",
       "maxLength": 270,
-      "pattern": "^did:aria:(?:u-[A-Za-z0-9]{8}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?):org$"
+      "pattern": "^did:aria:(?:u-[A-Za-z0-9]{8}|(?!u-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?):org$"
     },
     "kid": {
       "type": "string",
