@@ -145,7 +145,8 @@ export async function verifierFromKeyset({ keysetUrl, pinned, profile, fetch = g
 The trust profile's name, highest level and status lists stay your statement: the key
 set says which keys signed, not what they are worth. This recipe trusts one pinned key;
 following a rotation through `introduced_by` is the publishing authority's check today,
-not the SDK's.
+not the SDK's: it serves a set only when its first key is the anchor its operator
+configured apart and each later key is introduced by the one before.
 
 Or via API:
 

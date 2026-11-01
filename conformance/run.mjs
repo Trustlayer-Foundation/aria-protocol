@@ -290,7 +290,15 @@ async function keysetCheck(strict) {
     const expected = `sha256:${createHash('sha256').update(canonical(identity)).digest('hex')}`;
     if (k.fingerprint !== expected) wrong.push(`${k.key_id}: fingerprint`);
   }
-  const total = 1 + doc.valid.published.keys.length;
+  // A set the publisher refuses for its spelling would also fail the schema once
+  // published: the two agree on the key-ID alphabet and the timestamp form.
+  const spelling = doc.refused.filter((c) => /fragment|fractional/.test(c.label));
+  for (const c of spelling) {
+    const asPublished = { ...c.configured, keys: c.configured.keys.map((k) => ({ ...k, fingerprint: `sha256:${'0'.repeat(64)}` })) };
+    if (validate(asPublished)) wrong.push(`${c.label}: passes the schema`);
+  }
+  if (spelling.length !== 2) wrong.push(`expected 2 spelling cases, found ${spelling.length}`);
+  const total = 1 + doc.valid.published.keys.length + spelling.length;
   report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
 }
 
