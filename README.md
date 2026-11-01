@@ -33,7 +33,7 @@ cutover remain resolvable and are distinguished by their issuer DID, never by ve
 
 ARIA gives AI agents a verifiable, cryptographically signed identity — a passport for the agentic web.
 
-Every agent gets a DID (`did:aria:*`), a trust level (L0–L3), a set of scopes defining what it can do, and a signed credential (AID) that any system can verify offline using post-quantum cryptography.
+Every agent gets a DID (`did:aria:*`), a trust level (L0 live; L1 to L3 planned), the scopes it declares — what it intends to do, which each receiver decides whether to admit — and a signed credential (AID) that any system can verify offline using post-quantum cryptography.
 
 **ARIA AP** is how an agent uses that credential with a service: the agent authenticates
 the receiver, signs each request with its holder key, the receiver admits or refuses it,
@@ -87,6 +87,8 @@ if (result.ok) {
 }
 ```
 
+**Trust is yours to state.** The SDK trusts no issuer by default: you give it each issuer you accept, with its keys, the highest level you accept from it and the status lists it may use. A published key set to obtain those keys from is pending.
+
 **What this establishes, and what it does not.** `verifyCredential` checks the AID 1.0
 schema, a trusted issuer, the proof profile, both halves of the composite signature
 (ML-DSA-65 and Ed25519), the validity window and the holder key. The status of that
@@ -116,7 +118,7 @@ ARIA is a six-layer protocol:
 | **P2 — Certify** | W3C VC Data Model 2.0 | Signed, portable, offline-verifiable credentials |
 | **P3 — Present** | ARIA AP over RFC 9421 HTTP Message Signatures (provisional) | How credentials are presented and bound to a request |
 | **P4 — Protect** | FIPS 204 + RFC 8032 | ML-DSA-65 + Ed25519 composite signatures |
-| **P5 — Revoke** | W3C Bitstring Status List v1.0 | Revocation in under 60 seconds; append-only Trust Ledger |
+| **P5 — Revoke** | W3C Bitstring Status List v1.0 | Revocation in a signed status list, as fresh as each verifier requires; append-only Trust Ledger |
 | **P6 — Govern** | TrustLayer Foundation | Nonprofit stewardship, open source |
 
 ## Trust levels
@@ -196,7 +198,7 @@ Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas
 - **Classical:** Ed25519 (RFC 8032) — transition signature
 - **Mode:** Composite AND — both signatures must verify
 - **Suite:** `mldsa65-ed25519-2026`
-- **Sunset:** the composite mode ends December 31, 2029; ML-DSA-only credentials are required after that date
+- **Transition:** the specification's plan to end the composite mode on December 31, 2029 is under review by TLF. Until it decides, both halves are required, and no date disables either
 
 ## Standards alignment
 
