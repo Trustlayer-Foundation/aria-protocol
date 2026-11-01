@@ -10,7 +10,7 @@
     "files": [
       {
         "path": "src/components/spec/SpecDocument.tsx",
-        "sha256": "sha256:a1b68907345ae619f243b772857f041ee010ff177b2130457951fca77a120f07"
+        "sha256": "sha256:a4feedd24aae86ee3027aac9a1cad6ba17bc733256c21ad59b9662618c942fc0"
       },
       {
         "path": "src/lib/spec-data.ts",
