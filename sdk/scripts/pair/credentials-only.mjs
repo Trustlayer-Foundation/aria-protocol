@@ -9,8 +9,11 @@ const make = (revoked = []) => createVerifier({ trust: [profile], clock: () => n
 
 await c.check('exports exactly the credential API', () => {
   const names = Object.keys(sdk).sort().join(',');
-  return names === 'AriaUsageError,TRUST_LEVELS,canonicalJson,createVerifier,inspectCredential' || names;
+  return names === 'AriaUsageError,TRUST_LEVELS,canonicalJson,createVerifier,inspectCredential,parseDid' || names;
 });
+
+await c.check('parses did:aria identifiers by the shared grammar', () =>
+  sdk.parseDid('did:aria:aria.bar:u-cmDoHhM3:ordering-agent')?.shape === 'agent-registry-form' && sdk.parseDid('did:aria:aria.bar:u-cmDoHhM3:org') === null);
 await c.check('ARIA AP is not installed, and is not needed', async () => (await rejects(() => import('@aria-registry/ap'), Error)) === true);
 
 const v = make();

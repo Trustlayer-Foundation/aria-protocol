@@ -173,6 +173,16 @@ if (authentic.ok) {
 }
 ```
 
+## `did:aria` identifiers
+
+`parseDid(value)` returns the parts of a `did:aria` identifier, or `null`: one of the
+four shapes of specification §3.1 (`agent-domain-form`, `agent-registry-form`,
+`principal-domain-form`, `principal-registry-form`), with its domain or registry host,
+account and agent name. It applies the same rules as the authority's parser and passes
+the 22 shared cases in `conformance/vectors/abnf-cases.json`. Use it for identifiers being
+created or compared; verifying a credential does not apply it, since a signed 1.0
+document is read under its own schema.
+
 ## Credential profile
 
 `spec_version` `"1.0"` (`schema/aid-1.0.json`, embedded byte for byte and checked by a

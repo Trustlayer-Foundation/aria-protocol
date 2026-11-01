@@ -13,4 +13,6 @@ export { canonicalJson } from './internal/canonical';
 export { LEVELS as TRUST_LEVELS } from './internal/verify-credential';
 
 export type { CredentialBinding, Did, TrustLevel } from './types';
+export { parseDid } from './did';
+export type { ParsedDid } from './did';
 export { AriaUsageError } from './errors';
