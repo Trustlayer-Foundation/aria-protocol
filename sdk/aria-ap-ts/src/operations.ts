@@ -220,6 +220,9 @@ export class OperationLedger {
       }
       existing = created.existing;
     }
+    // A stored result is access too: the admission must still hold after the last storage wait.
+    const stillHeld = this.#stillAdmitted(key, attempt, a);
+    if (stillHeld) return stillHeld;
     return this.#existing(key, existing, p.fingerprint!, attempt);
   }
 
@@ -288,13 +291,16 @@ export class OperationLedger {
     const p = a.presentation;
     const own = this.#keyOf(p);
     if (own.sender !== key.sender || own.operationId !== key.operationId || own.receiver !== key.receiver) throw new AriaUsageError('the admission is for another operation');
-    const record = await this.#storage.get(key);
-    if (!record) throw new AriaUsageError('there is no operation to resume');
     const attempt = { requestDigest: p.requestDigest, sender: { did: p.holder.did, credential: p.holder.credentialId } };
-    if (record.state !== 'accepted') return this.#existing(key, record, p.fingerprint!, attempt);
-    if (record.fingerprint !== p.fingerprint) return this.#refuse(key, attempt, 409, 'aria.idempotency_conflict');
     const before = this.#stillAdmitted(key, attempt, a);
     if (before) return before;
+    const record = await this.#storage.get(key);
+    if (!record) throw new AriaUsageError('there is no operation to resume');
+    // Judged again after the read: a final record is returned only to a current admission.
+    const afterRead = this.#stillAdmitted(key, attempt, a);
+    if (afterRead) return afterRead;
+    if (record.state !== 'accepted') return this.#existing(key, record, p.fingerprint!, attempt);
+    if (record.fingerprint !== p.fingerprint) return this.#refuse(key, attempt, 409, 'aria.idempotency_conflict');
     const next: Claimed = { state: 'claimed', fingerprint: record.fingerprint, revision: record.revision + 1, claim: { id: globalThis.crypto.randomUUID(), at: this.#now() }, attempt, receipts: record.receipts };
     if (!(await this.#storage.reclaim(key, record.revision, next))) return this.#refuse(key, attempt, 409, 'aria.operation_in_progress');
     const after = this.#stillAdmitted(key, attempt, a, () => this.#release(key, next));

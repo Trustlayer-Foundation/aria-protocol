@@ -108,6 +108,11 @@ and is the one named (`credential`); the pinned DID (`unexpected_receiver`), ori
 (`origin`), audience (`audience`), nonce (`nonce`); `created` within 60 s (`stale`); the
 signature by that credential's holder key (`signature`); and the credential's standing is
 `good` now (`status`). The client pins origin and DID; nothing is learnt from the answer.
+The verified receiver keeps that credential and status evidence: `signRequest` judges the
+statement's freshness and the credential's standing when it starts and again after the
+`Signer` returns, and refuses a request whose own signature window ended while signing.
+After that, identify the receiver again; nothing extends the old statement. Receipts
+already recorded are not judged again this way.
 The identity endpoint is anonymous and every call signs and stores a challenge:
 rate-limit it. `MemoryChallengeStore` refuses to hold more than `maxLive` (default 10 000).
 
@@ -125,8 +130,10 @@ nothing; `indeterminate` is a signed 503 `aria.status_unavailable`.
 used.** `admit` judges standing and approval again after `authorize` returns, since the
 authorizer may take time. The admission keeps the status evidence and approval it was
 judged on and its request's deadline (the signature's `expires` plus the 5 s skew);
-`begin` and `resume` judge it again before they grant a claim and once more after the
-storage write, releasing the claim just made if it no longer holds. An approval or status
+`begin` and `resume` judge it again on entry and after every storage wait, on every path:
+before granting a claim, after the write (releasing the claim just made if it no longer
+holds), and before returning a stored receipt to a retry, including after losing the
+`create` race. The recorded outcome is never changed by these refusals. An approval or status
 that lapsed refuses the attempt (signed, as at admission); a deadline that passed throws
 `AdmissionExpired`: admit a fresh attempt. Every admission is used once. The application's
 own resource decision is valid for that same lifetime; revalidating it longer is the

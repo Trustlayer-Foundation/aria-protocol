@@ -1,4 +1,4 @@
-import { AriaUsageError, canonicalJson, type CredentialFacts, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import { AriaUsageError, canonicalJson, type CredentialFacts, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
 import type { Admission, AdmissionInput, AdmissionReason, ApprovalEvidence, LookupAdmission, LookupInput } from './admission';
 import type { IdentityResponse, IdentityStatement, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
 import { digestField, fromBase64, fromBase64url, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
@@ -65,6 +65,9 @@ const ORIGIN_RULE = 'an origin is https://host[:port], or http:// on a loopback 
 interface ReceiverSnapshot {
   /** After this instant (ms) the statement and its challenge are stale: identify the receiver again. */
   readonly freshUntil: number;
+  /** The receiver's exact credential and the status evidence it was verified with, judged again at every use. */
+  readonly credential: VerifiedCredential;
+  readonly status: StatusEvidence;
   readonly pin: ReceiverPin;
   readonly key: ReceiverKey;
 }
@@ -112,6 +115,12 @@ export function createAp(config: ApConfig): Ap {
     const signature = await signer.sign(bytes);
     if (!(signature instanceof Uint8Array) || signature.length !== 64) throw new AriaUsageError('an Ed25519 signer returns 64 bytes');
     return toBase64url(signature);
+  }
+
+  /** Throws unless the receiver's statement is fresh and its credential stands now, from the evidence it was verified with. */
+  function receiverCurrent(r: ReceiverSnapshot): void {
+    if (now() > r.freshUntil) throw new AriaUsageError('the receiver statement and its challenge are no longer fresh: identify the receiver again');
+    if (credentials.standing(r.credential, r.status).state !== 'good') throw new AriaUsageError('the receiver credential no longer stands: identify the receiver again');
   }
 
   function approvalOf(a: ApprovalEvidence | undefined): ApprovalSnapshot | null {
@@ -272,13 +281,16 @@ export function createAp(config: ApConfig): Ap {
       const { proof: _, ...unsigned } = s;
       const bytes = utf8(canonicalJson({ ...unsigned, proof: { alg: proof.alg, keyid: proof.keyid } }));
       if (proof.alg !== 'ed25519' || proof.keyid !== f.holderKey.id || !signature || !strictVerify(signature, bytes, f.holderKey.publicKey)) return fail('signature');
-      const standing = credentials.standing(verified.credential, await credentials.checkStatus(verified.credential));
+      const status = await credentials.checkStatus(verified.credential);
+      const standing = credentials.standing(verified.credential, status);
       if (standing.state !== 'good') return fail('status');
       // Fetching status took time: the statement, and the challenge it carries, must still be fresh.
       if (now() - created > STATEMENT_MAX_AGE_MS) return fail('stale');
 
       const snapshot: ReceiverSnapshot = {
         freshUntil: created + STATEMENT_MAX_AGE_MS,
+        credential: verified.credential,
+        status,
         pin: { origin: pin.origin, did: pin.did },
         key: { did: f.did, credentialId: f.binding.credentialId, keyId: f.holderKey.id, publicKey: f.holderKey.publicKey },
       };
@@ -288,7 +300,7 @@ export function createAp(config: ApConfig): Ap {
 
     async signRequest(input) {
       const receiver = recall<ReceiverSnapshot>(ap, 'receiver', input?.receiver);
-      if (now() > receiver.freshUntil) throw new AriaUsageError('the receiver statement and its challenge are no longer fresh: identify the receiver again');
+      receiverCurrent(receiver);
       const f = credentials.facts(input.credential);
       if (input.signer?.keyId !== f.holderKey.id || input.signer.algorithm !== 'ed25519') throw new AriaUsageError("the signer must be the credential's Ed25519 holder key");
       const rule = CLASSES[input.class];
@@ -331,6 +343,9 @@ export function createAp(config: ApConfig): Ap {
         throw new AriaUsageError(`the request cannot be signed as given: ${(error as Error).message}`);
       }
       const signature = await input.signer.sign(utf8(prepared.base));
+      // The signer may take time: the receiver must still be current, and the signature inside its own window.
+      receiverCurrent(receiver);
+      if (now() / 1000 > created + windowSeconds) throw new AriaUsageError('the signature window ended while signing: sign the request again');
       if (!(signature instanceof Uint8Array) || signature.length !== 64) throw new AriaUsageError('an Ed25519 signer returns 64 bytes');
       const signedHeaders = { ...prepared.headers, 'signature-input': `${PROFILE.label}=${serializeInnerList(prepared.params)}`, signature: `${PROFILE.label}=:${toBase64(signature)}:` };
       const request: HttpRequestLike = Object.freeze({ method, target, headers: Object.freeze(signedHeaders), ...(body.length > 0 ? { body } : {}) });

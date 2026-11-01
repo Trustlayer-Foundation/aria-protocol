@@ -4,8 +4,8 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { AriaUsageError, createVerifier } from '@aria-registry/sdk';
-import { AdmissionExpired, createAp, StaleClaim, type ApprovalEvidence, type OperationStorage } from '../src';
-import { profile, statusList } from './fixtures';
+import { AdmissionExpired, createAp, OperationLedger, StaleClaim, type ApprovalEvidence, type OperationStorage } from '../src';
+import { iso, profile, sign, statusList } from './fixtures';
 import { AGENT, BANK, NOW, world } from './world';
 
 function gate() {
@@ -14,7 +14,7 @@ function gate() {
   return { opened, open };
 }
 
-async function presented(w: ReturnType<typeof world>, id = randomUUID()) {
+async function presented(w: ReturnType<typeof world>, id: string = randomUUID()) {
   const p = await w.bankAp.verifyPresentation((await w.signTransfer(id)).request, w.context);
   if (!p.ok) throw new Error(p.reason);
   return { p: p.presentation, status: await w.bankVerifier.checkStatus(p.presentation.credential), id };
@@ -250,5 +250,133 @@ describe('F3: an admission is judged again when it is used', () => {
     const blocked = { ...w2.storage, get: async (k: never) => (w2.at(NOW + 40_000), w2.storage.get(k)) } as unknown as OperationStorage;
     const { OperationLedger } = await import('../src');
     await expect(new OperationLedger(w2.bankAp, blocked, w2.self).lookup(a)).rejects.toThrow(AdmissionExpired);
+  });
+});
+
+describe('R1: every path that returns a stored result judges the admission again', () => {
+  async function admitted(w: ReturnType<typeof world>, id: string) {
+    const x = await presented(w, id);
+    const a = await w.bankAp.admit({ presentation: x.p, status: x.status, authorize: async () => ({ allowed: true }) });
+    if (a.decision !== 'allow') throw new Error('expected allow');
+    return a;
+  }
+  const slowRead = (w: ReturnType<typeof world>, at: number): OperationStorage => ({
+    get: async (k) => { const r = await w.storage.get(k); w.at(at); return r; },
+    create: (k, r) => w.storage.create(k, r),
+    replace: (k, e, n) => w.storage.replace(k, e, n),
+    reclaim: (k, rv, n) => w.storage.reclaim(k, rv, n),
+    remove: (k, e) => w.storage.remove(k, e),
+  });
+
+  it('control: a retry inside its deadline gets the original receipt, one effect', async () => {
+    const w = world();
+    const id = randomUUID();
+    const first = await w.handle((await w.signTransfer(id)).request);
+    const r = await new OperationLedger(w.bankAp, slowRead(w, NOW + 1_000), w.self).begin(await admitted(w, id));
+    expect(r).toEqual({ kind: 'existing', governing: first.receipt, status: 201 });
+    expect(w.effects).toBe(1);
+  });
+
+  it('R1a: a request that expires while the record is read gets no stored receipt', async () => {
+    const w = world();
+    const id = randomUUID();
+    const first = await w.handle((await w.signTransfer(id)).request);
+    await expect(new OperationLedger(w.bankAp, slowRead(w, NOW + 40_000), w.self).begin(await admitted(w, id))).rejects.toThrow(AdmissionExpired);
+    expect((await w.storage.get(keyOf(id)))?.receipts).toEqual([first.receipt]);
+    expect(w.effects).toBe(1);
+  });
+
+  it('R1b: status that turns stale while the record is read refuses the attempt, the outcome unchanged', async () => {
+    const w = world({ statusMaxAgeSeconds: 70 });
+    const id = randomUUID();
+    const first = await w.handle((await w.signTransfer(id)).request);
+    const r = await new OperationLedger(w.bankAp, slowRead(w, NOW + 20_000), w.self).begin(await admitted(w, id));
+    expect(r).toMatchObject({ kind: 'refused', refusal: { status: 503, code: 'aria.status_unavailable' } });
+    expect((await w.storage.get(keyOf(id)))?.receipts).toEqual([first.receipt]);
+  });
+
+  it('R1c: resume with an admission that expired before entry returns nothing stored', async () => {
+    const w = world();
+    const id = randomUUID();
+    await w.handle((await w.signTransfer(id)).request);
+    const a = await admitted(w, id);
+    w.at(NOW + 25 * 3_600_000);
+    await expect(w.ledger.resume(keyOf(id), a)).rejects.toThrow(AdmissionExpired);
+  });
+
+  it('R1d: losing the create race to another worker while the admission expires returns nothing stored', async () => {
+    const w = world();
+    const id = randomUUID();
+    const winner = await w.ledger.begin(await admitted(w, id));
+    expect(winner.kind).toBe('claimed');
+    const loser: OperationStorage = {
+      get: async () => null, // read before the winner wrote
+      create: async (k, r) => { const out = await w.storage.create(k, r); w.at(NOW + 40_000); return out; },
+      replace: (k, e, n) => w.storage.replace(k, e, n),
+      reclaim: (k, rv, n) => w.storage.reclaim(k, rv, n),
+      remove: (k, e) => w.storage.remove(k, e),
+    };
+    await expect(new OperationLedger(w.bankAp, loser, w.self).begin(await admitted(w, id))).rejects.toThrow(AdmissionExpired);
+    expect((await w.storage.get(keyOf(id)))?.state).toBe('claimed');
+  });
+});
+
+describe('R2: a verified receiver is judged when it is used to sign', () => {
+  const request = { method: 'POST', target: '/v1/transfers', headers: { 'content-type': 'application/json' }, body: new TextEncoder().encode('{}') };
+  const signWith = (w: ReturnType<typeof world>, receiver: Awaited<ReturnType<ReturnType<typeof world>['receiver']>>, after: number, windowSeconds?: number) =>
+    w.agentAp.signRequest({
+      request,
+      class: 'unsafe-body',
+      operationId: randomUUID(),
+      receiver,
+      credential: w.agentCredential,
+      ...(windowSeconds ? { windowSeconds } : {}),
+      signer: { ...w.agentSigner, sign: async (bytes) => { const v = await w.agentSigner.sign(bytes); w.at(NOW + after); return v; } },
+    });
+
+  it('R2a: a signer that returns after the statement went stale yields no request', async () => {
+    const w = world();
+    const receiver = await w.receiver();
+    await expect(signWith(w, receiver, 61_000)).rejects.toThrow(AriaUsageError);
+    const w2 = world();
+    expect((await signWith(w2, await w2.receiver(), 25_000)).sent).not.toBeNull();
+  });
+
+  it('R2b: a receiver credential that expired since verification refuses the signing', async () => {
+    const short = async (w: ReturnType<typeof world>) => {
+      const document = sign({ ...(w.self.document as Record<string, unknown>), validUntil: iso(1_000) }, w.issuer);
+      const v = w.bankVerifier.verifyCredential(document);
+      if (!v.ok) throw new Error(v.reason);
+      const expected = { nonce: 'short-lived-receiver-0001', audience: AGENT };
+      const r = await w.agentAp.verifyReceiverIdentity(await w.bankAp.identify({ ...w.self, document, credential: v.credential }, expected, w.challenges), BANK, expected);
+      if (!r.ok) throw new Error(r.reason);
+      return r.receiver;
+    };
+    const w = world();
+    const receiver = await short(w);
+    w.at(NOW + 7_000);
+    await expect(w.signTransfer(randomUUID(), '10.00', receiver)).rejects.toThrow(AriaUsageError);
+    const w2 = world();
+    const fresh = await short(w2);
+    w2.at(NOW + 500);
+    expect((await w2.signTransfer(randomUUID(), '10.00', fresh)).sent).not.toBeNull();
+  });
+
+  it('R2c: receiver status evidence past its maximum age refuses the signing', async () => {
+    const w = world({ statusMaxAgeSeconds: 70 });
+    const receiver = await w.receiver();
+    w.at(NOW + 20_000);
+    await expect(w.signTransfer(randomUUID(), '10.00', receiver)).rejects.toThrow(AriaUsageError);
+    const w2 = world({ statusMaxAgeSeconds: 70 });
+    const r2 = await w2.receiver();
+    w2.at(NOW + 5_000);
+    expect((await w2.signTransfer(randomUUID(), '10.00', r2)).sent).not.toBeNull();
+  });
+
+  it('a request whose own signature window ends while signing is refused, the receiver still fresh', async () => {
+    const w = world();
+    await expect(signWith(w, await w.receiver(), 6_000, 5)).rejects.toThrow(AriaUsageError);
+    const w2 = world();
+    expect((await signWith(w2, await w2.receiver(), 4_000, 5)).sent).not.toBeNull();
   });
 });
