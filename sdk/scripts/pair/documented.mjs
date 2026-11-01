@@ -3,7 +3,9 @@
 // fixtures.mjs standing for the `trust`, `fetch` and `credential` it leaves to the
 // reader.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { checks, credential, NOW } from './fixtures.mjs';
+import { createHash } from 'node:crypto';
+import { canonicalJson } from '@aria-registry/sdk';
+import { checks, credential, NOW, profile } from './fixtures.mjs';
 
 const c = checks('documented');
 const here = new URL('.', import.meta.url);
@@ -45,6 +47,30 @@ if (block) {
       console.log = log;
     }
     return logged.join('\n') === `${subject.id} ${subject.trustLevel} good` || logged.join(' | ');
+  });
+}
+
+// The key-set recipe, as written: its exported function, given a key set built from
+// the fixture issuer and served by a stub, must trust exactly the pinned key.
+const recipe = /### Trust from a published key set[\s\S]*?```javascript\n([\s\S]*?)```/.exec(readme)?.[1];
+await c.check('the README shows how to trust a published key set', () => Boolean(recipe));
+if (recipe) {
+  writeFileSync(new URL('documented-keyset.mjs', here), recipe);
+  const { verifierFromKeyset } = await import(new URL('documented-keyset.mjs', here).href);
+  const hex = (b) => Buffer.from(b).toString('hex');
+  const entry = { key_id: profile.verificationMethod, suite: 'mldsa65-ed25519-2026', public_key_mldsa65: hex(profile.keys.mldsa65), public_key_ed25519: hex(profile.keys.ed25519) };
+  const pinned = `sha256:${createHash('sha256').update(canonicalJson(entry)).digest('hex')}`;
+  const serve = (keys) => async () => new Response(JSON.stringify({ issuer: profile.issuer, keys }), { headers: { 'content-type': 'application/json' } });
+  const published = [{ ...entry, active_from: '2026-01-01T00:00:00Z', active_until: null, fingerprint: pinned }];
+  const settings = { id: 'demo', maxLevel: profile.maxLevel, statusLists: profile.statusLists, verifier: { clock: () => new Date(NOW) } };
+  const recipeFor = (keys, pin = pinned) => verifierFromKeyset({ keysetUrl: 'https://status.example.test/v1/keyset', pinned: pin, profile: settings, fetch: serve(keys) });
+  await c.check('the pinned key verifies the credential', async () => (await recipeFor(published)).verifyCredential(credential).ok === true);
+  await c.check('another pin trusts nothing', async () => {
+    try { await recipeFor(published, 'sha256:' + '0'.repeat(64)); return 'trusted'; } catch { return true; }
+  });
+  await c.check('a key set claiming the pinned fingerprint for other keys is refused', async () => {
+    const forged = [{ ...published[0], public_key_ed25519: hex(new Uint8Array(32).fill(7)) }];
+    try { await recipeFor(forged); return 'trusted'; } catch { return true; }
   });
 }
 

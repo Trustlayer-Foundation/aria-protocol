@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/aria-keyset-1.json",
+  "title": "ARIA issuer key set, as published at /v1/keyset (draft)",
+  "description": "Every key an issuer has signed credentials with, in the order they became active, append-only: the first is the anchor, each later key is introduced by a composite signature of the key before it, and only the last is active. A verifier trusts the key whose fingerprint it pinned out of band; being listed here grants no trust. Draft: the published values are decision D2, TLF's.",
+  "$comment": "Rules JSON Schema cannot express, checked by the publishing authority (conformance/vectors/keyset.json): keys are ordered by active_from and their windows follow one another; introduced_by names the key before it and its signature verifies, both halves, under that key over the canonical JSON of {ctx: 'aria-keyset-introduction-v1', key_id, suite, public_key_mldsa65, public_key_ed25519, active_from}; fingerprint is 'sha256:' and the hex SHA-256 of the canonical JSON of {key_id, suite, public_key_mldsa65, public_key_ed25519}; the Ed25519 key is canonical, of large order and torsion-free.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["issuer", "keys"],
+  "properties": {
+    "issuer": { "type": "string", "pattern": "^did:aria:[a-z0-9.:-]+$" },
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/key" }
+    }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_id", "suite", "public_key_mldsa65", "public_key_ed25519", "active_from", "active_until", "fingerprint"],
+      "properties": {
+        "key_id": { "description": "The verification method credentials name in proof.verificationMethod: the issuer DID and a fragment.", "type": "string", "pattern": "^did:aria:[a-z0-9.:-]+#[A-Za-z0-9._-]+$" },
+        "suite": { "const": "mldsa65-ed25519-2026" },
+        "public_key_mldsa65": { "type": "string", "pattern": "^[0-9a-f]{3904}$" },
+        "public_key_ed25519": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "active_from": { "$ref": "#/$defs/timestamp" },
+        "active_until": { "description": "Null while the key is active. Set on retirement; the key stays listed, since credentials it signed are never re-signed.", "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] },
+        "introduced_by": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key_id", "signature"],
+          "properties": {
+            "key_id": { "type": "string" },
+            "signature": { "description": "'u' + base64url(u32be(3309) || ML-DSA-65 signature || Ed25519 signature).", "type": "string", "pattern": "^u[A-Za-z0-9_-]{4503}$" }
+          }
+        },
+        "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

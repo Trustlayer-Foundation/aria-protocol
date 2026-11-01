@@ -265,6 +265,35 @@ async function scopeAndHolderKeyCheck(strict) {
   report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
 }
 
+// ── 7 · the published key set ───────────────────────────────────────────────
+// vectors/keyset.json: the published form passes its schema and every fingerprint
+// is the SHA-256 of its key's canonical identity. Introductions and the refused
+// sets are judged by the publishing authority, which verifies composite signatures.
+async function keysetCheck(strict) {
+  const name = 'the published key set has its schema and its fingerprints';
+  let Ajv2020;
+  try {
+    Ajv2020 = (await import('ajv/dist/2020.js')).default;
+  } catch {
+    const why = 'ajv not installed — run `npm install` in conformance/';
+    return strict ? report(name, false, why) : skip(name, why);
+  }
+  const { createHash } = await import('node:crypto');
+  const doc = load('keyset.json');
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(JSON.parse(readFileSync(join(root, 'schema', 'aria-keyset-1.json'), 'utf8')));
+  const wrong = [];
+  if (!validate(doc.valid.published)) wrong.push(`schema: ${JSON.stringify(validate.errors)}`);
+  // The identity holds four plain strings: sorted keys are its canonical JSON.
+  const canonical = (o) => `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${JSON.stringify(o[k])}`).join(',')}}`;
+  for (const k of doc.valid.published.keys) {
+    const identity = { key_id: k.key_id, suite: k.suite, public_key_mldsa65: k.public_key_mldsa65, public_key_ed25519: k.public_key_ed25519 };
+    const expected = `sha256:${createHash('sha256').update(canonical(identity)).digest('hex')}`;
+    if (k.fingerprint !== expected) wrong.push(`${k.key_id}: fingerprint`);
+  }
+  const total = 1 + doc.valid.published.keys.length;
+  report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
+}
+
 // ── run ───────────────────────────────────────────────────────────────────────
 const argSdk = process.argv.indexOf('--sdk');
 let sdkEntry = argSdk > -1 ? process.argv[argSdk + 1] : null;
@@ -282,5 +311,6 @@ redefinitionCheck();
 await expansionCheck(process.argv.includes('--strict'));
 await principalKindCheck(process.argv.includes('--strict'));
 await scopeAndHolderKeyCheck(process.argv.includes('--strict'));
+await keysetCheck(process.argv.includes('--strict'));
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) failed.`}`);
 process.exit(failures === 0 ? 0 : 1);

@@ -102,6 +102,51 @@ document against its hash, bind the subject, derive the DID Document — is
 `[PLANNED]`; see [spec §3.5.2](https://aria.bar/spec#3-5-2). What the SDK verifies
 is a credential you already hold.
 
+### Trust from a published key set
+
+An issuer publishes its keys at `/v1/keyset` (schema [`aria-keyset-1.json`](schema/aria-keyset-1.json)),
+each with a fingerprint: `sha256:` and the SHA-256 of the canonical JSON of its
+`key_id`, `suite` and two public keys. Being listed grants no trust. Pin the
+fingerprint you obtained out of band — from the release manifest or the issuer's
+documentation — and take the key it names; the fingerprint is recomputed, never read
+from the document. **No issuer publishes a key set yet:** the endpoint and the values a
+production issuer would publish (decision D2) are pending.
+
+```javascript
+import { canonicalJson, createVerifier } from '@aria-registry/sdk';
+
+/** A verifier trusting the key, in an issuer's published key set, that `pinned` names. */
+export async function verifierFromKeyset({ keysetUrl, pinned, profile, fetch = globalThis.fetch }) {
+  const keyset = await (await fetch(keysetUrl, { redirect: 'error' })).json();
+  const entry = keyset.keys.find((k) => k.fingerprint === pinned && k.active_until === null);
+  if (!entry) throw new Error('the key set holds no active key with the pinned fingerprint');
+  const identity = canonicalJson({
+    key_id: entry.key_id,
+    suite: entry.suite,
+    public_key_mldsa65: entry.public_key_mldsa65,
+    public_key_ed25519: entry.public_key_ed25519,
+  });
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity));
+  if (`sha256:${Buffer.from(digest).toString('hex')}` !== pinned) throw new Error('the pinned key does not match');
+  return createVerifier({
+    ...profile.verifier, // clock, fetch policy
+    trust: [{
+      id: profile.id, // 'demo' or 'production': your statement, not the issuer's
+      issuer: keyset.issuer,
+      verificationMethod: entry.key_id,
+      keys: { mldsa65: Buffer.from(entry.public_key_mldsa65, 'hex'), ed25519: Buffer.from(entry.public_key_ed25519, 'hex') },
+      maxLevel: profile.maxLevel,
+      statusLists: profile.statusLists,
+    }],
+  });
+}
+```
+
+The trust profile's name, highest level and status lists stay your statement: the key
+set says which keys signed, not what they are worth. This recipe trusts one pinned key;
+following a rotation through `introduced_by` is the publishing authority's check today,
+not the SDK's.
+
 Or via API:
 
 ```bash

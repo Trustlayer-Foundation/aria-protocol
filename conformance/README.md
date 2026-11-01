@@ -29,6 +29,7 @@ vectors/
   context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
   scopes.json                     scope strings as issued and as read, and decision D5's proposal
   holder-keys.json                holder-key encodings accepted and refused, with their Multikey form
+  keyset.json                     a published, chained key set, and key sets an authority must refuse
 federation/                      RA-to-authority exchanges and the check of the federation
                                  contract against them (see federation/README.md)
 ap/                              ARIA AP vectors and their independent checker: provisional,
@@ -98,6 +99,7 @@ the second one possible, which is the whole reason it exists before it is needed
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
 | 5 | Manifest validation cases accepted and rejected with the stated reason | authority and RA | drift between the two validators |
 | 1e | Scopes and holder keys are accepted and refused as `scopes.json` and `holder-keys.json` say | the harness against the schemas; the SDK and the authority against their own code | one rule for what an authority issues and a verifier reads |
+| 1f | The published key set passes its schema and every fingerprint is recomputed | the harness; the authority's gateway judges the chain and the refused sets | that a pinned fingerprint names one key |
 | 6 | Federation exchanges: every request and answer matches the contract, and the authority answers each exactly | `federation/check.mjs`; the authority replays them | drift between the contract, the RA and the authority |
 
 **Check 2 is the one that matters most and the easiest to skip.** If the verify SDK
