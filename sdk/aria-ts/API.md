@@ -1,10 +1,7 @@
 # ARIA SDK 1.0 — API contract
 
-Status: S0 contract, corrected after its review (S0-R1 to S0-R4) and amended for the
-two-package structure, with S1 implemented: inspection, trust, credential verification,
-exact-instance status and the trust interface for ARIA AP work. Package name provisional
-(`@aria-registry/sdk`) until its owner is confirmed. Version 1.0.0 is a local candidate:
-private, not published, not an approved release.
+Status: implemented, version 1.0.0: inspection, trust, credential verification,
+exact-instance status and the trust interface ARIA AP works through.
 
 This package verifies credentials and their status. Requests, admission, operations and
 receipts are **ARIA AP**, the separate package in [`../aria-ap-ts`](../aria-ap-ts/API.md),
@@ -108,9 +105,9 @@ private copy, and returns the first failure in this order:
 5. both signature halves over the canonical document (`signature_invalid`);
 6. strict RFC 3339 validity, ordered, current within the skew (`invalid_validity`,
    `not_yet_valid`, `expired`);
-7. the holder key: exactly 32 raw Ed25519 bytes under the ARIA 1.0 compatibility
-   encoding, under the subject's DID, and acceptable by the authority's own rule —
-   the canonical encoding of a point, not of small order, torsion free
+7. the holder key: exactly 32 raw Ed25519 bytes in ARIA's own encoding (D6), under
+   the subject's DID, and acceptable by the authority's own rule — the canonical
+   encoding of a point, not of small order, torsion free
    (`holder_key_invalid`). The identity point and other weak keys cannot establish
    possession, so they are refused here, not only at issuance;
 8. rules the schema cannot express: `hitlRequired` within `scope` (`semantic_invalid`);
@@ -187,9 +184,9 @@ document is read under its own schema.
 
 `spec_version` `"1.0"` (`schema/aid-1.0.json`, embedded byte for byte and checked by a
 test) is the supported profile. Its holder key is 32 raw Ed25519 bytes under
-`Ed25519VerificationKey2020` — an ARIA compatibility encoding, not the standard Multikey
-one; the SDK decodes exactly 32 bytes and projects `0xed01` only when producing a
-Multikey. The proof metadata is outside the signed bytes: the SDK requires the supported
+`Ed25519VerificationKey2020` — ARIA's own encoding (D6), `z` and base58btc of the raw
+key, not the Multikey one; the SDK decodes exactly 32 bytes and projects `0xed01` only
+when producing a Multikey. The proof metadata is outside the signed bytes: the SDK requires the supported
 values, which does not make them signed (decision D12 covers a successor suite).
 
 ## Package and runtimes

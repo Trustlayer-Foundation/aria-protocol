@@ -3,12 +3,10 @@
 The ARIA SDK for ARIA 1.0: inspect and verify an agent's credential, and establish the
 status of that exact document.
 
-**Version 1.0.0, a local candidate: not published and not an approved release.** This
-directory holds the API contract (S0, corrected after review and amended for the
-two-package structure) and its implementation (S1): inspection, per-verifier trust,
-credential verification, exact-instance status, and the trust interface packages built on
-it use. The package name is provisional until its owner is confirmed, and `private`
-prevents publishing it.
+**Version 1.0.0.** This directory holds the API contract and its implementation:
+inspection, per-verifier trust, credential verification, exact-instance status, and the
+trust interface packages built on it use. It trusts no issuer by default: each verifier
+states the issuers it accepts.
 
 **Which package.** This repository has two SDK packages. A service that only checks
 credentials installs this one. A service that authenticates agent requests, admits them

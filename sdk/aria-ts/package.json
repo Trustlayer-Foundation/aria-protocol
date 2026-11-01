@@ -1,7 +1,6 @@
 {
   "name": "@aria-registry/sdk",
   "version": "1.0.0",
-  "private": true,
   "description": "The ARIA SDK: inspect and verify an agent's credential and establish the status of that exact document. ARIA AP is the separate package built on it.",
   "license": "Apache-2.0",
   "author": "TrustLayer Foundation",
@@ -25,6 +24,9 @@
     "MIGRATION.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },

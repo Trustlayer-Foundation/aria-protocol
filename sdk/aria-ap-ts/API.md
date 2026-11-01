@@ -1,17 +1,16 @@
 # ARIA AP 1.0 — API contract
 
-Status: implemented. Of the decisions its wire profile depends on, three are taken:
+Status: implemented, version 1.0.0. Of the decisions its wire profile depends on, four are taken:
 D3, the transport, is this RFC 9421 profile (the receiver's identity statement, a
 challenge per request, the credential by reference); D4 fixes the receipt's single
 format, `aria-ap-receipt/1`, carrying the decision's HTTP status and code; D8 is
 `refuse` for now: when an operation's scope requires human approval, a missing or
 invalid approval refuses the attempt; holding the operation is not supported, and a
-receipt carries no approval fields. D5
-(scopes) and the rest of D4, including retrieval, are open: what they cover may still
-change. The vectors in [`conformance/ap`](../../conformance/ap/README.md) encode all of
-it. Package name provisional
-(`@aria-registry/ap`) until its owner is confirmed. Version 1.0.0 is a local candidate:
-private, not published, not an approved release.
+receipt carries no approval fields; D5 fixes the scopes: three-segment grants, read
+under their own pattern in signed 1.0 documents, compared exactly, with policy patterns
+ending in `:*` and a matching deny prevailing. The rest of D4, including retrieval, is
+open: what it covers may still change. The vectors in
+[`conformance/ap`](../../conformance/ap/README.md) encode all of it.
 
 ## What it builds on
 
@@ -147,7 +146,7 @@ own resource decision is valid for that same lifetime; revalidating it longer is
 adopter's. Operation descriptors are checked: a minimum level outside `TRUST_LEVELS` or an
 approval policy other than `refuse` is a usage error.
 
-The scope policy (provisional, D5) is a list of `{ effect: 'allow' | 'deny', pattern }`
+The scope policy (D5) is a list of `{ effect: 'allow' | 'deny', pattern }`
 rules over the operation's scope. A pattern is a three-segment scope or two segments
 followed by `:*`, which matches any third segment and nothing longer or shorter. A matching
 deny wins whatever the order; otherwise a matching allow is needed, so an empty policy
@@ -260,7 +259,7 @@ if (r.ok) console.log(r.statement.state, r.findings);
 What is kept is plain JSON (the receipt, the attempts, the documents); a new process, with
 a new verifier, checks it again.
 
-## Schemas (provisional)
+## Schemas
 
 One JSON Schema (draft 2020-12) per wire document, in the protocol's
 [`schema/`](../../schema/README.md) and shipped byte for byte in `schemas/` (a test and

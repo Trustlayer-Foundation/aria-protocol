@@ -4,11 +4,10 @@ ARIA AP for ARIA 1.0: authenticate the receiver an agent calls and the agent's s
 request, admit the request, run each operation once, sign and verify its receipt, and
 check a kept receipt later against retained evidence.
 
-**Version 1.0.0, a local candidate: not published and not an approved release.** The
-package name is provisional until its owner is confirmed, and `private` prevents
-publishing it. Its transport (D3), its receipt format (D4) and, for now, refusing an
-attempt whose required human approval is missing or invalid (D8) are decided; scopes (D5) and the rest of D4, including retrieval,
-are open and may still change. Vectors: [`conformance/ap`](../../conformance/ap/README.md);
+**Version 1.0.0.** Its transport (D3), its receipt format (D4), its scope rules (D5)
+and, for now, refusing an attempt whose required human approval is missing or invalid
+(D8) are decided; retrieval and the other receipt rules (the rest of D4) may still
+change. Vectors: [`conformance/ap`](../../conformance/ap/README.md);
 schemas: [`schema/`](../../schema/README.md).
 
 **It builds on the ARIA SDK.** ARIA AP takes the credential verifier of
@@ -21,7 +20,7 @@ own. Install both; a service that only checks credentials needs only the ARIA SD
   offered yet.
 - `examples/`: a receiver's identity endpoint and protected operation, an agent's client
   with recovery, and the replacement for `if (result.valid) execute()`.
-- `schemas/`: byte-identical copies of the protocol's provisional ARIA AP schemas, exported
+- `schemas/`: byte-identical copies of the protocol's ARIA AP schemas, exported
   as `@aria-registry/ap/schemas/<name>.json`.
 - `test-d/`: the boundaries the types enforce.
 

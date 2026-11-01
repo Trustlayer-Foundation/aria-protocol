@@ -2,9 +2,9 @@
 
 `@aria-registry/verify` 1.x is replaced by two packages in the same repository:
 
-- **the ARIA SDK** (this package, provisionally `@aria-registry/sdk`) for credentials
+- **the ARIA SDK** (this package, `@aria-registry/sdk`) for credentials
   and their status;
-- **ARIA AP** (provisionally `@aria-registry/ap`, [`../aria-ap-ts`](../aria-ap-ts/README.md))
+- **ARIA AP** (`@aria-registry/ap`, [`../aria-ap-ts`](../aria-ap-ts/README.md))
   for authenticating requests, admitting them and receipts. It builds on the ARIA SDK's
   verifier.
 

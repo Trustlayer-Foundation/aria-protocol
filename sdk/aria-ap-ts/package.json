@@ -1,7 +1,6 @@
 {
   "name": "@aria-registry/ap",
   "version": "1.0.0",
-  "private": true,
   "description": "ARIA AP: authenticate an agent's request and its receiver, admit it, and sign and verify its receipt. Built on the credential verifier of @aria-registry/sdk.",
   "license": "Apache-2.0",
   "author": "TrustLayer Foundation",
@@ -24,6 +23,9 @@
     "API.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
