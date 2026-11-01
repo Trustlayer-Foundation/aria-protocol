@@ -1,11 +1,11 @@
-import type { CredentialFacts, CredentialResult, Inspection, VerifiedCredential } from './credential';
+import type { AuthenticCredential, AuthenticityResult, CredentialFacts, CredentialResult, HistoricalFacts, Inspection, VerifiedCredential } from './credential';
 import { AriaUsageError } from './errors';
-import { fromOnline, fromStatusList, type StatusSnapshot } from './internal/check-status';
+import { fromOnline, fromStatusList, readList, type StatusSnapshot } from './internal/check-status';
 import { iso } from './internal/instant';
 import { issue, recall } from './internal/provenance';
 import { judge } from './internal/standing';
 import { LEVELS, plainCopy, verifyCredentialDocument, type CredentialSnapshot, type ProfileSnapshot } from './internal/verify-credential';
-import type { Standing, StatusEvidence, StatusOptions } from './status';
+import type { RetainedStatus, RetainedStatusResult, Standing, StatusEvidence, StatusOptions } from './status';
 import type { Did, TrustLevel } from './types';
 
 /** One issuer the verifier trusts. Its `id` is a label for results, never a trust identity. */
@@ -72,7 +72,28 @@ export interface Verifier {
    * rules. Judged at every call with this verifier's clock. Throws like `facts`.
    */
   standing(credential: VerifiedCredential, status: StatusEvidence): Standing;
+  /**
+   * Verifies a retained document as `verifyCredential` does, except against the
+   * current time: an expired document can be authentic. The result is not a
+   * verified credential, and nothing that authorizes accepts it.
+   */
+  verifyAuthenticity(document: unknown): AuthenticityResult;
+  /**
+   * What a retained, signed status list (as a parsed object or JSON text) said about
+   * `credential`, offline: same issuer, the exact list it names, both signatures.
+   * The list's validity is reported, never judged against the current time.
+   */
+  readRetainedStatus(credential: AuthenticCredential, list: unknown): Promise<RetainedStatusResult>;
+  /**
+   * What this verifier established about an authentic credential and, when given,
+   * what a retained list said about it: a fresh copy, holder key bytes included.
+   * Throws `AriaUsageError` for anything this verifier did not produce, and for a
+   * retained status about another document.
+   */
+  historicalFacts(credential: AuthenticCredential, status?: RetainedStatus): HistoricalFacts;
 }
+
+type RetainedSnapshot = { readonly credential: CredentialSnapshot; readonly state: 'active' | 'revoked'; readonly validFrom: number; readonly validUntil: number };
 
 const ML_DSA_65_PUBLIC_KEY = 1952;
 const ED25519_PUBLIC_KEY = 32;
@@ -125,6 +146,21 @@ function credentialView(s: CredentialSnapshot): VerifiedCredential {
     verifiedAt: iso(s.verifiedAt),
   } as unknown as VerifiedCredential;
 }
+
+function authenticView(s: CredentialSnapshot): AuthenticCredential {
+  return {
+    kind: 'authentic-credential',
+    binding: { credentialId: s.credentialId, digest: s.digest, profile: s.profile.id },
+    did: s.did,
+    issuer: s.issuer,
+    holderKey: { id: s.holderKeyId, publicKeyMultibase: s.holderKeyMultibase },
+    validFrom: iso(s.validFrom),
+    validUntil: iso(s.validUntil),
+    statusEntry: { list: s.statusList, index: s.statusIndex },
+  } as unknown as AuthenticCredential;
+}
+
+const bindingOf = (s: CredentialSnapshot) => Object.freeze({ credentialId: s.credentialId, digest: s.digest, profile: s.profile.id });
 
 function statusView(s: StatusSnapshot): StatusEvidence {
   const base = {
@@ -199,6 +235,49 @@ export function createVerifier(config: VerifierConfig): Verifier {
       const at = now();
       const judged = judge(c, st, { now: at, skewMs, statusMaxAgeMs, onlineMaxAgeMs });
       return Object.freeze({ kind: 'standing', ...judged, judgedAt: iso(at) }) as Standing;
+    },
+
+    verifyAuthenticity(document) {
+      const outcome = verifyCredentialDocument(document, profiles, now(), skewMs, false);
+      if (!outcome.ok) {
+        const reason = outcome.reason as Exclude<typeof outcome.reason, 'not_yet_valid' | 'expired'>;
+        return Object.freeze(outcome.path === undefined ? { ok: false, reason } : { ok: false, reason, path: outcome.path });
+      }
+      return Object.freeze({ ok: true, credential: issue(verifier, 'authentic', authenticView(outcome.snapshot), outcome.snapshot) });
+    },
+
+    async readRetainedStatus(credential, list) {
+      const c = recall<CredentialSnapshot>(verifier, 'authentic', credential);
+      // The same bound as a fetched list.
+      const document = plainCopy(list, 262_144);
+      if (!document) return Object.freeze({ ok: false, reason: 'malformed' });
+      const read = await readList(c, document);
+      if (!read.ok) return Object.freeze({ ok: false, reason: read.reason });
+      const snapshot: RetainedSnapshot = { credential: c, state: read.revoked ? 'revoked' : 'active', validFrom: read.validFrom, validUntil: read.validUntil };
+      const view = {
+        kind: 'retained-status',
+        credential: { credentialId: c.credentialId, digest: c.digest, profile: c.profile.id },
+        state: snapshot.state,
+        list: { url: c.statusList, index: c.statusIndex, validFrom: iso(read.validFrom), validUntil: iso(read.validUntil) },
+      } as unknown as RetainedStatus;
+      return Object.freeze({ ok: true, status: issue(verifier, 'retained', view, snapshot) });
+    },
+
+    historicalFacts(credential, status) {
+      const c = recall<CredentialSnapshot>(verifier, 'authentic', credential);
+      const st = status === undefined ? null : recall<RetainedSnapshot>(verifier, 'retained', status);
+      if (st && (st.credential.credentialId !== c.credentialId || st.credential.digest !== c.digest)) {
+        throw new AriaUsageError('the retained status is about another document');
+      }
+      return Object.freeze({
+        binding: bindingOf(c),
+        did: c.did,
+        issuer: c.issuer,
+        holderKey: Object.freeze({ id: c.holderKeyId, publicKey: Uint8Array.from(c.holderKey) }),
+        validFrom: iso(c.validFrom),
+        validUntil: iso(c.validUntil),
+        retainedStatus: st ? Object.freeze({ state: st.state, validFrom: iso(st.validFrom), validUntil: iso(st.validUntil) }) : null,
+      });
     },
   };
   return Object.freeze(verifier);

@@ -18,6 +18,8 @@ which builds on this one. A service that only checks credentials needs only this
 | `VerifiedCredential` (`verifyCredential`) | This exact document conforms to its `spec_version`, is within its signed validity and verifies under a trusted issuer, both signature halves | Who presents it; its status |
 | `StatusEvidence` (`checkStatus`) | The status of that exact document, its source, and its times | Anything about another document of the same DID |
 | `Standing` (`standing`) | Whether that exact document stands now: valid, with fresh evidence of its status | That anyone presents it, or may do anything with it |
+| `AuthenticCredential` (`verifyAuthenticity`) | A retained document verifies under a trusted issuer as `verifyCredential` checks it, except against the current time | That it is valid now, its status, or anything a current result says |
+| `RetainedStatus` (`readRetainedStatus`) | What a retained, signed list said about that document during the list's own validity | Its status now |
 
 None of them is a decision to run anything. Who presents a credential, and what they may
 do, is ARIA AP's: its admission, not a field here, is what lets an operation run.
@@ -142,6 +144,34 @@ The result has no issuance time: `validFrom` and `validUntil` are the signed bou
   `fetch_failed`, `too_large`, `malformed`, `signature_invalid`, `wrong_issuer`,
   `not_valid_now`, `stale`, `no_online_endpoint`); its standing is `unknown`, which ARIA AP's
   admission treats as `indeterminate`.
+
+## Historical authenticity
+
+Checking a past statement (an ARIA AP receipt signed by a receiver whose credential has
+since expired) needs the document's authenticity, not its current validity. Three
+methods give that, apart from everything that judges a credential now:
+
+- **`verifyAuthenticity(document)`** runs the checks of `verifyCredential` in the same
+  order except `not_yet_valid` and `expired`: shape, version, schema, issuer, proof
+  profile, both signature halves, a validity interval, holder key, rules, level and
+  trusted status list. Its result is an `AuthenticCredential`, a provenance record of
+  its own kind: `facts`, `standing` and `checkStatus` refuse it, and so does everything
+  in ARIA AP that admits or signs.
+- **`readRetainedStatus(credential, list)`** reads a retained list offline, as
+  `checkStatus` reads a fetched one (issuer, the exact list the credential names, both
+  signatures, the supported subject, at most 24 hours of validity), but never judges its
+  times against now: it reports them. A `RetainedStatus` is not status evidence.
+- **`historicalFacts(credential, status?)`** is the read path, like `facts`: binding,
+  DID, holder key bytes, validity, and what the retained list said. It refuses anything
+  this verifier did not produce and a retained status about another document.
+
+```ts
+const authentic = verifier.verifyAuthenticity(retainedDocument);
+if (authentic.ok) {
+  const read = await verifier.readRetainedStatus(authentic.credential, retainedList);
+  // ARIA AP: ap.verifyHistoricalReceipt(receipt, { attempts, evidence: { credential: authentic.credential, status } })
+}
+```
 
 ## Credential profile
 

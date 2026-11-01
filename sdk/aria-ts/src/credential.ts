@@ -109,3 +109,45 @@ export interface CredentialFacts {
 export type CredentialResult =
   | { readonly ok: true; readonly credential: VerifiedCredential }
   | { readonly ok: false; readonly reason: CredentialFailure; readonly path?: string };
+
+/**
+ * A retained document that verifies under a trusted issuer as `verifyCredential`
+ * checks it, except against the current time: what past statements are checked
+ * against. It is not a verified credential: `facts`, `standing`, `checkStatus`
+ * and ARIA AP's admission refuse it, so it never authorizes anything now.
+ */
+export interface AuthenticCredential extends Produced<'authentic-credential'> {
+  readonly kind: 'authentic-credential';
+  readonly binding: CredentialBinding;
+  readonly did: Did;
+  readonly issuer: Did;
+  readonly holderKey: { readonly id: string; readonly publicKeyMultibase: string };
+  /** Signed validity bounds (RFC 3339), reported and not judged. */
+  readonly validFrom: string;
+  readonly validUntil: string;
+  readonly statusEntry: { readonly list: string; readonly index: number };
+}
+
+/** Why a retained document is not authentic: the credential failures without the current time. */
+export type AuthenticityFailure = Exclude<CredentialFailure, 'not_yet_valid' | 'expired'>;
+
+export type AuthenticityResult =
+  | { readonly ok: true; readonly credential: AuthenticCredential }
+  | { readonly ok: false; readonly reason: AuthenticityFailure; readonly path?: string };
+
+/**
+ * What a verifier established about one of its authentic credentials, read through
+ * `Verifier.historicalFacts`, with what a retained list said about it. Data for
+ * checking past statements; nothing accepts it as a result.
+ */
+export interface HistoricalFacts {
+  readonly binding: CredentialBinding;
+  readonly did: Did;
+  readonly issuer: Did;
+  /** The 32 raw bytes, already accepted by the strict key rule; a copy the caller owns. */
+  readonly holderKey: { readonly id: string; readonly publicKey: Uint8Array };
+  readonly validFrom: string;
+  readonly validUntil: string;
+  /** From `readRetainedStatus` when given: the list's statement and its own validity. */
+  readonly retainedStatus: { readonly state: 'active' | 'revoked'; readonly validFrom: string; readonly validUntil: string } | null;
+}

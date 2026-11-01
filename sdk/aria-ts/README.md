@@ -17,7 +17,8 @@ this package's verifier and has none of its own. `@aria-registry/verify` 1.x sta
 published and unchanged; see the migration guide.
 
 - [API contract](API.md): the results, runtime provenance, `facts` and `standing`, the
-  trust boundary, credential and status verification, the credential profile, runtimes.
+  trust boundary, credential and status verification, historical authenticity, the
+  credential profile, runtimes.
 - [Migration from `@aria-registry/verify` 1.x](MIGRATION.md).
 - `examples/verify-credential.ts`: checking a credential and its standing, which is not
   admitting a request.

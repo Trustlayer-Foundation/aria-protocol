@@ -59,23 +59,21 @@ function json(body: Uint8Array): Record<string, unknown> | null {
   }
 }
 
-/**
- * The credential's own bit in the signed list it names, read only after the list
- * verifies under the same issuer and is that exact list, in the supported profile
- * (one revocation bit per entry). Times are judged once the list is processed.
- */
-export async function fromStatusList(credential: CredentialSnapshot, context: StatusContext): Promise<StatusSnapshot> {
-  const { bounds } = context;
-  if (!bounds) return unavailable('status-list', credential, 'offline', context.now());
-  const fetched = await boundedGet(credential.statusList, bounds);
-  if (!fetched.ok) return unavailable('status-list', credential, fetched.reason, context.now());
-  const list = json(fetched.body);
-  if (!list) return unavailable('status-list', credential, 'malformed', context.now());
+export type ListReading =
+  | { readonly ok: true; readonly revoked: boolean; readonly validFrom: number; readonly validUntil: number }
+  | { readonly ok: false; readonly reason: 'malformed' | 'signature_invalid' | 'wrong_issuer' | 'invalid_validity' };
 
+/**
+ * The credential's own bit in `list`, read only after the list verifies under the
+ * same issuer and is the exact list the credential names, in the supported profile
+ * (one revocation bit per entry). Its validity bounds are checked as data; whether
+ * they hold now is the caller's judgment.
+ */
+export async function readList(credential: CredentialSnapshot, list: Record<string, unknown>): Promise<ListReading> {
   const profile = credential.profile;
   const proof = list.proof as Record<string, unknown> | undefined;
   const types = list.type;
-  if (list.issuer !== profile.issuer) return unavailable('status-list', credential, 'wrong_issuer', context.now());
+  if (list.issuer !== profile.issuer) return { ok: false, reason: 'wrong_issuer' };
   if (
     // Another genuine list of the same issuer is not this credential's list.
     list.id !== credential.statusList ||
@@ -89,9 +87,9 @@ export async function fromStatusList(credential: CredentialSnapshot, context: St
     proof.verificationMethod !== profile.verificationMethod ||
     typeof proof.proofValue !== 'string'
   ) {
-    return unavailable('status-list', credential, 'malformed', context.now());
+    return { ok: false, reason: 'malformed' };
   }
-  if (!verifyComposite(list, proof.proofValue, profile.keys)) return unavailable('status-list', credential, 'signature_invalid', context.now());
+  if (!verifyComposite(list, proof.proofValue, profile.keys)) return { ok: false, reason: 'signature_invalid' };
 
   // The supported subject: a revocation list of one bit per entry, as W3C Bitstring Status List defines by default.
   const subject = list.credentialSubject as Record<string, unknown> | undefined;
@@ -104,28 +102,41 @@ export async function fromStatusList(credential: CredentialSnapshot, context: St
     typeof encoded !== 'string' ||
     !encoded.startsWith('u')
   ) {
-    return unavailable('status-list', credential, 'malformed', context.now());
+    return { ok: false, reason: 'malformed' };
   }
   const packed = fromBase64url(encoded.slice(1));
   const bits = packed && (await gunzipBounded(packed, MAX_LIST_BYTES));
-  if (!bits || bits.length < MIN_LIST_BYTES || credential.statusIndex >= bits.length * 8) {
-    return unavailable('status-list', credential, 'malformed', context.now());
-  }
+  if (!bits || bits.length < MIN_LIST_BYTES || credential.statusIndex >= bits.length * 8) return { ok: false, reason: 'malformed' };
+
+  const validFrom = instant(list.validFrom);
+  const validUntil = instant(list.validUntil);
+  if (validFrom === null || validUntil === null || validUntil <= validFrom || validUntil - validFrom > MAX_LIST_VALIDITY_MS) return { ok: false, reason: 'invalid_validity' };
+  const revoked = ((bits[credential.statusIndex >> 3]! >> (7 - (credential.statusIndex & 7))) & 1) === 1;
+  return { ok: true, revoked, validFrom, validUntil };
+}
+
+/**
+ * The credential's status from the signed list it names, fetched now. Times are
+ * judged once the list is processed.
+ */
+export async function fromStatusList(credential: CredentialSnapshot, context: StatusContext): Promise<StatusSnapshot> {
+  const { bounds } = context;
+  if (!bounds) return unavailable('status-list', credential, 'offline', context.now());
+  const fetched = await boundedGet(credential.statusList, bounds);
+  if (!fetched.ok) return unavailable('status-list', credential, fetched.reason, context.now());
+  const list = json(fetched.body);
+  if (!list) return unavailable('status-list', credential, 'malformed', context.now());
+  const read = await readList(credential, list);
 
   // Judged now, after retrieval, signature and decompression: a list may have expired meanwhile.
   const now = context.now();
-  const validFrom = instant(list.validFrom);
-  const validUntil = instant(list.validUntil);
-  if (validFrom === null || validUntil === null || validUntil <= validFrom || validUntil - validFrom > MAX_LIST_VALIDITY_MS) {
-    return unavailable('status-list', credential, 'not_valid_now', now);
-  }
+  if (!read.ok) return unavailable('status-list', credential, read.reason === 'invalid_validity' ? 'not_valid_now' : read.reason, now);
+  const { validFrom, validUntil } = read;
   if (validFrom > now + context.skewMs || validUntil <= now) return unavailable('status-list', credential, 'not_valid_now', now);
   if (now - validFrom > context.maxAgeMs) return unavailable('status-list', credential, 'stale', now);
-
-  const revoked = ((bits[credential.statusIndex >> 3]! >> (7 - (credential.statusIndex & 7))) & 1) === 1;
   return {
     source: 'status-list',
-    state: revoked ? 'revoked' : 'active',
+    state: read.revoked ? 'revoked' : 'active',
     credential,
     list: { url: credential.statusList, index: credential.statusIndex, validFrom, validUntil },
     fetchedAt: now,

@@ -50,10 +50,10 @@ const MAX_DOCUMENT_BYTES = 100 * 1024;
 type Outcome = { readonly ok: true; readonly snapshot: CredentialSnapshot } | { readonly ok: false; readonly reason: CredentialFailure; readonly path?: string };
 
 /** A private, plain-data copy of the input, or `null` when it is not a JSON object within the size bound. */
-export function plainCopy(input: unknown): Record<string, unknown> | null {
+export function plainCopy(input: unknown, maxBytes = MAX_DOCUMENT_BYTES): Record<string, unknown> | null {
   try {
     const text = typeof input === 'string' ? input : JSON.stringify(input);
-    if (typeof text !== 'string' || new TextEncoder().encode(text).length > MAX_DOCUMENT_BYTES) return null;
+    if (typeof text !== 'string' || new TextEncoder().encode(text).length > maxBytes) return null;
     const value: unknown = JSON.parse(text);
     return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
   } catch {
@@ -66,9 +66,10 @@ const fail = (reason: CredentialFailure, path?: string): Outcome => (path === un
 /**
  * Verifies one AID 1.0 document against the trust profiles, in a fixed order:
  * shape, version, schema, issuer, proof profile, both signatures, validity,
- * holder key, rules, level, status list. The first failure decides.
+ * holder key, rules, level, status list. The first failure decides. Without
+ * `judgeTime` the validity bounds are checked as data but not against `now`.
  */
-export function verifyCredentialDocument(input: unknown, profiles: readonly ProfileSnapshot[], now: number, skewMs: number): Outcome {
+export function verifyCredentialDocument(input: unknown, profiles: readonly ProfileSnapshot[], now: number, skewMs: number, judgeTime = true): Outcome {
   const doc = plainCopy(input);
   if (!doc) return fail('malformed', '/');
   const subject = doc.credentialSubject as Record<string, unknown> | undefined;
@@ -96,8 +97,8 @@ export function verifyCredentialDocument(input: unknown, profiles: readonly Prof
   const validFrom = instant(doc.validFrom);
   const validUntil = instant(doc.validUntil);
   if (validFrom === null || validUntil === null || validFrom >= validUntil) return fail('invalid_validity', '/validFrom');
-  if (validFrom > now + skewMs) return fail('not_yet_valid', '/validFrom');
-  if (validUntil <= now) return fail('expired', '/validUntil');
+  if (judgeTime && validFrom > now + skewMs) return fail('not_yet_valid', '/validFrom');
+  if (judgeTime && validUntil <= now) return fail('expired', '/validUntil');
 
   const did = subject.id as Did;
   const holder = subject.holderKey as { id: string; publicKeyMultibase: string };

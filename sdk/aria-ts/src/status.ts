@@ -74,6 +74,28 @@ export type Standing = StandingState & {
   readonly judgedAt: string;
 };
 
+/** Why a retained status list says nothing about a credential. */
+export type RetainedStatusFailure =
+  | 'malformed'
+  | 'signature_invalid'
+  | 'wrong_issuer'
+  /** A validity bound is not an instant, the bounds are inverted, or longer than 24 hours. */
+  | 'invalid_validity';
+
+/**
+ * What a retained, signed status list said about one authentic credential, during
+ * the list's own validity. Never judged against the current time and never
+ * accepted by `standing`: history, not current status.
+ */
+export interface RetainedStatus extends Produced<'retained-status'> {
+  readonly kind: 'retained-status';
+  readonly credential: CredentialBinding;
+  readonly state: 'active' | 'revoked';
+  readonly list: { readonly url: string; readonly index: number; readonly validFrom: string; readonly validUntil: string };
+}
+
+export type RetainedStatusResult = { readonly ok: true; readonly status: RetainedStatus } | { readonly ok: false; readonly reason: RetainedStatusFailure };
+
 export interface StatusOptions {
   /** `status-list` (default) tells the issuer nothing about which credential is checked. */
   readonly via?: 'status-list' | 'online';
