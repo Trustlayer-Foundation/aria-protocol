@@ -63,8 +63,8 @@ export async function boundaries(): Promise<void> {
   await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'decision' });
   await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'decision', transportStatus: 201 });
   await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'retrieval' });
-  // Historical verification waits for the credential package (not offered).
-  // @ts-expect-error no historical mode yet
+  // Historical verification is a separate API (verifyHistoricalReceipt), not a mode of verifyReceipt.
+  // @ts-expect-error verifyReceipt has no historical mode
   await ap.verifyReceipt(receipt, { receiver, attempts, mode: 'historical' });
 
   // A valid receipt is not a success: callers read its state.

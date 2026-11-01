@@ -55,10 +55,10 @@ is consumed by the request that uses it.
 
 | Result | Says | Does not say |
 |---|---|---|
-| `VerifiedReceiver` | The pinned DID at the pinned origin signed a fresh statement for this client, with a credential that stands now | Anything about the operation |
+| `VerifiedReceiver` | The pinned DID at the pinned origin signed a fresh statement for this client, with a credential that stood when verified; `signRequest` judges it again | Anything about the operation; that it still stands later |
 | `VerifiedPresentation` | The caller signed this request with the holder key of an exact verified credential, for this receiver, operation and content | That it may do it |
 | `Admission` | `allow`, `deny` or `indeterminate`, with a fixed reason | That the operation ran |
-| `ReceiptStatement` | The expected receiver signed this statement about one kept attempt | That the effect is true outside the receiver; a valid receipt can say `rejected` |
+| `ReceiptStatement` | The receiver previously verified by this instance signed this statement about one kept attempt | That the receiver stands now; that the effect is true outside the receiver; a valid receipt can say `rejected` |
 | `HistoricalStatement` | The receiver credential the receipt names, retained and authentic, signed this statement about one kept attempt | That the credential stands now, or that anything is authorized now |
 
 Only `allow` lets an operation be claimed. There is no mode in which a failed check
