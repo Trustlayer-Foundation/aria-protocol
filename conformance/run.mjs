@@ -229,8 +229,6 @@ async function scopeAndHolderKeyCheck(strict) {
   const judges = {
     issued: ajv.getSchema(`${exchange.$id}#/$defs/scope`),
     credential: ajv.compile(subject.scope.items),
-    // Decision D5's recommendation, not in force: exactly three segments.
-    proposed_issuance: (s) => /^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/.test(s) && judges.issued(s),
   };
   const wrong = [];
   let total = 0;

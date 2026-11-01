@@ -27,7 +27,7 @@ vectors/
   canonical-json.json            canonical serialisation and identity commitment, byte for byte
   abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
   context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
-  scopes.json                     scope strings as issued and as read, and decision D5's proposal
+  scopes.json                     scope strings as an authority issues them and as a 1.0 credential carries them (D5)
   holder-keys.json                holder-key encodings accepted and refused, with their Multikey form
   keyset.json                     a published, chained key set, and key sets an authority must refuse
 federation/                      RA-to-authority exchanges and the check of the federation

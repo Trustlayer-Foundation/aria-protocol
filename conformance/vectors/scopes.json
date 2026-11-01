@@ -1,16 +1,16 @@
 {
-  "_comment": "Scope strings in ARIA 1.0, by where they are judged. issued: what an authority accepts in an agent statement today (two or more lower-case segments, each starting with a letter, of letters, digits and underscores; at most 64 characters). credential: what a signed 1.0 document may carry (the same segments, no length bound). proposed_issuance: decision D5's recommendation for new issuances, exactly three segments; not in force. Receivers' policy patterns (namespace:resource:*) are ARIA AP's, in conformance/ap.",
+  "_comment": "Scope strings in ARIA 1.0, by where they are judged (decision D5). issued: what an authority accepts in an agent statement, exactly three lower-case segments namespace:resource:action, each starting with a letter, of letters, digits and underscores, no version, at most 64 characters. credential: what a signed 1.0 document may carry, two or more such segments with no length bound, since credentials issued before D5 may carry them. Receivers’ policy patterns (namespace:resource:*, a matching deny prevails) are ARIA AP’s, in conformance/ap.",
   "issued": {
     "accept": [
       "commerce:orders:create",
       "data:documents:read",
       "finance:invoices:read",
       "x1:y_2:z3",
-      "catalog:read",
-      "a:b:c:d",
-      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      "x:y:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     ],
     "reject": [
+      "catalog:read",
+      "a:b:c:d",
       "commerce",
       "Commerce:orders:create",
       "commerce.orders.create",
@@ -22,7 +22,7 @@
       "1commerce:orders:create",
       "commerce:orders:create-now",
       "commerce:orders: create",
-      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      "x:y:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     ]
   },
   "credential": {
@@ -39,17 +39,6 @@
       "commerce:orders:*",
       "commerce:orders:create@v0.2",
       "commerce:orders:create-now"
-    ]
-  },
-  "proposed_issuance": {
-    "accept": [
-      "commerce:orders:create",
-      "x1:y_2:z3"
-    ],
-    "reject": [
-      "catalog:read",
-      "a:b:c:d",
-      "commerce:orders:*"
     ]
   }
 }

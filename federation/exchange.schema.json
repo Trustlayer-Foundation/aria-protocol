@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/federation-exchange-1.json",
-  "title": "ARIA federation exchange 1.0 (draft): what a Registration Authority sends the authority, and what it answers",
-  "$comment": "Draft. Implemented by the ARIA authority; normative adoption by TLF is pending. Every object is closed and no object uses patternProperties or propertyNames, so every path a refusal carries is made of names defined here and array indices. Agreement between values (reservation, statement, attestation, accreditation, level rules) is judged by the authority and exercised by conformance/federation; a request that passes this schema can still be refused.",
+  "title": "ARIA federation exchange 1.0: what a Registration Authority sends the authority, and what it answers",
+  "$comment": "ARIA 1.0, adopted by TLF on 1 November 2026 and implemented by the ARIA authority. Every object is closed and no object uses patternProperties or propertyNames, so every path a refusal carries is made of names defined here and array indices. Agreement between values (reservation, statement, attestation, accreditation, level rules) is judged by the authority and exercised by conformance/federation; a request that passes this schema can still be refused.",
   "$defs": {
     "uuid": {
       "type": "string",
@@ -83,9 +83,10 @@
       }
     },
     "scope": {
+      "$comment": "What an authority issues: exactly three lower-case segments, namespace:resource:action, with no version. A 1.0 credential issued earlier may carry two or more (aid-1.0.json reads them).",
       "type": "string",
       "maxLength": 64,
-      "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*(:[a-z][a-z0-9_]*)*$"
+      "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
     },
     "assertion": {
       "$comment": "The RA request assertion. Its canonical JSON (RFC 8785) is the exact signing input of the request signature: aria-ra-request-v1 binds the operation, the audience, a five-minute window and the digest of the payload.",

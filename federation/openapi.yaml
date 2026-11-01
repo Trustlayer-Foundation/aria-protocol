@@ -1,10 +1,9 @@
 openapi: 3.1.0
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STATUS: draft. This file describes the exchange the ARIA authority implements
-# today. TLF has not yet adopted it as the normative federation contract; until it
-# does, names and shapes may still change, and the authority's behaviour is the
-# reference for what this draft describes.
+# STATUS: ARIA 1.0. TLF adopted this exchange as the normative federation contract
+# on 1 November 2026 (revisions r3 and r4). A change to its names or shapes is a new
+# contract version; the shared exchanges are its executable reference.
 #
 # This is the contract between a Registration Authority and the ARIA authority.
 # It is published because federation is impossible without it: a prospective RA
@@ -18,7 +17,7 @@ openapi: 3.1.0
 
 info:
   title: ARIA Authority Contract
-  version: 1.0.0-draft
+  version: 1.0.0
   summary: What a Registration Authority may ask of the ARIA authority, and what it answers.
   description: |
     ARIA follows the Certificate Authority / Registration Authority model.
@@ -85,12 +84,13 @@ info:
     bindings. Each code travels with one HTTP status, listed below and in
     `exchange.schema.json` (`refusal400` … `refusal503`).
 
-    ## Not in this draft
+    ## Not in this contract
 
-    Public reads (credentials, status lists) are served by the authority's public
-    API, not by this contract. A published key set for the authority is pending: no
-    endpoint serves one yet. The scope catalogue is kept by each registry: the
-    authority checks a scope's form only. A queryable RA standing endpoint is not
+    Public reads (credentials, status lists) and the issuer's key set
+    (`/v1/keyset`, schema `aria-keyset-1.json`) are served by the authority's public
+    API, not by this contract. The scope catalogue is kept by each registry: the
+    authority checks a scope's form only, three lower-case segments
+    `namespace:resource:action`. A queryable RA standing endpoint is not
     implemented.
   license:
     name: CC-BY-4.0
