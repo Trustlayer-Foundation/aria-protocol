@@ -72,7 +72,7 @@
       "path": "schema/aria-keyset-1.json",
       "id": "https://aria.bar/schema/aria-keyset-1.json",
       "status": "an issuer key set (draft: values are D2)",
-      "sha256": "sha256:d258c52fd12e61fab04158e2e56ddc6418a83c03b2e8816f9f2b79a0cb2791b8"
+      "sha256": "sha256:776b5cc09523504b6cad66d1e65cdb9ccecf8c4f247ceb089ec74022cc71f6af"
     },
     {
       "path": "schema/atp-policy-v1.json",
@@ -136,7 +136,7 @@
     },
     {
       "path": "conformance/vectors/keyset.json",
-      "sha256": "sha256:2329de0e2f5d02ed71b7de04f7b32aae28708e7e7c2a767bf62da0dd5aa27dbd"
+      "sha256": "sha256:750b6ffdf82af2b12faaf2247380a5ad66b8c721dc835a97e679cfb330526197"
     },
     {
       "path": "conformance/vectors/scopes.json",
