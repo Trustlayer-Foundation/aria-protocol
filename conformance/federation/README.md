@@ -14,7 +14,7 @@ exchanges/
   tlf-config.json            the authority parameters the exchanges assume
   fixtures/ra-register.json  accredited RAs and their public test keys
   fixtures/issuer-key.json   the public half of the test issuer key
-  vectors/vectors.json       31 exchanges: requests and expected answers, step by step
+  vectors/vectors.json       54 exchanges: requests and expected answers, step by step
 ```
 
 ## Run it
@@ -44,7 +44,10 @@ It checks, with no authority running:
 
 Each exchange runs against a fresh authority with the RAs of `ra-register.json`
 accredited, the DIDs of `taken_dids` already issued to another RA, and its clock
-fixed at each step's `now`. Refusals are compared by status, code, path and whether
+fixed at each step's `now`. Its resolver answers what the `dns` steps have set for each
+binding record name (no record until one is set); `domain_binding` in `tlf-config.json`
+is its policy, and a vector may adjust it (`policy.domain_binding`) or run without a
+resolver (`resolver: false`), as an authority that reads no records. Refusals are compared by status, code, path and whether
 `request_id` is echoed (it must then be the request's own), and each refusal body
 must pass the schema of its status; no `sentinels` value may appear in a refusal. A
 `same_as_step` answer must equal that earlier answer. An answer given in full
@@ -69,17 +72,31 @@ another RA, bindings between statement, attestation and reservation, check sets,
 scopes, oversized attestations and consumed reservations, with planted values that
 must never be echoed.
 
+Domain bindings and L1 (contract r4): a binding pending until its record is seen and
+an L1 reservation that waits for it; bind, publish, check, reserve and mint at L1 for
+an organization and a person, and with an enrollment window's authorization; the
+same binding when binding again, and a new one after expiry; a removed record and a
+resolver failure at the mint (stale observation), with recovery by the same request;
+DNSSEC required against an unsigned zone; another RA's binding as unknown; an RA
+without L1 accreditation; a domain under the registry host; unbinding, before and
+after issuance, and a binding that cannot be ended or checked again; no resolver;
+the same request ID with another payload; L1 attestation rules (a check of another
+level, a stale identity check, a missing assurance class, consent after capture, an
+attested domain that is not the DID's). L2 is refused (`level_not_supported`): this
+authority does not issue it.
+
+The L0 exchanges were selected from the authority contract's candidate vectors; the
+binding and L1 exchanges come from a reference model of candidate r4. Where r4 does
+not fix a refusal's path, the path is the one the authority gives.
+
 **Outside shared exchanges:** a lost database acknowledgement cannot be written as a
 request and an answer. The authority tests it on its own side: a commit whose
 acknowledgement is lost answers 503 `unavailable`, and the same request then returns
 the recorded answer with one credential issued; a connection lost before the commit
 leaves nothing, and the same request then issues once.
 
-**Not covered yet:** exchanges for L1 and L2 issuance and for the domain-binding
-operations (`domain-bind`, `domain-check`, `domain-unbind`). Their shapes, paths and
-refusal codes are in the contract and checked here; their behaviour is covered only by
-the authority's own tests until shared exchanges exist. Renewal is not part of these
-exchanges: it is off unless an authority enables it.
+**Not covered:** L2 issuance, which no authority performs yet, and renewal, which is
+off unless an authority enables it.
 
 The exchanges are synthetic, and every key is a test key derived from a public label.
 No real principal, credential or key appears here.

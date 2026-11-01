@@ -29,6 +29,11 @@
     "credential": "https://api.aria.bar/v1/status/1",
     "first_index": 4711
   },
+  "domain_binding": {
+    "validity_days": 366,
+    "freshness_seconds": 300,
+    "dnssec": "when_signed"
+  },
   "taken_dids": [
     "did:aria:aria.bar:u-7qk2mx9a:taken-bot"
   ]

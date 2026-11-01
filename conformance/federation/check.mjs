@@ -220,10 +220,35 @@ function checkStep(id, i, step) {
   return pass();
 }
 
+// What a dns step may set, and what a vector may adjust.
+const DNS_ANSWERS = new Set(['records', 'none', 'unavailable']);
+const POLICY_KEYS = new Set(['validity_days', 'freshness_seconds', 'dnssec']);
+
+function checkDns(id, i, step) {
+  const at = `${id} step ${i} (dns)`;
+  if (typeof step.name !== 'string' || !step.name.startsWith('_aria-bind.')) return fail(`${at}: a binding record name`);
+  if (!DNS_ANSWERS.has(step.answer)) return fail(`${at}: answer is records, none or unavailable`);
+  if (step.answer === 'records' && !(Array.isArray(step.records) && step.records.every((r) => typeof r === 'string'))) {
+    return fail(`${at}: records are strings`);
+  }
+  if (step.dnssec !== undefined && !['secure', 'insecure'].includes(step.dnssec)) return fail(`${at}: dnssec is secure or insecure`);
+  return pass();
+}
+
 let steps = 0;
+let dnsSteps = 0;
 for (const vector of exchanges.vectors) {
+  const adjusted = Object.keys(vector.policy?.domain_binding ?? {});
+  if (adjusted.some((k) => !POLICY_KEYS.has(k)) || (vector.resolver !== undefined && vector.resolver !== false)) {
+    fail(`${vector.id}: a vector adjusts only the domain-binding policy, or runs without a resolver`);
+  }
   vector.steps.forEach((step, i) => {
     if (step.endpoint === 'owner') return; // an operator action between requests
+    if (step.endpoint === 'dns') {
+      dnsSteps += 1;
+      checkDns(vector.id, i, step);
+      return;
+    }
     steps += 1;
     checkStep(vector.id, i, step);
   });
@@ -305,7 +330,7 @@ for (const [name, mustReject, rejected] of controls) {
 
 console.log(
   `${ops.length} operations, ${allCodes.length} refusal codes; ` +
-    `${exchanges.vectors.length} exchanges, ${steps} requests; ${cases} identifier cases; ${controls.length} controls`,
+    `${exchanges.vectors.length} exchanges, ${steps} requests, ${dnsSteps} DNS changes; ${cases} identifier cases; ${controls.length} controls`,
 );
 console.log(
   `requests: ${kinds.accepted} accepted, ${kinds.unreadable} unreadable, ${kinds.shape} refused for shape, ` +
