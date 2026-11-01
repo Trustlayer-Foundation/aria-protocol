@@ -1,10 +1,10 @@
 // Synthetic test material: ephemeral keys made per process, never written anywhere.
-// The same material as @aria-registry/sdk's test fixtures, through its public API only.
+// The same material as @trustlayer-foundation/aria-sdk's test fixtures, through its public API only.
 import { randomBytes } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { canonicalJson, type TrustProfile } from '@aria-registry/sdk';
+import { canonicalJson, type TrustProfile } from '@trustlayer-foundation/aria-sdk';
 
 export const NOW = Date.parse('2026-11-01T12:00:00Z');
 export const iso = (offsetMs: number): string => new Date(NOW + offsetMs).toISOString().replace('.000Z', 'Z');

@@ -1,10 +1,15 @@
 {
-  "name": "@aria-registry/sdk",
+  "name": "@trustlayer-foundation/aria-sdk",
   "version": "1.0.0",
   "description": "The ARIA SDK: inspect and verify an agent's credential and establish the status of that exact document. ARIA AP is the separate package built on it.",
   "license": "Apache-2.0",
   "author": "TrustLayer Foundation",
   "homepage": "https://aria.bar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trustlayer-foundation/aria-protocol.git",
+    "directory": "sdk/aria-ts"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

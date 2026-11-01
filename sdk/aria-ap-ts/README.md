@@ -11,7 +11,7 @@ change. Vectors: [`conformance/ap`](../../conformance/ap/README.md);
 schemas: [`schema/`](../../schema/README.md).
 
 **It builds on the ARIA SDK.** ARIA AP takes the credential verifier of
-[`@aria-registry/sdk`](../aria-ts/README.md) (`createAp({ credentials: verifier })`) and reads
+[`@trustlayer-foundation/aria-sdk`](../aria-ts/README.md) (`createAp({ credentials: verifier })`) and reads
 every credential and status result through it; it has no credential verification of its
 own. Install both; a service that only checks credentials needs only the ARIA SDK.
 
@@ -21,7 +21,7 @@ own. Install both; a service that only checks credentials needs only the ARIA SD
 - `examples/`: a receiver's identity endpoint and protected operation, an agent's client
   with recovery, and the replacement for `if (result.valid) execute()`.
 - `schemas/`: byte-identical copies of the protocol's ARIA AP schemas, exported
-  as `@aria-registry/ap/schemas/<name>.json`.
+  as `@trustlayer-foundation/aria-ap/schemas/<name>.json`.
 - `test-d/`: the boundaries the types enforce.
 
 `pnpm typecheck` compiles the sources, examples, tests and boundary checks against the

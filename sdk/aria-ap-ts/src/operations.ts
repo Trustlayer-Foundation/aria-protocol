@@ -1,4 +1,4 @@
-import { AriaUsageError, type Did, type Produced, type StatusEvidence } from '@aria-registry/sdk';
+import { AriaUsageError, type Did, type Produced, type StatusEvidence } from '@trustlayer-foundation/aria-sdk';
 import type { Admitted, LookupAdmission } from './admission';
 import type { Ap } from './ap';
 import { AdmissionExpired, InvariantViolation, StaleClaim } from './errors';

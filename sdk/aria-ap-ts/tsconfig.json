@@ -16,10 +16,10 @@
       "node"
     ],
     "paths": {
-      "@aria-registry/ap": [
+      "@trustlayer-foundation/aria-ap": [
         "./src/index.ts"
       ],
-      "@aria-registry/sdk": [
+      "@trustlayer-foundation/aria-sdk": [
         "../aria-ts/src/index.ts"
       ]
     },

@@ -1,4 +1,4 @@
-import { AriaUsageError, type Did, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import { AriaUsageError, type Did, type StatusEvidence, type Verifier, type VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 import type { ScopeRule } from '../admission';
 import type { AttemptRefusal } from '../operations';
 import type { OperationDescriptor } from '../presentation';

@@ -2,7 +2,7 @@
 // checked long after the exchange, kept apart from anything that authorizes now.
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError } from '@aria-registry/sdk';
+import { AriaUsageError } from '@trustlayer-foundation/aria-sdk';
 import { HOUR, statusList } from './fixtures';
 import { NOW, world } from './world';
 

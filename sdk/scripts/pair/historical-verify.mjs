@@ -1,8 +1,8 @@
 // The second process of historical.mjs: reads exported evidence, verifies it at a later
 // time with a new verifier, and prints what it found as one JSON line.
 import { readFileSync } from 'node:fs';
-import * as ap from '@aria-registry/ap';
-import * as sdk from '@aria-registry/sdk';
+import * as ap from '@trustlayer-foundation/aria-ap';
+import * as sdk from '@trustlayer-foundation/aria-sdk';
 
 const [file, at] = process.argv.slice(2);
 const e = JSON.parse(readFileSync(file, 'utf8'));

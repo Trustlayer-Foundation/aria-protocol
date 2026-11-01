@@ -3,7 +3,7 @@
 // operations are UUIDs, fingerprints are bodies, challenges come from verified
 // identity statements, admissions are decided by real credentials and status.
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError } from '@aria-registry/sdk';
+import { AriaUsageError } from '@trustlayer-foundation/aria-sdk';
 import { InvariantViolation, OperationTracker, StaleClaim, type ApprovalEvidence, type EffectObservation, type OperationClaim, type Receipt, type VerifiedReceiver } from '../src';
 import { newReceiptId } from '../src/internal/instance';
 import { RECEIPT_TYPE, signReceipt } from '../src/internal/receipt';

@@ -19,14 +19,14 @@ verifier of the ARIA SDK ([`../aria-ts`](../aria-ts/API.md)), which the applicat
 creates with its trust configuration and hands over:
 
 ```ts
-import { createVerifier } from '@aria-registry/sdk';
-import { createAp } from '@aria-registry/ap';
+import { createVerifier } from '@trustlayer-foundation/aria-sdk';
+import { createAp } from '@trustlayer-foundation/aria-ap';
 
 const verifier = createVerifier({ trust, fetch });
 const ap = createAp({ credentials: verifier });
 ```
 
-- **One verifier, the application's.** `@aria-registry/sdk` is a peer dependency: the
+- **One verifier, the application's.** `@trustlayer-foundation/aria-sdk` is a peer dependency: the
   application installs it, and ARIA AP uses that copy. ARIA AP imports only its public
   entry point and contains none of its code. Its own dependencies are `@noble/curves`
   and `@noble/hashes`.
@@ -273,7 +273,7 @@ One JSON Schema (draft 2020-12) per wire document, in the protocol's
 
 `aria-ap-identity-1.json` refers to `https://aria.bar/schema/aid-1.0.json`, and
 `aria-ap-lookup-1.json` to the receipt schema. Outside this repository, load the AID
-schema from `@aria-registry/sdk/schemas/aid-1.0.json`, which the ARIA SDK exports byte
+schema from `@trustlayer-foundation/aria-sdk/schemas/aid-1.0.json`, which the ARIA SDK exports byte
 for byte, register its two annotation keywords, and assert formats, since the instants
 rely on `date-time`. This is
 [`../scripts/pair/schema-consumer.mjs`](../scripts/pair/schema-consumer.mjs), which
@@ -282,10 +282,10 @@ rely on `date-time`. This is
 ```js
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import aid from '@aria-registry/sdk/schemas/aid-1.0.json' with { type: 'json' };
-import receipt from '@aria-registry/ap/schemas/aria-ap-receipt-1.json' with { type: 'json' };
-import identity from '@aria-registry/ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
-import lookup from '@aria-registry/ap/schemas/aria-ap-lookup-1.json' with { type: 'json' };
+import aid from '@trustlayer-foundation/aria-sdk/schemas/aid-1.0.json' with { type: 'json' };
+import receipt from '@trustlayer-foundation/aria-ap/schemas/aria-ap-receipt-1.json' with { type: 'json' };
+import identity from '@trustlayer-foundation/aria-ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
+import lookup from '@trustlayer-foundation/aria-ap/schemas/aria-ap-lookup-1.json' with { type: 'json' };
 
 const ajv = new Ajv2020();
 ajv.addKeyword('_comment'); // annotations in aid-1.0.json, not validation keywords
@@ -318,7 +318,7 @@ the strict parsing refuses.
 
 ## Package and runtimes
 
-- ESM only, with type declarations. Peer dependency: `@aria-registry/sdk` `^1.0.0`;
+- ESM only, with type declarations. Peer dependency: `@trustlayer-foundation/aria-sdk` `^1.0.0`;
   the compatible pair is the one the release manifest records after
   [`../scripts/check-pair.mjs`](../scripts/check-pair.mjs) passed.
 - Node.js 20 and 22 (declared). Uses the Web Crypto `getRandomValues` and `randomUUID`.

@@ -1,5 +1,5 @@
 import type { AdmissionReason, ScopeRule } from '../admission';
-import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '@aria-registry/sdk';
+import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '@trustlayer-foundation/aria-sdk';
 import type { MissingApproval } from '../presentation';
 import { scopeAllowed } from './scope-policy';
 

@@ -1,8 +1,8 @@
 // Compile-time boundaries of the ARIA AP API. Each `@ts-expect-error` must stay an
 // error: `tsc` fails if one of these lines starts to compile. The same boundaries
 // are checked again at run time, since a cast gets past any type.
-import { OperationLedger, OperationTracker, type Admission, type Ap, type HistoricalStatement, type OperationClaim, type Receipt, type ReceiptStatement, type ReceiverSelf, type SentAttempt, type Signer, type VerifiedPresentation, type VerifiedReceiver } from '@aria-registry/ap';
-import type { AuthenticCredential, CredentialFacts, RetainedStatus, Standing, StatusEvidence, VerifiedCredential } from '@aria-registry/sdk';
+import { OperationLedger, OperationTracker, type Admission, type Ap, type HistoricalStatement, type OperationClaim, type Receipt, type ReceiptStatement, type ReceiverSelf, type SentAttempt, type Signer, type VerifiedPresentation, type VerifiedReceiver } from '@trustlayer-foundation/aria-ap';
+import type { AuthenticCredential, CredentialFacts, RetainedStatus, Standing, StatusEvidence, VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 
 declare const ap: Ap;
 declare const ledger: OperationLedger;

@@ -11,8 +11,8 @@ states the issuers it accepts.
 **Which package.** This repository has two SDK packages. A service that only checks
 credentials installs this one. A service that authenticates agent requests, admits them
 or exchanges receipts also installs [ARIA AP](../aria-ap-ts/README.md), which builds on
-this package's verifier and has none of its own. `@aria-registry/verify` 1.x stays
-published and unchanged; see the migration guide.
+this package's verifier and has none of its own. `@aria-registry/verify` 1.x is no
+longer served by npm; see the migration guide.
 
 - [API contract](API.md): the results, runtime provenance, `facts` and `standing`, the
   trust boundary, credential and status verification, historical authenticity, the

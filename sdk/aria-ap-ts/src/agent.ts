@@ -1,4 +1,4 @@
-import type { Produced, VerifiedCredential } from '@aria-registry/sdk';
+import type { Produced, VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 import type { RequestClass } from './presentation';
 import type { ReceiverPin, SentAttempt } from './receipt';
 import type { HttpRequestLike, Signer } from './types';

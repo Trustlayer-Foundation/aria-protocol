@@ -16,7 +16,7 @@
       "node"
     ],
     "paths": {
-      "@aria-registry/sdk": [
+      "@trustlayer-foundation/aria-sdk": [
         "./src/index.ts"
       ]
     },

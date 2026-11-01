@@ -1,6 +1,6 @@
 // The credential package alone, installed from its tarball: it builds, installs and
 // works without ARIA AP, and its trust interface refuses what it did not produce.
-import * as sdk from '@aria-registry/sdk';
+import * as sdk from '@trustlayer-foundation/aria-sdk';
 import { checks, credential, fetchServing, NOW, ORIGIN, profile, rejects, sign, statusList } from './fixtures.mjs';
 
 const { AriaUsageError, createVerifier, inspectCredential, TRUST_LEVELS } = sdk;
@@ -14,7 +14,7 @@ await c.check('exports exactly the credential API', () => {
 
 await c.check('parses did:aria identifiers by the shared grammar', () =>
   sdk.parseDid('did:aria:aria.bar:u-cmDoHhM3:ordering-agent')?.shape === 'agent-registry-form' && sdk.parseDid('did:aria:aria.bar:u-cmDoHhM3:org') === null);
-await c.check('ARIA AP is not installed, and is not needed', async () => (await rejects(() => import('@aria-registry/ap'), Error)) === true);
+await c.check('ARIA AP is not installed, and is not needed', async () => (await rejects(() => import('@trustlayer-foundation/aria-ap'), Error)) === true);
 
 const v = make();
 const r = v.verifyCredential(credential);

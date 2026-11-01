@@ -1,4 +1,4 @@
-import { canonicalJson, TRUST_LEVELS, type Did } from '@aria-registry/sdk';
+import { canonicalJson, TRUST_LEVELS, type Did } from '@trustlayer-foundation/aria-sdk';
 import type { OperationDescriptor, RequestClass } from '../presentation';
 import type { HttpRequestLike } from '../types';
 import { digestField, sameBytes, toBase64, utf8, UUID } from './bytes';

@@ -2,8 +2,8 @@
 // copy of the credential package through its peer dependency, and uses its verifier.
 import { readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import * as ap from '@aria-registry/ap';
-import * as sdk from '@aria-registry/sdk';
+import * as ap from '@trustlayer-foundation/aria-ap';
+import * as sdk from '@trustlayer-foundation/aria-sdk';
 import { checks, credential, fetchServing, NOW, ORIGIN, profile, rejects, statusList } from './fixtures.mjs';
 
 const c = checks('pair');
@@ -14,14 +14,14 @@ await c.check('ARIA AP exports its own API only', () => {
 await c.check('one copy of the credential package: none nested under ARIA AP', () => {
   let nested = [];
   try {
-    nested = readdirSync('node_modules/@aria-registry/ap/node_modules');
+    nested = readdirSync('node_modules/@trustlayer-foundation/aria-ap/node_modules');
   } catch {}
   return nested.length === 0 || nested.join(',');
 });
 
 await c.check('ARIA AP exports its provisional schemas by path', () => {
   const require = createRequire(import.meta.url);
-  const ids = ['receipt', 'identity', 'lookup'].map((n) => JSON.parse(readFileSync(require.resolve(`@aria-registry/ap/schemas/aria-ap-${n}-1.json`), 'utf8')).$id);
+  const ids = ['receipt', 'identity', 'lookup'].map((n) => JSON.parse(readFileSync(require.resolve(`@trustlayer-foundation/aria-ap/schemas/aria-ap-${n}-1.json`), 'utf8')).$id);
   return ids.join() === ['receipt', 'identity', 'lookup'].map((n) => `https://aria.bar/schema/aria-ap-${n}-1.json`).join() || ids.join();
 });
 

@@ -2,15 +2,15 @@
 
 `@aria-registry/verify` 1.x is replaced by two packages in the same repository:
 
-- **the ARIA SDK** (this package, `@aria-registry/sdk`) for credentials
+- **the ARIA SDK** (this package, `@trustlayer-foundation/aria-sdk`) for credentials
   and their status;
-- **ARIA AP** (`@aria-registry/ap`, [`../aria-ap-ts`](../aria-ap-ts/README.md))
+- **ARIA AP** (`@trustlayer-foundation/aria-ap`, [`../aria-ap-ts`](../aria-ap-ts/README.md))
   for authenticating requests, admitting them and receipts. It builds on the ARIA SDK's
   verifier.
 
 A credential-only consumer migrates to the first; a consumer that decides whether an
-agent may do something needs both. `@aria-registry/verify` keeps its published versions;
-nothing is unpublished or overwritten.
+agent may do something needs both. `@aria-registry/verify` 1.x is no
+longer served by npm; its source stays in `sdk/verify-ts/` for reference.
 
 ## The one change that matters
 
@@ -26,8 +26,8 @@ never a decision to run anything, and there is no compatibility wrapper that kee
 
 ```ts
 // 1.0: authenticate, then admit; only `allow` runs
-const verifier = createVerifier({ trust });           // @aria-registry/sdk
-const ap = createAp({ credentials: verifier });       // @aria-registry/ap
+const verifier = createVerifier({ trust });           // @trustlayer-foundation/aria-sdk
+const ap = createAp({ credentials: verifier });       // @trustlayer-foundation/aria-ap
 const presented = await ap.verifyPresentation(request, context);
 if (!presented.ok) return presented.status;
 const status = await verifier.checkStatus(presented.presentation.credential);

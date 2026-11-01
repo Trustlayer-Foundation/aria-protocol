@@ -3,7 +3,7 @@
 // an admission is judged again when it is used (F3).
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError, createVerifier } from '@aria-registry/sdk';
+import { AriaUsageError, createVerifier } from '@trustlayer-foundation/aria-sdk';
 import { AdmissionExpired, createAp, OperationLedger, StaleClaim, type ApprovalEvidence, type OperationStorage } from '../src';
 import { iso, profile, sign, statusList } from './fixtures';
 import { AGENT, BANK, NOW, world } from './world';

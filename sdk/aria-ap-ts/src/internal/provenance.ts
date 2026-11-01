@@ -1,4 +1,4 @@
-import { AriaUsageError } from '@aria-registry/sdk';
+import { AriaUsageError } from '@trustlayer-foundation/aria-sdk';
 
 /**
  * Where ARIA AP keeps what it established: presentations, admissions, claims,

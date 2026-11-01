@@ -3,7 +3,7 @@
 // stand in for the credential verifier with those views and run ARIA AP's own
 // rules unchanged. Credential verification itself is the credential package's.
 import { readFileSync } from 'node:fs';
-import type { Did } from '@aria-registry/sdk';
+import type { Did } from '@trustlayer-foundation/aria-sdk';
 import type { HttpRequestLike } from '../src';
 import type { Holder } from '../src/internal/request';
 

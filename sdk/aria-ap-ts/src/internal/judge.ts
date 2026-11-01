@@ -1,4 +1,4 @@
-import type { StatusEvidence } from '@aria-registry/sdk';
+import type { StatusEvidence } from '@trustlayer-foundation/aria-sdk';
 import type { Internals, PresentationSnapshot } from './instance';
 import type { ScopeRule } from '../admission';
 import { evaluate, type ApprovalSnapshot, type PolicyOutcome } from './policy';

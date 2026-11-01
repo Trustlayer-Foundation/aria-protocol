@@ -1,4 +1,4 @@
-import { AriaUsageError, canonicalJson, type CredentialFacts, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import { AriaUsageError, canonicalJson, type CredentialFacts, type StatusEvidence, type Verifier, type VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 import type { Admission, AdmissionInput, AdmissionReason, ApprovalEvidence, LookupAdmission, LookupInput } from './admission';
 import type { IdentityResponse, IdentityStatement, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
 import { digestField, fromBase64, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
@@ -20,7 +20,7 @@ import type { HttpRequestLike } from './types';
 /** Trusted configuration, from the adopter. */
 export interface ApConfig {
   /**
-   * The credential verifier of `@aria-registry/sdk` this instance builds on. Its
+   * The credential verifier of `@trustlayer-foundation/aria-sdk` this instance builds on. Its
    * credential and status results are the only ones accepted, and they are read
    * through its `facts` and `standing`, never from their fields. ARIA AP has no
    * credential or status verification of its own.
@@ -99,7 +99,7 @@ function statementView(x: Receipt) {
 export function createAp(config: ApConfig): Ap {
   const credentials = config?.credentials;
   if (!credentials || TRUST_INTERFACE.some((method) => typeof credentials[method] !== 'function')) {
-    throw new AriaUsageError('ARIA AP needs a credential verifier from @aria-registry/sdk (createVerifier)');
+    throw new AriaUsageError('ARIA AP needs a credential verifier from @trustlayer-foundation/aria-sdk (createVerifier)');
   }
   const clock = config.clock ?? (() => new Date());
   const now = (): number => {

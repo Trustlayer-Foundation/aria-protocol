@@ -1,8 +1,8 @@
 // ARIA AP over the installed pair: a real admission between the two packages, the
 // refusals that must not reach the authorizer or the effect, the operation's
 // minimum level through public admission, and the recovery of the original receipt.
-import * as ap from '@aria-registry/ap';
-import * as sdk from '@aria-registry/sdk';
+import * as ap from '@trustlayer-foundation/aria-ap';
+import * as sdk from '@trustlayer-foundation/aria-sdk';
 import { checks, fetchServing, holder, NOW, ORIGIN, profile, rejects, statusList } from './fixtures.mjs';
 
 const c = checks('ap-exchange');

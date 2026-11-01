@@ -1,6 +1,6 @@
 // AP1 request and fingerprint vectors against ARIA AP's request rules.
 import { describe, expect, it } from 'vitest';
-import { canonicalJson } from '@aria-registry/sdk';
+import { canonicalJson } from '@trustlayer-foundation/aria-sdk';
 import { digestField, utf8 } from '../src/internal/bytes';
 import { MemoryChallengeStore } from '../src';
 import { authenticate, fieldsOf, signatureBase } from '../src/internal/request';

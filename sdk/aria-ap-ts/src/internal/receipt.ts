@@ -1,4 +1,4 @@
-import { canonicalJson, type Did } from '@aria-registry/sdk';
+import { canonicalJson, type Did } from '@trustlayer-foundation/aria-sdk';
 import type { Receipt, SentAttempt } from '../receipt';
 import type { Signer } from '../types';
 import { DIGEST, fromBase64url, instantOf, toBase64url, utf8, UUID } from './bytes';

@@ -1,6 +1,6 @@
 // Checking an agent's credential, which is not the same as admitting a request:
 // nothing here establishes who is calling.
-import { createVerifier, inspectCredential, type TrustProfile } from '@aria-registry/sdk';
+import { createVerifier, inspectCredential, type TrustProfile } from '@trustlayer-foundation/aria-sdk';
 
 declare const demoProfile: TrustProfile; // the trust set the adopter configures (D2)
 declare const document: unknown; // e.g. fetched from https://api.aria.bar/v1/aids/<did>

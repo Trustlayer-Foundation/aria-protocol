@@ -1,4 +1,4 @@
-import { AriaUsageError } from '@aria-registry/sdk';
+import { AriaUsageError } from '@trustlayer-foundation/aria-sdk';
 import type { ScopeRule } from '../admission';
 
 // The receiver's scope policy (D5): patterns are three-segment scopes, or

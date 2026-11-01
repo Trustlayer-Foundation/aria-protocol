@@ -26,9 +26,13 @@ All notable changes to the ARIA Protocol specification.
 
 ### Added — the ARIA SDK and ARIA AP 1.0.0, and the demonstration issuer's key set
 
-- **Two packages**, `sdk/aria-ts` (credentials and their status) and `sdk/aria-ap-ts`
-  (requests, admission, operations and receipts), version 1.0.0, pinned by integrity in
-  the release manifest `release/aria-1.0.json`.
+- **Two packages**, `@trustlayer-foundation/aria-sdk` (`sdk/aria-ts`: credentials and
+  their status) and `@trustlayer-foundation/aria-ap` (`sdk/aria-ap-ts`: requests,
+  admission, operations and receipts), version 1.0.0, in the npm organization
+  `trustlayer-foundation` (decision D9), pinned by integrity in the release manifest
+  `release/aria-1.0.json`. ARIA AP declares the SDK as a peer of the same major version.
+- **`@aria-registry/verify` 1.x** is no longer served by npm; its source stays in
+  `sdk/verify-ts/`, and the migration guide leads to the two packages.
 - **Key set (D1, D2).** `schema/aria-keyset-1.json` and the demonstration issuer's set,
   `release/trust/registry.aria.bar.keyset.json`, whose anchor the manifest pins. The SDK
   trusts no issuer by default; today's issuer is a demonstration, and production 1.0

@@ -3,7 +3,7 @@
 // ARIA AP. The new-grant grammar is issuance's (C2); here only its reuse in policy patterns.
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError, createVerifier } from '@aria-registry/sdk';
+import { AriaUsageError, createVerifier } from '@trustlayer-foundation/aria-sdk';
 import { scopeAllowed, scopePolicyOf } from '../src/internal/scope-policy';
 import { evaluate, type PolicyInput } from '../src/internal/policy';
 import { credential, newIssuer, NOW, profile, sign } from './fixtures';

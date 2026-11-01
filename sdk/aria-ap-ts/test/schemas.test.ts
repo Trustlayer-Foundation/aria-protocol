@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormatsModule from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError, canonicalJson } from '@aria-registry/sdk';
+import { AriaUsageError, canonicalJson } from '@trustlayer-foundation/aria-sdk';
 import { isProfileOrigin } from '../src/internal/bytes';
 import { readReceipt } from '../src/internal/receipt';
 import { load } from './conformance';

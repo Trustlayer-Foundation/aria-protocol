@@ -3,7 +3,7 @@
 // signatures; keys are made per process and never written.
 import { randomBytes } from 'node:crypto';
 import { ed25519 } from '@noble/curves/ed25519.js';
-import { createVerifier, type Did, type TrustLevel, type VerifiedCredential, type Verifier } from '@aria-registry/sdk';
+import { createVerifier, type Did, type TrustLevel, type VerifiedCredential, type Verifier } from '@trustlayer-foundation/aria-sdk';
 import {
   createAp,
   MemoryChallengeStore,

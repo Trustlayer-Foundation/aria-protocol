@@ -1,8 +1,8 @@
 // A receiver's side: its identity statement, then each protected request:
 // authenticate, admit, claim, run once, sign; and the signed lookup that recovers
 // an operation's receipts after a lost answer.
-import { createAp, OperationLedger, type ChallengeStore, type HttpRequestLike, type IdentityResponse, type OperationDescriptor, type OperationStorage, type Receipt, type ReceiverSelf } from '@aria-registry/ap';
-import type { Verifier } from '@aria-registry/sdk';
+import { createAp, OperationLedger, type ChallengeStore, type HttpRequestLike, type IdentityResponse, type OperationDescriptor, type OperationStorage, type Receipt, type ReceiverSelf } from '@trustlayer-foundation/aria-ap';
+import type { Verifier } from '@trustlayer-foundation/aria-sdk';
 
 declare const verifier: Verifier; // the credential verifier, with the bank's trust profiles
 declare const self: ReceiverSelf; // the bank's own identity, credential document and signer

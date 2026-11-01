@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Acceptance of the two SDK packages as distribution artifacts, alone and as a pair.
 //
-// Builds and packs @aria-registry/sdk and @aria-registry/ap, or takes two archives
+// Builds and packs @trustlayer-foundation/aria-sdk and @trustlayer-foundation/aria-ap, or takes two archives
 // already packed, then installs them with npm in fresh directories outside the
 // repository: no workspace link, no source alias, nothing from ops/ or a sibling
 // repository. Runs the consumer scenarios in scripts/pair/ against them. Exits 1 on
@@ -21,8 +21,8 @@ import { fileURLToPath } from 'node:url';
 
 const SDK = fileURLToPath(new URL('..', import.meta.url));
 const PACKAGES = [
-  { dir: 'aria-ts', name: '@aria-registry/sdk' },
-  { dir: 'aria-ap-ts', name: '@aria-registry/ap' },
+  { dir: 'aria-ts', name: '@trustlayer-foundation/aria-sdk' },
+  { dir: 'aria-ap-ts', name: '@trustlayer-foundation/aria-ap' },
 ];
 // Only for the synthetic issuer in scripts/pair/fixtures.mjs.
 const FIXTURE_DEPS = ['@noble/curves@2.4.0', '@noble/post-quantum@0.5.4'];
@@ -95,18 +95,18 @@ for (const [i, pkg] of PACKAGES.entries()) {
 
 // ARIA AP's built code imports the credential package by its public name only, and
 // carries none of it; its other imports are its own declared dependencies.
-const apTar = artifacts['@aria-registry/ap'].tarball;
+const apTar = artifacts['@trustlayer-foundation/aria-ap'].tarball;
 const apCode = run('tar', ['-xzOf', apTar, 'package/dist/index.js'], work);
 const apManifest = JSON.parse(run('tar', ['-xzOf', apTar, 'package/package.json'], work));
 const apDependencies = Object.keys(apManifest.dependencies ?? {});
-const allowedImport = (s) => s === '@aria-registry/sdk' || apDependencies.some((d) => d !== '@aria-registry/sdk' && (s === d || s.startsWith(`${d}/`)));
+const allowedImport = (s) => s === '@trustlayer-foundation/aria-sdk' || apDependencies.some((d) => d !== '@trustlayer-foundation/aria-sdk' && (s === d || s.startsWith(`${d}/`)));
 const apImports = [...apCode.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]);
-if (!apImports.includes('@aria-registry/sdk') || apImports.some((s) => !allowedImport(s))) fail('ARIA AP imports something other than the credential package entry and its own dependencies', { apImports });
+if (!apImports.includes('@trustlayer-foundation/aria-sdk') || apImports.some((s) => !allowedImport(s))) fail('ARIA AP imports something other than the credential package entry and its own dependencies', { apImports });
 for (const marker of ['mldsa65-ed25519-2026', 'BitstringStatusList', 'createVerifier(']) {
   if (apCode.includes(marker)) fail('ARIA AP carries credential-package code', { marker });
 }
 // The schemas it ships are the protocol's, byte for byte, and all of them.
-const shipped = artifacts['@aria-registry/ap'].files.filter((f) => f.startsWith('package/schemas/')).map((f) => f.slice('package/schemas/'.length));
+const shipped = artifacts['@trustlayer-foundation/aria-ap'].files.filter((f) => f.startsWith('package/schemas/')).map((f) => f.slice('package/schemas/'.length));
 const protocolSchemas = readdirSync(join(SDK, '..', 'schema')).filter((f) => /^aria-ap-[a-z]+-1\.json$/.test(f));
 if (shipped.sort().join() !== protocolSchemas.sort().join()) fail('ARIA AP does not ship exactly the protocol\'s ARIA AP schemas', { shipped, protocolSchemas });
 for (const name of shipped) {
@@ -114,8 +114,8 @@ for (const name of shipped) {
   if (!packed.equals(readFileSync(join(SDK, '..', 'schema', name)))) fail('a packaged schema differs from the protocol\'s', { name });
 }
 // The credential package exports the AID 1.0 schema those schemas refer to, byte for byte.
-const sdkTarFile = artifacts['@aria-registry/sdk'].tarball;
-if (!artifacts['@aria-registry/sdk'].files.includes('package/schemas/aid-1.0.json') || !execFileSync('tar', ['-xzOf', sdkTarFile, 'package/schemas/aid-1.0.json'], { cwd: work }).equals(readFileSync(join(SDK, '..', 'schema', 'aid-1.0.json')))) {
+const sdkTarFile = artifacts['@trustlayer-foundation/aria-sdk'].tarball;
+if (!artifacts['@trustlayer-foundation/aria-sdk'].files.includes('package/schemas/aid-1.0.json') || !execFileSync('tar', ['-xzOf', sdkTarFile, 'package/schemas/aid-1.0.json'], { cwd: work }).equals(readFileSync(join(SDK, '..', 'schema', 'aid-1.0.json')))) {
   fail('the credential package does not export the protocol\'s aid-1.0.json byte for byte');
 }
 // Its declarations, likewise: the credential package's types come from the peer, not a copy.
@@ -125,7 +125,7 @@ if (apTypeImports.some((s) => !allowedImport(s))) fail('ARIA AP types import som
 for (const marker of ['interface CredentialFacts', 'declare function createVerifier', 'type StandingState']) {
   if (apTypes.includes(marker)) fail('ARIA AP declares credential-package types itself', { marker });
 }
-if (!apManifest.peerDependencies?.['@aria-registry/sdk'] || apManifest.dependencies?.['@aria-registry/sdk']) {
+if (!apManifest.peerDependencies?.['@trustlayer-foundation/aria-sdk'] || apManifest.dependencies?.['@trustlayer-foundation/aria-sdk']) {
   fail('ARIA AP must declare the credential package as a peer dependency, not bundle or pin its own copy', { peer: apManifest.peerDependencies, deps: apManifest.dependencies });
 }
 
@@ -184,7 +184,7 @@ function scenario(dir, script) {
   }
 }
 
-const sdkTar = artifacts['@aria-registry/sdk'].tarball;
+const sdkTar = artifacts['@trustlayer-foundation/aria-sdk'].tarball;
 const scenarios = [];
 
 // 1. The credential package alone, and the README's example with it.
@@ -222,10 +222,10 @@ try {
   writeFileSync(join(alone, 'package.json'), JSON.stringify({ name: 'consumer-ap-alone', private: true, type: 'module' }));
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', '--legacy-peer-deps', apTar], alone);
   try {
-    run('node', ['--input-type=module', '-e', "await import('@aria-registry/ap')"], alone);
+    run('node', ['--input-type=module', '-e', "await import('@trustlayer-foundation/aria-ap')"], alone);
     aloneResult = { label: aloneLabel, ok: false, got: 'imported' };
   } catch (error) {
-    const missing = /Cannot find package '@aria-registry\/sdk'/.test(String(error.stderr));
+    const missing = /Cannot find package '@trustlayer-foundation\/aria-sdk'/.test(String(error.stderr));
     aloneResult = { label: aloneLabel, ok: missing, ...(missing ? {} : { got: String(error.stderr).slice(0, 500) }) };
   }
 } catch (error) {
@@ -248,7 +248,7 @@ const report = {
   source: { repository: 'aria-protocol', revision, uncommittedChangesUnderSdk: dirty, archives: given ? 'given' : 'packed here' },
   runtime: { node: process.version, npm: run('npm', ['--version'], work).trim(), pnpm: run('pnpm', ['--version'], work).trim() },
   pair: Object.fromEntries(Object.entries(artifacts).map(([name, a]) => [name, { version: a.version, integrity: a.integrity, sha256: a.sha256, reproducible: a.reproducible, files: a.files }])),
-  compatibility: { '@aria-registry/ap': { peerDependencies: apManifest.peerDependencies } },
+  compatibility: { '@trustlayer-foundation/aria-ap': { peerDependencies: apManifest.peerDependencies } },
   scenarios: scenarios.map(({ scenario: name, passed, failed }) => ({ name, passed, failed })),
   failures,
 };

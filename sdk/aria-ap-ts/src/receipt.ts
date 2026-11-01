@@ -1,4 +1,4 @@
-import { AriaUsageError, type AuthenticCredential, type Did, type Produced, type RetainedStatus } from '@aria-registry/sdk';
+import { AriaUsageError, type AuthenticCredential, type Did, type Produced, type RetainedStatus } from '@trustlayer-foundation/aria-sdk';
 import type { SignedAttempt, VerifiedReceiver } from './agent';
 import type { Ap } from './ap';
 import { internalsOf } from './internal/instance';

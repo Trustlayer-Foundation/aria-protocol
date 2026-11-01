@@ -1,4 +1,4 @@
-import type { Did, Produced, TrustLevel, VerifiedCredential } from '@aria-registry/sdk';
+import type { Did, Produced, TrustLevel, VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 import type { Signer } from './types';
 
 /**

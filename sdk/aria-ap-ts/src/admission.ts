@@ -1,4 +1,4 @@
-import type { Produced, StatusEvidence } from '@aria-registry/sdk';
+import type { Produced, StatusEvidence } from '@trustlayer-foundation/aria-sdk';
 import type { AttemptRefusal, OperationKey } from './operations';
 import type { VerifiedPresentation } from './presentation';
 

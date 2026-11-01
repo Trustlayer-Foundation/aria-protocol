@@ -1,4 +1,4 @@
-import { canonicalJson } from '@aria-registry/sdk';
+import { canonicalJson } from '@trustlayer-foundation/aria-sdk';
 import type { ReceiverIdentityFailure } from '../agent';
 import type { ReceiverPin } from '../receipt';
 import { fromBase64url, instantOf, isProfileOrigin, utf8 } from './bytes';

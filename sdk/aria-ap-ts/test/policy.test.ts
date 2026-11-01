@@ -2,7 +2,7 @@
 // verifier's `facts` and `standing` (AP2 wires them to a verified presentation;
 // nothing reaches them without one).
 import { describe, expect, it } from 'vitest';
-import { createVerifier, TRUST_LEVELS, type Standing, type TrustLevel } from '@aria-registry/sdk';
+import { createVerifier, TRUST_LEVELS, type Standing, type TrustLevel } from '@trustlayer-foundation/aria-sdk';
 import { evaluate, type PolicyInput } from '../src/internal/policy';
 import { credential, DID, newIssuer, NOW, profile, sign } from './fixtures';
 

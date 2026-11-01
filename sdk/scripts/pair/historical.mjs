@@ -3,8 +3,8 @@
 // credential has expired. Authenticity holds there; current authorization does not.
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
-import * as ap from '@aria-registry/ap';
-import * as sdk from '@aria-registry/sdk';
+import * as ap from '@trustlayer-foundation/aria-ap';
+import * as sdk from '@trustlayer-foundation/aria-sdk';
 import { checks, fetchServing, holder, HOUR, NOW, ORIGIN, profile, statusList } from './fixtures.mjs';
 
 const c = checks('historical');

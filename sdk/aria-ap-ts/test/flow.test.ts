@@ -2,7 +2,7 @@
 // must not reach the application's authorizer or the effect, and the recovery of
 // the original operation receipt after a lost answer.
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError } from '@aria-registry/sdk';
+import { AriaUsageError } from '@trustlayer-foundation/aria-sdk';
 import { createAp, MemoryChallengeStore, OperationTracker } from '../src';
 import { RECEIPT_TYPE, signReceipt } from '../src/internal/receipt';
 import { AGENT, BANK, NOW, world } from './world';

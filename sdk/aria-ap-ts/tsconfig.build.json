@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "paths": { "@aria-registry/sdk": ["../aria-ts/dist/index.d.ts"] }
+    "paths": { "@trustlayer-foundation/aria-sdk": ["../aria-ts/dist/index.d.ts"] }
   },
   "include": ["src/**/*.ts"]
 }

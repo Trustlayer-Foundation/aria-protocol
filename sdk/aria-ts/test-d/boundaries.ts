@@ -1,7 +1,7 @@
 // Compile-time boundaries of the credential API. Each `@ts-expect-error` must stay
 // an error: `tsc` fails if one of these lines starts to compile. The same
 // boundaries hold at run time, since a cast gets past any type.
-import { inspectCredential, type AuthenticCredential, type CredentialFacts, type RetainedStatus, type Standing, type StatusEvidence, type VerifiedCredential, type Verifier } from '@aria-registry/sdk';
+import { inspectCredential, type AuthenticCredential, type CredentialFacts, type RetainedStatus, type Standing, type StatusEvidence, type VerifiedCredential, type Verifier } from '@trustlayer-foundation/aria-sdk';
 
 declare const verifier: Verifier;
 declare const credential: VerifiedCredential;

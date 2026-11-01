@@ -1,7 +1,7 @@
 // AP1 receiver identity vectors against ARIA AP's identity rules, the same core
 // `verifyReceiverIdentity` runs over the credential verifier.
 import { describe, expect, it } from 'vitest';
-import { canonicalJson } from '@aria-registry/sdk';
+import { canonicalJson } from '@trustlayer-foundation/aria-sdk';
 import { checkIdentity, type IdentityHolder } from '../src/internal/identity';
 import { load, multibaseKey } from './conformance';
 

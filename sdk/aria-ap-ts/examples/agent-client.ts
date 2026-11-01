@@ -1,8 +1,8 @@
 // The agent's side: authenticate the receiver, sign each attempt, keep every
 // attempt, and recover the operation's original receipt after a lost answer,
 // without a second effect and without calling an already-sent operation unsent.
-import { createAp, OperationTracker, type HttpRequestLike, type Receipt, type ReceiverPin, type Signer, type VerifiedReceiver } from '@aria-registry/ap';
-import type { Did, Verifier, VerifiedCredential } from '@aria-registry/sdk';
+import { createAp, OperationTracker, type HttpRequestLike, type Receipt, type ReceiverPin, type Signer, type VerifiedReceiver } from '@trustlayer-foundation/aria-ap';
+import type { Did, Verifier, VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 
 declare const verifier: Verifier; // the credential verifier, with the agent's trust profiles
 const ap = createAp({ credentials: verifier });

@@ -4,7 +4,7 @@
 // reader.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { canonicalJson } from '@aria-registry/sdk';
+import { canonicalJson } from '@trustlayer-foundation/aria-sdk';
 import { checks, credential, NOW, profile } from './fixtures.mjs';
 
 const c = checks('documented');
@@ -18,7 +18,7 @@ if (block) {
   const imports = lines.filter((l) => l.startsWith('import '));
   const body = lines.filter((l) => !l.startsWith('import '));
   const source = [
-    ...imports.map((l) => l.replace("'@aria-registry/sdk'", "'./documented-sdk.mjs'")),
+    ...imports.map((l) => l.replace("'@trustlayer-foundation/aria-sdk'", "'./documented-sdk.mjs'")),
     "import { credential as fixture, fetchServing, ORIGIN, profile, statusList } from './fixtures.mjs';",
     'const trust = [profile];',
     'const fetch = { allowedOrigins: [ORIGIN], fetch: fetchServing(statusList([])) };',
@@ -30,8 +30,8 @@ if (block) {
   writeFileSync(
     new URL('documented-sdk.mjs', here),
     [
-      "import * as sdk from '@aria-registry/sdk';",
-      "export * from '@aria-registry/sdk';",
+      "import * as sdk from '@trustlayer-foundation/aria-sdk';",
+      "export * from '@trustlayer-foundation/aria-sdk';",
       `export const createVerifier = (options) => sdk.createVerifier({ clock: () => new Date(${NOW}), ...options });`,
     ].join('\n'),
   );

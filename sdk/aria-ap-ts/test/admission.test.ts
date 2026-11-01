@@ -3,7 +3,7 @@
 // results it produced, judged when admission runs. Their credential-layer halves
 // stay in credential.test.ts and provenance.test.ts.
 import { describe, expect, it } from 'vitest';
-import { AriaUsageError, createVerifier, type StatusEvidence, type VerifiedCredential } from '@aria-registry/sdk';
+import { AriaUsageError, createVerifier, type StatusEvidence, type VerifiedCredential } from '@trustlayer-foundation/aria-sdk';
 import { createAp } from '../src';
 import { evaluate, type PolicyInput } from '../src/internal/policy';
 import { credential, fakeFetch, HOUR, LIST_URL, newIssuer, NOW, profile, sign, statusList } from './fixtures';
@@ -95,7 +95,7 @@ describe('time-sensitive evidence is judged when it is used', () => {
 });
 
 describe('ARIA AP builds on one credential verifier', () => {
-  it('needs a verifier from @aria-registry/sdk', () => {
+  it('needs a verifier from @trustlayer-foundation/aria-sdk', () => {
     expect(() => createAp({ credentials: {} as never })).toThrow(AriaUsageError);
     expect(() => createAp({} as never)).toThrow(AriaUsageError);
     const { v } = setup(null);

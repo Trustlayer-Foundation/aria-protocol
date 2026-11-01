@@ -1,4 +1,4 @@
-import { AriaUsageError, type Did } from '@aria-registry/sdk';
+import { AriaUsageError, type Did } from '@trustlayer-foundation/aria-sdk';
 import { randomToken } from './internal/bytes';
 import type { ChallengeStore } from './presentation';
 

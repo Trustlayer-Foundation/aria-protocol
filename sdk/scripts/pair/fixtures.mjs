@@ -1,10 +1,10 @@
 // Synthetic issuer, credential and status list for the artifact checks. Keys are
-// made per run and never written. Uses only the public API of @aria-registry/sdk.
+// made per run and never written. Uses only the public API of @trustlayer-foundation/aria-sdk.
 import { randomBytes } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { ed25519 } from '@noble/curves/ed25519.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { canonicalJson } from '@aria-registry/sdk';
+import { canonicalJson } from '@trustlayer-foundation/aria-sdk';
 
 export const NOW = Date.parse('2026-11-01T12:00:00Z');
 export const HOUR = 3_600_000;

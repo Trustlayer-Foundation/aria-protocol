@@ -2,10 +2,10 @@
 // against the installed packages through ap-exchange.mjs.
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
-import aid from '@aria-registry/sdk/schemas/aid-1.0.json' with { type: 'json' };
-import receipt from '@aria-registry/ap/schemas/aria-ap-receipt-1.json' with { type: 'json' };
-import identity from '@aria-registry/ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
-import lookup from '@aria-registry/ap/schemas/aria-ap-lookup-1.json' with { type: 'json' };
+import aid from '@trustlayer-foundation/aria-sdk/schemas/aid-1.0.json' with { type: 'json' };
+import receipt from '@trustlayer-foundation/aria-ap/schemas/aria-ap-receipt-1.json' with { type: 'json' };
+import identity from '@trustlayer-foundation/aria-ap/schemas/aria-ap-identity-1.json' with { type: 'json' };
+import lookup from '@trustlayer-foundation/aria-ap/schemas/aria-ap-lookup-1.json' with { type: 'json' };
 
 const ajv = new Ajv2020();
 ajv.addKeyword('_comment'); // annotations in aid-1.0.json, not validation keywords

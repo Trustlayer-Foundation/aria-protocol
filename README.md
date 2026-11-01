@@ -64,8 +64,8 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 | `conformance/` | Vectors and harnesses any implementation runs, in any language | `conformance/ap/` (ARIA AP) is provisional |
 | `federation/` | The contract between registration authorities and the issuing authority | |
 | `examples/` | Reference credentials and usage examples; [`examples/README.md`](examples/README.md) is the index | |
-| `sdk/aria-ts/` | **ARIA SDK** (`@aria-registry/sdk`): credential verification and the status of the exact document | 1.0.0, not yet on npm |
-| `sdk/aria-ap-ts/` | **ARIA AP** (`@aria-registry/ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, not yet on npm |
+| `sdk/aria-ts/` | **ARIA SDK** (`@trustlayer-foundation/aria-sdk`): credential verification and the status of the exact document | 1.0.0, not yet on npm |
+| `sdk/aria-ap-ts/` | **ARIA AP** (`@trustlayer-foundation/aria-ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, not yet on npm |
 
 The two SDKs are separate packages. A service that only checks credentials installs the
 ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
@@ -78,7 +78,7 @@ artifacts, alone and together.
 With the ARIA SDK (not yet on npm; build it from `sdk/aria-ts`):
 
 ```typescript
-import { createVerifier } from '@aria-registry/sdk';
+import { createVerifier } from '@trustlayer-foundation/aria-sdk';
 
 const verifier = createVerifier({ trust, fetch }); // the issuers you trust, and where status may be fetched
 const result = verifier.verifyCredential(credential);
@@ -122,7 +122,7 @@ the identity checks behind them are the demonstration's. Production ARIA 1.0 wil
 new TLF issuer and keys.
 
 ```javascript
-import { canonicalJson, createVerifier } from '@aria-registry/sdk';
+import { canonicalJson, createVerifier } from '@trustlayer-foundation/aria-sdk';
 
 /** A verifier trusting the key, in an issuer's published key set, that `pinned` names. */
 export async function verifierFromKeyset({ keysetUrl, pinned, profile, fetch = globalThis.fetch }) {
@@ -308,7 +308,7 @@ were published. Why each is retired, and what replaces it: [DEPRECATIONS.md](DEP
 | Artifact | Why it stays | Until |
 |---|---|---|
 | [`schema/aid-v1.2.json`](schema/aid-v1.2.json), [`examples/aid-example-v1.2.json`](examples/aid-example-v1.2.json), `conformance/vectors/aid-v1.2-shape.json` | Credentials issued before the cutover declare `spec_version: "1.2"` inside their signed bytes and validate against this schema; its path is cited from the W3C DID Method Registry | The last such credential expires or is revoked |
-| [`sdk/verify-ts/`](sdk/verify-ts/README.md) (`@aria-registry/verify` 1.x, published on npm), [`examples/verify-example.ts`](examples/verify-example.ts) | Applications pin published versions | A deprecation on npm, which has not been done |
+| [`sdk/verify-ts/`](sdk/verify-ts/README.md) (`@aria-registry/verify` 1.x, no longer served by npm), [`examples/verify-example.ts`](examples/verify-example.ts) | Applications that pinned it, and the W3C registry entry that cites it | The citation moves to the 1.0 packages ([INVARIANTS](INVARIANTS.md), npm package names) |
 | [`schema/atp-policy-v1.json`](schema/atp-policy-v1.json), [`schema/intent-declaration-v1.json`](schema/intent-declaration-v1.json), [`examples/atp-policy-example.txt`](examples/atp-policy-example.txt), the `_aria-policy` record `v=ATP1`, the `ATP-…` codes | Their identifiers were published; ATP is deprecated in favour of ARIA AP | A compatibility decision for each identifier |
 
 **The edition of September 7, 2026** (tagged `v1.0.0`) used Verification Requirements

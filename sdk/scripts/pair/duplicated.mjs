@@ -1,10 +1,10 @@
 // Two copies of the credential package in one process (a duplicated install): each
 // verifier trusts only its own results, so duplication fails closed, never open.
-import * as a from '@aria-registry/sdk';
-import * as ap from '@aria-registry/ap';
+import * as a from '@trustlayer-foundation/aria-sdk';
+import * as ap from '@trustlayer-foundation/aria-ap';
 import { checks, credential, NOW, profile, rejects } from './fixtures.mjs';
 
-const b = await import(new URL('./second/node_modules/@aria-registry/sdk/dist/index.js', import.meta.url).href);
+const b = await import(new URL('./second/node_modules/@trustlayer-foundation/aria-sdk/dist/index.js', import.meta.url).href);
 const c = checks('duplicated');
 await c.check('the two copies are distinct modules', () => a.createVerifier !== b.createVerifier);
 

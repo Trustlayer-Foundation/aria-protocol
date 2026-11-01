@@ -3,7 +3,7 @@
 // at a time when the named receiver credential has expired; ARIA AP checks the
 // receipts against that evidence.
 import { describe, expect, it } from 'vitest';
-import { createVerifier, type AuthenticCredential, type RetainedStatus } from '@aria-registry/sdk';
+import { createVerifier, type AuthenticCredential, type RetainedStatus } from '@trustlayer-foundation/aria-sdk';
 import { createAp, type SentAttempt } from '../src';
 import { load } from './conformance';
 
