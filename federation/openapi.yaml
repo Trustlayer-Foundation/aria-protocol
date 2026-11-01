@@ -52,13 +52,29 @@ info:
 
     ## Retries
 
-    The authority records each answer under the RA and its `request_id`. Sending
-    the same `request_id` with the same payload returns the recorded answer and does
-    nothing again, even after a reservation or the original assertion has expired:
-    sign a fresh assertion for the same `request_id` and payload. The same
-    `request_id` with another payload is `request_id_conflict`. An RA that did not
-    receive an answer resends the same request; it never invents a new one to find
-    out.
+    The authority records a **successful** answer with the request, in the same
+    transaction, under the RA and its `request_id`. A refusal is recorded nowhere.
+
+    - **Recovering an answer:** resend the same operation with the same
+      `request_id` and the same payload. If it was recorded, the recorded answer
+      comes back and nothing is done again, even after the reservation or the
+      original assertion has expired. The resent request must authenticate now: when
+      the original window has passed, sign a fresh assertion for the same
+      `request_id` and payload, with a key that is still registered and active, from
+      an RA still in good standing.
+    - **If it was not recorded,** the resent request is judged afresh, against the
+      state at that moment: it may succeed, or be refused for a reason the first
+      attempt did not meet (an expired reservation, for instance).
+    - The same `request_id` with another payload is `request_id_conflict`.
+
+    An answer that never arrived (a 504, a lost connection) or a 500 or 503
+    `unavailable` leaves the outcome **unknown**: the database may have committed
+    the request even though its acknowledgement was lost. The RA keeps the request
+    unresolved and resends the same request until it gets the recorded answer or a
+    refusal of the request itself. A resend refused before its payload is judged
+    (401, or 403 `ra_not_in_good_standing`) says nothing about the original. The RA
+    never treats an unresolved request as not done, and never sends a new one with
+    another `request_id` to find out.
 
     ## Refusals
 
@@ -71,10 +87,11 @@ info:
 
     ## Not in this draft
 
-    Public reads (credentials, status lists, the authority's key set) are served by
-    the authority's public API, not by this contract. The scope catalogue is kept by
-    each registry: the authority checks a scope's form only. A queryable RA standing
-    endpoint is not implemented.
+    Public reads (credentials, status lists) are served by the authority's public
+    API, not by this contract. A published key set for the authority is pending: no
+    endpoint serves one yet. The scope catalogue is kept by each registry: the
+    authority checks a scope's form only. A queryable RA standing endpoint is not
+    implemented.
   license:
     name: CC-BY-4.0
     url: https://creativecommons.org/licenses/by/4.0/
@@ -353,18 +370,22 @@ components:
     InternalError:
       description: >-
         The authority failed while answering. Nothing of the request is in the
-        answer or the log. Resend the same request.
+        answer or the log. The outcome is unknown: resend the same request.
       content:
         application/json:
           schema: { $ref: 'exchange.schema.json#/$defs/refusal500' }
     Unavailable:
       description: >-
-        A dependency did not answer (the database, the signer, the DNS resolver).
-        Nothing was committed. Resend the same request.
+        A dependency did not answer. `signer_unavailable` (the signer) and
+        `domain_binding_unavailable` (the DNS resolver) are given before the request
+        is recorded: resending it judges it afresh. `unavailable` (the database)
+        leaves the outcome unknown, since the failure may come after a commit whose
+        acknowledgement was lost: resend the same request to learn its recorded
+        answer.
       content:
         application/json:
           schema: { $ref: 'exchange.schema.json#/$defs/refusal503' }
     NoAnswer:
       description: >-
-        No answer within 30 seconds, and no body. Whether the request was committed
-        is unknown; resend the same request to learn its recorded answer.
+        No answer within 30 seconds, and no body. The outcome is unknown: resend
+        the same request to learn its recorded answer.
