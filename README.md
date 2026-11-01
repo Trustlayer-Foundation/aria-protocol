@@ -182,9 +182,9 @@ its transport, receipt, scope and human-approval rules await decisions):
    own resource rule. A refusal is a signed receipt for that attempt only.
 4. **Once per operation.** An admitted operation is claimed and settled with a signed
    `aria-ap-receipt/1` in the adopter's storage, in the same transaction as its effect;
-   retries of the same operation get the original receipt. Running it once depends on
-   that storage and effect integration, and on reconciliation, whose handling of an
-   uncertain failure is still open.
+   retries of the same operation get the original receipt. An effect outside that
+   transaction runs once only with an adapter that guarantees it; an uncertain failure
+   otherwise keeps the operation locked rather than allowing a second execution.
 5. **Recovery.** After a lost answer, a signed lookup returns the operation's receipts.
 
 Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas

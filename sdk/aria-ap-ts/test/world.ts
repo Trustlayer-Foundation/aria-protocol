@@ -79,14 +79,15 @@ function holder(issuer: ReturnType<typeof newIssuer>, did: string, n: number, ov
   return { document: sign(doc, issuer), signer: signer(secret, `${did}#holder-key-${n}`), url: doc.id };
 }
 
-export function world(options: { level?: TrustLevel; hitl?: string[] } = {}) {
+export function world(options: { level?: TrustLevel; hitl?: string[]; statusMaxAgeSeconds?: number } = {}) {
   let t = NOW;
   const clock = () => new Date(t);
   const issuer = newIssuer();
   const revoked: number[] = [];
   let statusUp = true;
   const routes = { [LIST_URL]: () => (statusUp ? new Response(JSON.stringify(statusList(issuer, revoked, { ageMs: 60_000 })), { status: 200 }) : new Response('unavailable', { status: 503 })) };
-  const verifier = (): Verifier => createVerifier({ trust: [profile(issuer, { maxLevel: 'L3' })], clock, fetch: { allowedOrigins: [ORIGIN], fetch: fakeFetch(routes) } });
+  const verifier = (): Verifier =>
+    createVerifier({ trust: [profile(issuer, { maxLevel: 'L3' })], clock, fetch: { allowedOrigins: [ORIGIN], fetch: fakeFetch(routes) }, ...(options.statusMaxAgeSeconds ? { statusMaxAgeSeconds: options.statusMaxAgeSeconds } : {}) });
 
   const agent = holder(issuer, AGENT, 11, options);
   const bankHolder = holder(issuer, BANK.did, 12, { scopes: ['payments:transfer:receive'] });

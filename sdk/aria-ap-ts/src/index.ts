@@ -33,6 +33,8 @@ export type {
   Settlement,
   Expected,
   Failure,
+  Assurance,
+  EffectObservation,
   Reconciled,
 } from './operations';
 
@@ -42,4 +44,4 @@ export type { Receipt, ReceiptCheck, ReceiptFailure, ReceiptResult, ReceiptState
 export type { IdentityResponse, IdentityStatement, ReceiverIdentityFailure, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
 
 export type { HttpRequestLike, Signer } from './types';
-export { StaleClaim, InvariantViolation } from './errors';
+export { StaleClaim, InvariantViolation, AdmissionExpired } from './errors';

@@ -4,7 +4,7 @@
 // identity statements, admissions are decided by real credentials and status.
 import { describe, expect, it } from 'vitest';
 import { AriaUsageError } from '@aria-registry/sdk';
-import { InvariantViolation, OperationTracker, StaleClaim, type ApprovalEvidence, type OperationClaim, type Receipt, type VerifiedReceiver } from '../src';
+import { InvariantViolation, OperationTracker, StaleClaim, type ApprovalEvidence, type EffectObservation, type OperationClaim, type Receipt, type VerifiedReceiver } from '../src';
 import { newReceiptId } from '../src/internal/instance';
 import { RECEIPT_TYPE, signReceipt } from '../src/internal/receipt';
 import { load } from './conformance';
@@ -126,7 +126,8 @@ function runner(issued: readonly string[]) {
         labels.set(outcome.receipt.id, s.receipt);
         receiptsByLabel.set(s.receipt, outcome.receipt);
         const op = attemptsOf.get(s.attempt)!;
-        if (s.outcome === 'completed') effects.set(op, (effects.get(op) ?? 0) + 1);
+        // A transactional effect commits with its outcome; an external one was counted when it landed.
+        if (s.outcome === 'completed' && !s.external) effects.set(op, (effects.get(op) ?? 0) + 1);
         if (s.delivered !== false) await deliver(op, outcome.receipt, outcome.status);
         return { http: outcome.status, receipt: s.receipt };
       } catch (error) {
@@ -148,13 +149,32 @@ function runner(issued: readonly string[]) {
     },
 
     async reconcile(s) {
+      // The adopter names the claim it observed, with the revision it read: the current one
+      // for the claim that holds the operation, the one it last saw for an older claim.
+      let observation: EffectObservation = { committed: true };
+      if (!s.committed) {
+        const claim = claims.get(s.observed);
+        const record = await w.storage.get(keyOf(s.operation));
+        const current = record?.state === 'claimed' && claim && record.claim.id === claim.claimId;
+        observation = { committed: false, claimId: claim?.claimId ?? 'none', revision: current ? record.revision : (claim?.revision ?? 0), ...(s.assurance ? { assurance: s.assurance } : {}) };
+      }
       try {
-        const r = await w.ledger.reconcile(keyOf(s.operation), { committed: s.committed });
-        return r.kind === 'committed' ? { receipt: label(r.current) } : { [r.kind]: true };
+        const r = await w.ledger.reconcile(keyOf(s.operation), observation);
+        if (r.kind === 'committed') return { receipt: label(r.current) };
+        if (r.kind === 'kept') return { kept: r.reason };
+        return { [r.kind]: true };
       } catch (error) {
         if (error instanceof InvariantViolation) return { error: 'invariant_violation' };
+        if (error instanceof StaleClaim) return { error: 'stale_observation' };
         throw error;
       }
+    },
+
+    async effect(s) {
+      // The external effect lands, whether or not its outcome is recorded afterwards.
+      const op = attemptsOf.get(s.attempt)!;
+      effects.set(op, (effects.get(op) ?? 0) + 1);
+      return { applied: true };
     },
 
     async resume(s) {

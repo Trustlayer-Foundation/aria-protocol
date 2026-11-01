@@ -19,7 +19,7 @@ async function answer(vector: any): Promise<Record<string, unknown>> {
   const result = await authenticate(requestOf(vector.request), {
     origin: ctx.receiver.origin,
     operations: ctx.descriptors,
-    now: Date.parse(ctx.now),
+    now: () => Date.parse(ctx.now),
     challengeLive: async (nonce) => live(nonce),
     consume: async (nonce) => live(nonce) && consumed.add(nonce) !== undefined,
     resolve: async (url, digest) => {

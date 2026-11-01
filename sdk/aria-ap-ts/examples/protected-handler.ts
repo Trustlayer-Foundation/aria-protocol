@@ -80,7 +80,8 @@ export async function handle(request: HttpRequestLike): Promise<Answer> {
   } catch (error) {
     // No receipt either way; the client stays unknown and retries the same operation.
     // Release only a proven rollback. If the commit is uncertain the claim stays,
-    // retries get `operation_in_progress`, and `ledger.reconcile` decides later from the bank's records.
+    // retries get `operation_in_progress`, and `ledger.reconcile` releases it only with an assurance
+    // that this worker can no longer apply the effect (here the transfer and its outcome share a transaction).
     await ledger.fail(begun.claim, rolledBack(error) ? 'rolled-back' : 'uncertain');
     return { status: 500, problem: 'internal' };
   }

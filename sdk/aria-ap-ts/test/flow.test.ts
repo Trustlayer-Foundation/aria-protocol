@@ -221,11 +221,12 @@ describe('challenges', () => {
     expect(results.map((r) => r.ok).sort()).toEqual([false, true]);
   });
 
-  it('an expired challenge is refused, even in a request signed just now', async () => {
+  it('an expired challenge is refused, even in a request whose signature is still current', async () => {
     const w = world();
     const receiver = await w.receiver();
-    w.at(NOW + 61_000);
+    w.at(NOW + 59_000);
     const a = await w.signTransfer(OP, '10.00', receiver);
+    w.at(NOW + 61_000);
     expect(await w.handle(a.request)).toEqual({ status: 401, problem: 'aria.authentication_failed/challenge' });
   });
 });

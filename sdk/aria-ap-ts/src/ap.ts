@@ -3,12 +3,14 @@ import type { Admission, AdmissionInput, AdmissionReason, ApprovalEvidence, Look
 import type { IdentityResponse, IdentityStatement, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
 import { digestField, fromBase64, fromBase64url, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
 import { strictVerify } from './internal/ed25519';
-import { newReceiptId, refusalOf, register, type AdmissionSnapshot, type PresentationSnapshot, type RefusalSnapshot } from './internal/instance';
-import { evaluate, type ApprovalSnapshot } from './internal/policy';
+import { newReceiptId, refusalOf, register, type AdmissionSnapshot, type Internals, type PresentationSnapshot, type RefusalSnapshot } from './internal/instance';
+import { judge, lookupRefusal, refusalFor } from './internal/judge';
+import type { ApprovalSnapshot } from './internal/policy';
 import { issue, recall } from './internal/provenance';
 import { checkReceipt, isReceiverCode, RECEIPT_TYPE, REASONS, signReceipt, type ReceiverKey } from './internal/receipt';
 import { authenticate, checkDescriptors, CLASSES, fieldsOf, PROFILE, prepareSignature } from './internal/request';
 import { serializeInnerList } from './internal/sf';
+import { AdmissionExpired } from './errors';
 import type { AttemptRefusal } from './operations';
 import type { ChallengeStore, OperationDescriptor, PresentationContext, PresentationResult, ReceiverSelf } from './presentation';
 import type { Receipt, ReceiptCheck, ReceiptResult, ReceiptStatement, ReceiverPin } from './receipt';
@@ -61,6 +63,8 @@ const CHALLENGE = /^[A-Za-z0-9._~+/=-]{8,256}$/;
 const ORIGIN_RULE = 'an origin is https://host[:port], or http:// on a loopback host, in its canonical form without path, query, fragment or user information';
 
 interface ReceiverSnapshot {
+  /** After this instant (ms) the statement and its challenge are stale: identify the receiver again. */
+  readonly freshUntil: number;
   readonly pin: ReceiverPin;
   readonly key: ReceiverKey;
 }
@@ -80,6 +84,7 @@ export function createAp(config: ApConfig): Ap {
     if (!Number.isFinite(t)) throw new AriaUsageError('the clock returned an invalid date');
     return t;
   };
+  const internals: Internals = { credentials, now };
   const described = new WeakMap<readonly OperationDescriptor[], readonly OperationDescriptor[]>();
 
   function operationsOf(operations: readonly OperationDescriptor[]): readonly OperationDescriptor[] {
@@ -124,7 +129,7 @@ export function createAp(config: ApConfig): Ap {
       const result = await authenticate(request, {
         origin,
         operations,
-        now: now(),
+        now,
         challengeLive: (nonce) => context.challenges.live(nonce, receiverDid),
         consume: (nonce) => context.challenges.consume(nonce, receiverDid),
         resolve: async (url, digest) => {
@@ -148,7 +153,7 @@ export function createAp(config: ApConfig): Ap {
         return status === 400 ? { ok: false, status, code: 'aria.request_invalid', reason } : { ok: false, status, code: 'aria.authentication_failed', reason };
       }
       const a = result.value;
-      const snapshot: PresentationSnapshot = { credential: credential!, holder: a.holder, descriptor: a.descriptor, operationId: a.operationId, lookupOf: a.lookupOf, audience: a.audience, fingerprint: a.fingerprint, requestDigest: a.requestDigest, receiverDid };
+      const snapshot: PresentationSnapshot = { credential: credential!, holder: a.holder, descriptor: a.descriptor, operationId: a.operationId, lookupOf: a.lookupOf, audience: a.audience, fingerprint: a.fingerprint, requestDigest: a.requestDigest, receiverDid, expiresAt: (a.expires + PROFILE.skewSeconds) * 1000 };
       const view = { kind: 'verified-presentation', credential: credential!, operation: a.descriptor, operationId: a.operationId, lookupOf: a.lookupOf, audience: a.audience, fingerprint: a.fingerprint, requestDigest: a.requestDigest };
       return { ok: true, presentation: issue(ap, 'presentation', view as never, snapshot) };
     },
@@ -157,19 +162,10 @@ export function createAp(config: ApConfig): Ap {
       const p = recall<PresentationSnapshot>(ap, 'presentation', input?.presentation);
       if (p.descriptor.class === 'retrieval') throw new AriaUsageError('a retrieval is admitted with admitLookup');
       if (typeof input.authorize !== 'function') throw new AriaUsageError('admission needs the resource decision of the application (authorize)');
-      // Read through the credential verifier: it refuses evidence it did not produce for this exact result.
-      const standing = credentials.standing(p.credential, input.status);
-      const d = p.descriptor;
-      let outcome = evaluate({
-        credential: credentials.facts(p.credential),
-        standing,
-        audienceMatches: p.audience === p.receiverDid,
-        operation: { scope: d.scope!, minLevel: d.minLevel!, onMissingApproval: d.onMissingApproval ?? 'refuse' },
-        operationId: p.operationId,
-        fingerprint: p.fingerprint!,
-        approval: approvalOf(input.approval),
-        now: Date.parse(standing.judgedAt),
-      });
+      const approval = approvalOf(input.approval);
+      // Read through the credential verifier, which refuses evidence it did not produce for this exact result.
+      let outcome = judge(internals, p, input.status, approval);
+      if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');
       let code: string | undefined;
       if (outcome.decision === 'allow') {
         const decided = await input.authorize({ presentation: input.presentation });
@@ -177,15 +173,17 @@ export function createAp(config: ApConfig): Ap {
           code = (decided as { code?: unknown } | undefined)?.code as string;
           if (typeof code !== 'string' || !isReceiverCode(code)) throw new AriaUsageError('a resource refusal carries a code of the receiver, such as bank.account_not_granted');
           outcome = { decision: 'deny', reason: 'forbidden' };
+        } else {
+          // The authorizer took time: standing, approval and the deadline are judged again.
+          outcome = judge(internals, p, input.status, approval);
+          if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');
         }
       }
-      const snapshot: AdmissionSnapshot = { decision: outcome.decision, presentation: p };
+      const snapshot: AdmissionSnapshot = { decision: outcome.decision, presentation: p, status: input.status, approval };
       if (outcome.decision === 'allow') return issue(ap, 'admission', { decision: 'allow', presentation: input.presentation } as never, snapshot);
-      const refusalCode = outcome.decision === 'indeterminate' ? 'aria.status_unavailable' : (code ?? `aria.${outcome.reason}`);
-      const status = (outcome.decision === 'indeterminate' ? 503 : 403) as 403 | 503;
+      const answer = refusalFor(outcome, code);
       const refusal = refusalOf(ap, {
-        status,
-        code: refusalCode,
+        ...answer,
         operationId: p.operationId!,
         requestDigest: p.requestDigest,
         sender: { did: p.holder.did, credential: p.holder.credentialId },
@@ -201,23 +199,12 @@ export function createAp(config: ApConfig): Ap {
     async admitLookup(input) {
       const p = recall<PresentationSnapshot>(ap, 'presentation', input?.presentation);
       if (p.descriptor.class !== 'retrieval') throw new AriaUsageError('only a retrieval is admitted with admitLookup');
-      const deny = (status: 403 | 503, code: Extract<LookupAdmission, { decision: 'deny' }>['code']): LookupAdmission => Object.freeze({ decision: 'deny', status, code });
-      if (p.audience !== p.receiverDid) return deny(403, 'aria.audience_mismatch');
-      const standing = credentials.standing(p.credential, input.status);
-      switch (standing.state) {
-        case 'not_valid_now':
-          return deny(403, 'aria.credential_expired');
-        case 'revoked':
-          return deny(403, 'aria.credential_revoked');
-        case 'superseded':
-          return deny(403, 'aria.credential_superseded');
-        case 'unknown':
-          return deny(503, 'aria.status_unavailable');
-        case 'good':
-          break;
-      }
+      if (now() > p.expiresAt) throw new AdmissionExpired('deadline');
+      if (p.audience !== p.receiverDid) return Object.freeze({ decision: 'deny', status: 403, code: 'aria.audience_mismatch' });
+      const refused = lookupRefusal(credentials.standing(p.credential, input.status).state);
+      if (refused) return Object.freeze({ decision: 'deny', ...refused });
       const key = { receiver: p.receiverDid, sender: p.holder.did, operationId: p.lookupOf! };
-      return issue(ap, 'lookup', { decision: 'allow', key } as never, { key });
+      return issue(ap, 'lookup', { decision: 'allow', key } as never, { key, presentation: p, status: input.status });
     },
 
     async buildAttemptRefusal(refusal, receiver) {
@@ -287,8 +274,11 @@ export function createAp(config: ApConfig): Ap {
       if (proof.alg !== 'ed25519' || proof.keyid !== f.holderKey.id || !signature || !strictVerify(signature, bytes, f.holderKey.publicKey)) return fail('signature');
       const standing = credentials.standing(verified.credential, await credentials.checkStatus(verified.credential));
       if (standing.state !== 'good') return fail('status');
+      // Fetching status took time: the statement, and the challenge it carries, must still be fresh.
+      if (now() - created > STATEMENT_MAX_AGE_MS) return fail('stale');
 
       const snapshot: ReceiverSnapshot = {
+        freshUntil: created + STATEMENT_MAX_AGE_MS,
         pin: { origin: pin.origin, did: pin.did },
         key: { did: f.did, credentialId: f.binding.credentialId, keyId: f.holderKey.id, publicKey: f.holderKey.publicKey },
       };
@@ -298,6 +288,7 @@ export function createAp(config: ApConfig): Ap {
 
     async signRequest(input) {
       const receiver = recall<ReceiverSnapshot>(ap, 'receiver', input?.receiver);
+      if (now() > receiver.freshUntil) throw new AriaUsageError('the receiver statement and its challenge are no longer fresh: identify the receiver again');
       const f = credentials.facts(input.credential);
       if (input.signer?.keyId !== f.holderKey.id || input.signer.algorithm !== 'ed25519') throw new AriaUsageError("the signer must be the credential's Ed25519 holder key");
       const rule = CLASSES[input.class];
@@ -378,6 +369,6 @@ export function createAp(config: ApConfig): Ap {
     },
   };
   Object.freeze(ap);
-  register(ap, { credentials, now });
+  register(ap, internals);
   return ap;
 }

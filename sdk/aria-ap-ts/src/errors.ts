@@ -13,3 +13,19 @@ export class InvariantViolation extends Error {
     this.name = 'InvariantViolation';
   }
 }
+
+/**
+ * An admission, or a lookup admission, no longer authorizes new work: its request's
+ * signature window has ended (`deadline`), or the credential no longer stands
+ * (`standing`, with the status and code to answer). Admit a fresh attempt.
+ */
+export class AdmissionExpired extends Error {
+  constructor(
+    readonly why: 'deadline' | 'standing',
+    readonly status?: 403 | 503,
+    readonly code?: string,
+  ) {
+    super(why === 'deadline' ? 'the admission outlived its request' : `the credential no longer stands (${code})`);
+    this.name = 'AdmissionExpired';
+  }
+}

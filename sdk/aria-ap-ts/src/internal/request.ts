@@ -95,7 +95,8 @@ export interface AuthContext {
   /** The receiver's configured origin: `@target-uri` is built from it, never from a client header. */
   readonly origin: string;
   readonly operations: readonly OperationDescriptor[];
-  readonly now: number;
+  /** The receiver's clock (ms), read again after every asynchronous step. */
+  readonly now: () => number;
   /** Whether the challenge is live, without consuming it. */
   readonly challengeLive: (nonce: string) => Promise<boolean>;
   /** The exact credential named by URL and digest, verified; `null` when it cannot be. */
@@ -116,6 +117,8 @@ export interface Authenticated {
   readonly fingerprint: string | null;
   readonly requestDigest: string;
   readonly holder: Holder;
+  /** The signature's `expires` (seconds). */
+  readonly expires: number;
 }
 
 const invalid = (reason: InvalidReason) => ({ ok: false as const, failure: { status: 400 as const, reason } });
@@ -241,10 +244,12 @@ export async function authenticate(request: HttpRequestLike, ctx: AuthContext): 
   const keyid = params.get('keyid');
   if (params.get('alg') !== PROFILE.alg || params.get('tag') !== PROFILE.tag) return refused('signature');
   if (typeof created !== 'number' || typeof expires !== 'number' || typeof nonce !== 'string' || typeof keyid !== 'string') return refused('signature');
-  const now = ctx.now / 1000;
-  if (expires <= created || expires - created > PROFILE.maxWindowSeconds || created > now + PROFILE.skewSeconds || expires < now - PROFILE.skewSeconds) {
-    return refused('window');
-  }
+  // The window is judged now and again after every asynchronous step below.
+  const current = (): boolean => {
+    const now = ctx.now() / 1000;
+    return created <= now + PROFILE.skewSeconds && expires >= now - PROFILE.skewSeconds;
+  };
+  if (expires <= created || expires - created > PROFILE.maxWindowSeconds || !current()) return refused('window');
 
   // 8. Content-Digest of the exact content: empty content for unsafe-empty.
   if (rule.components.includes('content-digest')) {
@@ -285,8 +290,11 @@ export async function authenticate(request: HttpRequestLike, ctx: AuthContext): 
     return refused('signature');
   }
 
-  // 12. Authenticated: the challenge is consumed, atomically in the adopter's store.
+  // 12. Still inside the window after resolving the credential; then the challenge is
+  // consumed, atomically in the adopter's store, and the window holds after that too.
+  if (!current()) return refused('window');
   if (!(await ctx.consume(nonce))) return refused('challenge');
+  if (!current()) return refused('window');
 
   const audience = sfStringOf(single(fields, 'aria-audience') ?? '') ?? '';
   return {
@@ -299,6 +307,7 @@ export async function authenticate(request: HttpRequestLike, ctx: AuthContext): 
       fingerprint: d.class === 'retrieval' ? null : fingerprintOf(d, url, fields, body),
       requestDigest: digestField(utf8(base)),
       holder,
+      expires,
     },
   };
 }

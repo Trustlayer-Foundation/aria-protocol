@@ -1,6 +1,7 @@
-import { AriaUsageError, type Did, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import { AriaUsageError, type Did, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
 import type { AttemptRefusal } from '../operations';
 import type { OperationDescriptor } from '../presentation';
+import type { ApprovalSnapshot } from './policy';
 import { issue } from './provenance';
 import type { Holder } from './request';
 
@@ -34,11 +35,16 @@ export interface PresentationSnapshot {
   readonly requestDigest: string;
   /** The receiver that verified it. */
   readonly receiverDid: Did;
+  /** The end of the signature's window, with the skew (ms): no admission made from it is used later. */
+  readonly expiresAt: number;
 }
 
 export interface AdmissionSnapshot {
   readonly decision: 'allow' | 'deny' | 'indeterminate';
   readonly presentation: PresentationSnapshot;
+  /** The evidence the decision used, judged again when the admission is used. */
+  readonly status: StatusEvidence;
+  readonly approval: ApprovalSnapshot | null;
 }
 
 export interface RefusalSnapshot {

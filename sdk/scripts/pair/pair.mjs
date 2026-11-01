@@ -9,7 +9,7 @@ import { checks, credential, fetchServing, NOW, ORIGIN, profile, rejects, status
 const c = checks('pair');
 await c.check('ARIA AP exports its own API only', () => {
   const names = Object.keys(ap).sort().join(',');
-  return names === 'InvariantViolation,MemoryChallengeStore,MemoryOperationStorage,OperationLedger,OperationTracker,StaleClaim,createAp' || names;
+  return names === 'AdmissionExpired,InvariantViolation,MemoryChallengeStore,MemoryOperationStorage,OperationLedger,OperationTracker,StaleClaim,createAp' || names;
 });
 await c.check('one copy of the credential package: none nested under ARIA AP', () => {
   let nested = [];

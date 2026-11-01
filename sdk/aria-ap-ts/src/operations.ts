@@ -1,9 +1,10 @@
-import { AriaUsageError, type Did, type Produced } from '@aria-registry/sdk';
+import { AriaUsageError, type Did, type Produced, type StatusEvidence } from '@aria-registry/sdk';
 import type { Admitted, LookupAdmission } from './admission';
 import type { Ap } from './ap';
-import { InvariantViolation, StaleClaim } from './errors';
+import { AdmissionExpired, InvariantViolation, StaleClaim } from './errors';
 import { instantText } from './internal/bytes';
-import { internalsOf, newReceiptId, refusalOf, spentAdmissions, type AdmissionSnapshot, type Internals } from './internal/instance';
+import { internalsOf, newReceiptId, refusalOf, spentAdmissions, type AdmissionSnapshot, type Internals, type PresentationSnapshot } from './internal/instance';
+import { judge, lookupRefusal, refusalFor } from './internal/judge';
 import { issue, recall } from './internal/provenance';
 import { isReceiverCode, RECEIPT_TYPE, signReceipt } from './internal/receipt';
 import type { ReceiverSelf } from './presentation';
@@ -32,6 +33,8 @@ export type StoredOperation =
       readonly attempt: { readonly requestDigest: string; readonly sender: { readonly did: Did; readonly credential: string } };
       /** Operation receipts already issued: an `accepted` one when this claim continues it. */
       readonly receipts: readonly Receipt[];
+      /** Set when the claim's worker could not tell whether its effect committed; only `reconcile` with an assurance releases it. */
+      readonly uncertain?: { readonly at: string };
     }
   | {
       readonly state: 'accepted' | 'completed' | 'rejected';
@@ -115,19 +118,45 @@ export type Settlement =
 export type Failure =
   /** The effect's transaction rolled back: nothing happened. The claim is released and a retry may run. */
   | 'rolled-back'
-  /** Whether the effect committed is unknown. The claim stays; `reconcile` decides later from the adopter's own records. */
+  /** Whether the effect committed is unknown. The claim is marked uncertain and stays locked; `reconcile` decides later. */
   | 'uncertain';
+
+/**
+ * Why releasing an uncertain claim cannot cause a second execution:
+ * - `transactional`: the effect commits only in the transaction that runs `settle`,
+ *   so `settle`'s compare-and-set fences the old work, and no committed outcome exists;
+ * - `fenced`: the effect is outside that transaction, and its adapter has established
+ *   that it is finally absent and that the old work can no longer apply it (cancelled at
+ *   the destination, or the destination applies it at most once for this operation).
+ * A timeout, an absent row at one instant or a stopped local handler is not an assurance.
+ */
+export type Assurance = 'transactional' | 'fenced';
+
+/** What the adopter observed of an operation's effect, about the exact claim it read. */
+export type EffectObservation =
+  /** The effect committed. Its outcome must already be recorded. */
+  | { readonly committed: true }
+  /** The effect has not committed, observed for this claim generation; released only with an assurance. */
+  | { readonly committed: false; readonly claimId: string; readonly revision: number; readonly assurance?: Assurance };
 
 export type Reconciled =
   | { readonly kind: 'absent' }
   /** The claim was released without effect: back to no record, or to `accepted`. */
   | { readonly kind: 'released' }
   /** The effect committed with its outcome: the stored receipt, never a new one. */
-  | { readonly kind: 'committed'; readonly current: Receipt };
+  | { readonly kind: 'committed'; readonly current: Receipt }
+  /** Nothing changed: the claim is not marked uncertain (`active`), or no assurance was given (`unassured`). */
+  | { readonly kind: 'kept'; readonly reason: 'active' | 'unassured' };
 
 /** The governing receipt: the final one if any, else the latest `accepted`. */
 export function governing(receipts: readonly Receipt[]): Receipt | null {
   return receipts.find((r) => r.outcome.state !== 'accepted') ?? receipts.at(-1) ?? null;
+}
+
+interface LookupSnapshot {
+  readonly key: OperationKey;
+  readonly presentation: PresentationSnapshot;
+  readonly status: StatusEvidence;
 }
 
 interface ClaimSnapshot {
@@ -174,14 +203,21 @@ export class OperationLedger {
 
   /** Claims the admitted operation, or returns its existing outcome, or refuses this attempt. */
   async begin(admission: Admitted): Promise<Begin> {
-    const { presentation: p } = this.#admitted(admission);
+    const a = this.#admitted(admission);
+    const p = a.presentation;
     const key = this.#keyOf(p);
     const attempt = { requestDigest: p.requestDigest, sender: { did: p.holder.did, credential: p.holder.credentialId } };
+    const before = this.#stillAdmitted(key, attempt, a);
+    if (before) return before;
     let existing = await this.#storage.get(key);
     if (!existing) {
       const record: Claimed = { state: 'claimed', fingerprint: p.fingerprint!, revision: 1, claim: { id: globalThis.crypto.randomUUID(), at: this.#now() }, attempt, receipts: [] };
       const created = await this.#storage.create(key, record);
-      if (created.created) return { kind: 'claimed', claim: this.#claim(key, record) };
+      if (created.created) {
+        // Storage took time: the admission must still authorize new work when the claim is granted.
+        const after = this.#stillAdmitted(key, attempt, a, () => this.#release(key, record));
+        return after ? await after : { kind: 'claimed', claim: this.#claim(key, record) };
+      }
       existing = created.existing;
     }
     return this.#existing(key, existing, p.fingerprint!, attempt);
@@ -202,21 +238,43 @@ export class OperationLedger {
       },
       this.#receiver.signer,
     );
-    const next: StoredOperation = { state: outcome.state, fingerprint: c.fingerprint, revision: c.revision + 1, receipts: [...c.receipts, receipt] };
-    if (!(await this.#storage.replace(c.key, { revision: c.revision, claimId: c.claimId }, next))) throw new StaleClaim();
+    const record = await this.#storage.get(c.key);
+    if (!record || record.state !== 'claimed' || record.claim.id !== c.claimId) throw new StaleClaim();
+    const next: StoredOperation = { state: outcome.state, fingerprint: c.fingerprint, revision: record.revision + 1, receipts: [...c.receipts, receipt] };
+    if (!(await this.#storage.replace(c.key, { revision: record.revision, claimId: c.claimId }, next))) throw new StaleClaim();
     this.#spent.add(claim);
     const view = { key: c.key, state: outcome.state, status: outcome.status, code: outcome.code, receipt };
     return issue(this.#ap, 'outcome', view as unknown as RecordedOperationOutcome, view);
   }
 
-  /** Ends a claim whose handler threw. `rolled-back` releases it; `uncertain` keeps it for `reconcile`. Throws `StaleClaim` if it is no longer this worker's. */
+  /**
+   * Ends a claim whose handler threw. `rolled-back` releases it. `uncertain` marks it,
+   * and it stays locked: retries are refused until `reconcile` decides with an
+   * assurance, or this worker learns the outcome and settles it. Throws `StaleClaim`
+   * if the claim is no longer this worker's.
+   */
   async fail(claim: OperationClaim, failure: Failure): Promise<void> {
     const c = this.#claimOf(claim);
     const record = await this.#storage.get(c.key);
-    if (!record || record.state !== 'claimed' || record.claim.id !== c.claimId || record.revision !== c.revision) throw new StaleClaim();
-    if (failure === 'uncertain') return;
+    if (!record || record.state !== 'claimed' || record.claim.id !== c.claimId) throw new StaleClaim();
+    if (failure === 'uncertain') {
+      if (!(await this.#markUncertain(c.key, record))) throw new StaleClaim();
+      return;
+    }
     if (!(await this.#release(c.key, record))) throw new StaleClaim();
     this.#spent.add(claim);
+  }
+
+  /**
+   * Marks a claim uncertain for a worker that stopped without calling `fail`, for
+   * instance one that crashed, naming the exact claim and revision observed. The
+   * claim stays locked; `reconcile` decides it. Throws `StaleClaim` if another
+   * generation holds the operation.
+   */
+  async markUncertain(key: OperationKey, observed: { readonly claimId: string; readonly revision: number }): Promise<void> {
+    const record = await this.#storage.get(key);
+    if (!record || record.state !== 'claimed' || record.claim.id !== observed.claimId || record.revision !== observed.revision) throw new StaleClaim();
+    if (!(await this.#markUncertain(key, record))) throw new StaleClaim();
   }
 
   /**
@@ -226,7 +284,8 @@ export class OperationLedger {
    * with its governing receipt; other content, or a claim held, is refused.
    */
   async resume(key: OperationKey, admission: Admitted): Promise<Begin> {
-    const { presentation: p } = this.#admitted(admission);
+    const a = this.#admitted(admission);
+    const p = a.presentation;
     const own = this.#keyOf(p);
     if (own.sender !== key.sender || own.operationId !== key.operationId || own.receiver !== key.receiver) throw new AriaUsageError('the admission is for another operation');
     const record = await this.#storage.get(key);
@@ -234,41 +293,76 @@ export class OperationLedger {
     const attempt = { requestDigest: p.requestDigest, sender: { did: p.holder.did, credential: p.holder.credentialId } };
     if (record.state !== 'accepted') return this.#existing(key, record, p.fingerprint!, attempt);
     if (record.fingerprint !== p.fingerprint) return this.#refuse(key, attempt, 409, 'aria.idempotency_conflict');
+    const before = this.#stillAdmitted(key, attempt, a);
+    if (before) return before;
     const next: Claimed = { state: 'claimed', fingerprint: record.fingerprint, revision: record.revision + 1, claim: { id: globalThis.crypto.randomUUID(), at: this.#now() }, attempt, receipts: record.receipts };
     if (!(await this.#storage.reclaim(key, record.revision, next))) return this.#refuse(key, attempt, 409, 'aria.operation_in_progress');
-    return { kind: 'claimed', claim: this.#claim(key, next) };
+    const after = this.#stillAdmitted(key, attempt, a, () => this.#release(key, next));
+    return after ? await after : { kind: 'claimed', claim: this.#claim(key, next) };
   }
 
   /**
-   * Decides a claim left `uncertain` from the adopter's own record of whether the
-   * effect committed. Because the effect and its signed outcome commit in one
-   * transaction, a committed effect already has its stored receipt: that receipt
-   * is returned, never regenerated. An open claim reported committed, or an outcome
-   * reported not committed, breaks that invariant and throws `InvariantViolation`.
-   * Only an explicit `committed: false` releases a claim; a timeout alone never
-   * proves the effect absent.
+   * Decides an operation from the adopter's own record of its effect. A committed
+   * effect already has its stored outcome (the effect and its signed outcome commit
+   * together, or the worker settled it): that receipt is returned, never regenerated;
+   * an open claim reported committed, or an outcome reported not committed, throws
+   * `InvariantViolation`. A claim is released only when it is marked uncertain, the
+   * observation names its exact claim and revision, and an assurance says why the old
+   * work cannot apply its effect later; otherwise nothing changes (`kept`). An
+   * observation of an earlier generation throws `StaleClaim` and releases nothing.
    */
-  async reconcile(key: OperationKey, effect: { readonly committed: boolean }): Promise<Reconciled> {
+  async reconcile(key: OperationKey, observation: EffectObservation): Promise<Reconciled> {
     const record = await this.#storage.get(key);
     if (!record) {
-      if (effect.committed) throw new InvariantViolation('an effect without an operation record');
+      if (observation.committed) throw new InvariantViolation('an effect without an operation record');
       return { kind: 'absent' };
     }
-    if (record.state === 'claimed') {
-      if (effect.committed) throw new InvariantViolation('a committed effect whose outcome was not recorded');
-      if (!(await this.#release(key, record))) throw new StaleClaim();
-      return { kind: 'released' };
+    if (record.state !== 'claimed') {
+      if (!observation.committed) throw new InvariantViolation(`a recorded ${record.state} outcome without its effect`);
+      return { kind: 'committed', current: governing(record.receipts)! };
     }
-    if (!effect.committed) throw new InvariantViolation(`a recorded ${record.state} outcome without its effect`);
-    return { kind: 'committed', current: governing(record.receipts)! };
+    if (observation.committed) throw new InvariantViolation('a committed effect whose outcome was not recorded');
+    if (observation.claimId !== record.claim.id || observation.revision !== record.revision) throw new StaleClaim();
+    if (!record.uncertain) return { kind: 'kept', reason: 'active' };
+    if (observation.assurance !== 'transactional' && observation.assurance !== 'fenced') return { kind: 'kept', reason: 'unassured' };
+    if (!(await this.#release(key, record))) throw new StaleClaim();
+    return { kind: 'released' };
   }
 
   /** The governing receipt (`current`) and every operation receipt (`history`) for an admitted retrieval; `null` when there is no record. */
   async lookup(admission: Extract<LookupAdmission, { decision: 'allow' }>): Promise<{ readonly current: Receipt | null; readonly history: readonly Receipt[] } | null> {
-    const { key } = recall<{ key: OperationKey }>(this.#ap, 'lookup', admission);
-    if (key.receiver !== this.#receiver.did) throw new AriaUsageError('the retrieval was admitted for another receiver');
-    const record = await this.#storage.get(key);
+    const l = recall<LookupSnapshot>(this.#ap, 'lookup', admission);
+    if (l.key.receiver !== this.#receiver.did) throw new AriaUsageError('the retrieval was admitted for another receiver');
+    this.#stillReadable(l);
+    const record = await this.#storage.get(l.key);
+    // Judged again when the data is released, after the storage wait.
+    this.#stillReadable(l);
     return record ? { current: governing(record.receipts), history: [...record.receipts] } : null;
+  }
+
+  /** Throws `AdmissionExpired` unless the lookup's request is current and its credential stands now. */
+  #stillReadable(l: LookupSnapshot): void {
+    if (this.#internals.now() > l.presentation.expiresAt) throw new AdmissionExpired('deadline');
+    const refused = lookupRefusal(this.#internals.credentials.standing(l.presentation.credential, l.status).state);
+    if (refused) throw new AdmissionExpired('standing', refused.status, refused.code);
+  }
+
+  /**
+   * `null` while the admission still authorizes new work now; otherwise its refusal,
+   * after `undo` (if given) released the claim just made. A deadline that passed throws.
+   */
+  #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot): Begin | null;
+  #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot, undo: () => Promise<boolean>): Promise<Begin> | null;
+  #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot, undo?: () => Promise<boolean>): Begin | Promise<Begin> | null {
+    const outcome = judge(this.#internals, a.presentation, a.status, a.approval);
+    if (outcome.decision === 'allow') return null;
+    const refuse = (): Begin => {
+      if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');
+      const { status, code } = refusalFor(outcome);
+      return this.#refuse(key, attempt, status, code);
+    };
+    if (!undo) return refuse();
+    return undo().then(refuse);
   }
 
   #now(): string {
@@ -307,8 +401,14 @@ export class OperationLedger {
     return { kind: 'existing', governing: current, status: current.outcome.status };
   }
 
-  #refuse(key: OperationKey, attempt: Claimed['attempt'], status: 409, code: string): Begin {
+  #refuse(key: OperationKey, attempt: Claimed['attempt'], status: 403 | 409 | 503, code: string): Begin {
     return { kind: 'refused', refusal: refusalOf(this.#ap, { status, code, operationId: key.operationId, requestDigest: attempt.requestDigest, sender: attempt.sender, receiverDid: key.receiver }) };
+  }
+
+  /** Marks a claimed record uncertain, conditional on the revision and claim read. */
+  #markUncertain(key: OperationKey, record: Claimed): Promise<boolean> {
+    if (record.uncertain) return Promise.resolve(true);
+    return this.#storage.replace(key, { revision: record.revision, claimId: record.claim.id }, { ...record, revision: record.revision + 1, uncertain: { at: this.#now() } });
   }
 
   /** Back to no record, or to `accepted` when the claim continued an accepted operation. */

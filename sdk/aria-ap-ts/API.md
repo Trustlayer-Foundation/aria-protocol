@@ -121,15 +121,25 @@ pass. A refusal by `authorize` carries the receiver's own code (`bank.account_no
 and is a 403 attempt refusal. Refusals are signed `rejected/attempt` receipts and claim
 nothing; `indeterminate` is a signed 503 `aria.status_unavailable`.
 
-Every admission is used once: `begin` and `resume` refuse an admission already used,
-so a continuation is always judged on current evidence. Operation descriptors are
-checked: a minimum level outside `TRUST_LEVELS` or an approval policy other than
-`refuse` is a usage error.
+**An admission is a short-lived capability, judged when it is made and again when it is
+used.** `admit` judges standing and approval again after `authorize` returns, since the
+authorizer may take time. The admission keeps the status evidence and approval it was
+judged on and its request's deadline (the signature's `expires` plus the 5 s skew);
+`begin` and `resume` judge it again before they grant a claim and once more after the
+storage write, releasing the claim just made if it no longer holds. An approval or status
+that lapsed refuses the attempt (signed, as at admission); a deadline that passed throws
+`AdmissionExpired`: admit a fresh attempt. Every admission is used once. The application's
+own resource decision is valid for that same lifetime; revalidating it longer is the
+adopter's. Operation descriptors are checked: a minimum level outside `TRUST_LEVELS` or an
+approval policy other than `refuse` is a usage error.
 
 A retrieval is admitted by `admitLookup` (provisional, D4): a credential of the
 operation's sender DID whose standing is `good` reads that operation's receipts; a
 revoked, superseded or expired credential reads nothing. Its refusals are unsigned
-problems, since a retrieval gets no receipt of its own.
+problems, since a retrieval gets no receipt of its own. A lookup admission is judged again
+before the receipts are released, after the storage read: `ledger.lookup` throws
+`AdmissionExpired` once its request is past its deadline, or with the status and code to
+answer once the credential no longer stands.
 
 ## Operations and receipts
 
@@ -139,18 +149,29 @@ adopter's `OperationStorage` (each method one atomic compare-and-set;
 governing receipt of a finished one with its original status, or refuses this attempt:
 `aria.idempotency_conflict` for other content, `aria.operation_in_progress` while
 claimed. `settle` records the outcome and signs its receipt inside the effect's
-transaction; `fail('rolled-back')` releases a claim, `fail('uncertain')` keeps it for
-`reconcile`, which only an explicit «not committed» releases; `resume` continues an
-`accepted` operation after a fresh admission of the same operation and content. A stale
-worker gets `StaleClaim`; a record that contradicts the adopter's effect,
-`InvariantViolation`.
+transaction; `fail('rolled-back')` releases a claim; `resume` continues an `accepted`
+operation after a fresh admission of the same operation and content. A stale worker gets
+`StaleClaim`; a record that contradicts the adopter's effect, `InvariantViolation`.
 
-**Open limitation.** `fail('uncertain')` leaves no mark on the record, so
-`reconcile(key, { committed: false })` cannot tell an uncertain claim from one still
-running and can release it. With a transactional effect the running worker's `settle`
-then fails its compare-and-set and its transaction rolls back; with an effect outside that
-transaction a second execution is possible. Call `reconcile` only for claims you know
-have stopped. The contract fix is pending review.
+**Running each operation once.** The simple contract is an effect that commits in the
+same transaction as `settle`: `settle`'s compare-and-set then fences any older worker,
+whose transaction rolls back. An effect outside that transaction (a remote call) needs its
+adapter to guarantee that a released claim cannot apply it later: durable idempotency at
+the destination keyed by this operation, or cancellation that is known to be final.
+Otherwise the operation stays locked:
+
+- `fail(claim, 'uncertain')` marks the claim, by compare-and-set; it stays locked and
+  retries get `aria.operation_in_progress`. The worker that holds it can still `settle`
+  it once it learns the outcome. `markUncertain(key, { claimId, revision })` marks the
+  claim of a worker that stopped without calling `fail`.
+- `reconcile(key, observation)` releases a claim only when it is marked uncertain, the
+  observation names its exact `claimId` and `revision`, `committed` is `false`, and the
+  `assurance` is `transactional` or `fenced` (`Assurance`). An unmarked claim is `kept`
+  (`active`); a marked one without assurance is `kept` (`unassured`); an observation of an
+  earlier generation throws `StaleClaim` and releases nothing. A timeout, a row absent at
+  one instant or a stopped local handler is not an assurance.
+- A committed effect already has its stored outcome: `reconcile` returns that receipt,
+  never a new one; an open claim reported committed throws `InvariantViolation`.
 
 Receipts (`aria-ap-receipt/1`, provisional D4) have two sources only: a settled outcome
 and an attempt refusal. The governing receipt is the final one if any, else the latest
