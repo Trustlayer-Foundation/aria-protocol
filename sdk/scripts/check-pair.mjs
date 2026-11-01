@@ -26,6 +26,10 @@ const PACKAGES = [
 ];
 // Only for the synthetic issuer in scripts/pair/fixtures.mjs.
 const FIXTURE_DEPS = ['@noble/curves@2.4.0', '@noble/post-quantum@0.5.4'];
+// Only to compile the packages' examples against their packed types; the versions
+// the packages are developed with.
+const TYPECHECK_DEPS = ['typescript@5.9.3', '@types/node@22.20.5'];
+const EXAMPLES = ['aria-ts/examples', 'aria-ap-ts/examples'];
 const args = process.argv.slice(2);
 const reportPath = args.includes('--report') ? args[args.indexOf('--report') + 1] : null;
 const given = args.includes('--archives') ? args.slice(args.indexOf('--archives') + 1, args.indexOf('--archives') + 3).map((f) => resolve(f)) : null;
@@ -131,7 +135,36 @@ function consumer(name, tarballs, extra = []) {
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: `consumer-${name}`, private: true, type: 'module' }));
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...extra, ...tarballs, ...FIXTURE_DEPS], dir);
   for (const f of readdirSync(join(SDK, 'scripts', 'pair'))) copyFileSync(join(SDK, 'scripts', 'pair', f), join(dir, f));
+  copyFileSync(join(SDK, '..', 'README.md'), join(dir, 'README.protocol.md'));
   return dir;
+}
+
+// The packages' examples compile against the types the archives ship, not the
+// sources: with both installed, under the packages' own strictness.
+function typecheckExamples(dir) {
+  const into = join(dir, 'examples');
+  mkdirSync(into);
+  const files = EXAMPLES.flatMap((d) =>
+    readdirSync(join(SDK, d)).filter((f) => f.endsWith('.ts')).map((f) => {
+      const name = `${d.split('/')[0]}-${f}`;
+      copyFileSync(join(SDK, d, f), join(into, name));
+      return `examples/${name}`;
+    }),
+  );
+  writeFileSync(join(dir, 'tsconfig.json'), JSON.stringify({
+    compilerOptions: {
+      target: 'ES2022', module: 'ESNext', moduleResolution: 'bundler', lib: ['ES2022'], types: ['node'],
+      strict: true, exactOptionalPropertyTypes: true, noUncheckedIndexedAccess: true, noEmit: true, resolveJsonModule: true,
+    },
+    files,
+  }));
+  try {
+    run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...TYPECHECK_DEPS], dir);
+    run(join(dir, 'node_modules', '.bin', 'tsc'), ['-p', 'tsconfig.json'], dir);
+    return { scenario: 'examples-typecheck', passed: files.length, failed: 0, results: files.map((label) => ({ label, ok: true })) };
+  } catch (error) {
+    return { scenario: 'examples-typecheck', passed: 0, failed: 1, results: [{ label: files.join(', '), ok: false, error: String(error.stdout || error.stderr || error.message).slice(0, 2000) }] };
+  }
 }
 
 function installFailed(name, error) {
@@ -154,9 +187,11 @@ function scenario(dir, script) {
 const sdkTar = artifacts['@aria-registry/sdk'].tarball;
 const scenarios = [];
 
-// 1. The credential package alone.
+// 1. The credential package alone, and the README's example with it.
 try {
-  scenarios.push(scenario(consumer('credentials-only', [sdkTar]), 'credentials-only.mjs'));
+  const alone = consumer('credentials-only', [sdkTar]);
+  scenarios.push(scenario(alone, 'credentials-only.mjs'));
+  scenarios.push(scenario(alone, 'documented.mjs'));
 } catch (error) {
   scenarios.push(installFailed('credentials-only', error));
 }
@@ -173,6 +208,7 @@ try {
   writeFileSync(join(second, 'package.json'), JSON.stringify({ name: 'second-copy', private: true, type: 'module' }));
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', sdkTar], second);
   scenarios.push(scenario(pairDir, 'duplicated.mjs'));
+  scenarios.push(typecheckExamples(pairDir));
 } catch (error) {
   scenarios.push(installFailed('pair', error));
 }
