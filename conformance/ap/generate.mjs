@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generates the ARIA AP request, fingerprint, receipt, receiver identity and historical
-// receipt vectors (provisional profile).
+// receipt vectors.
 //
 // Keys are synthetic: each seed is SHA-256 of a public label below, so anyone can
 // rebuild them. They exist only to make these vectors and are never trusted anywhere.

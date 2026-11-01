@@ -1,10 +1,10 @@
-# ARIA AP conformance (provisional)
+# ARIA AP conformance
 
-> **Status:** provisional while D5 and the rest of D4 are open. D3 (transport) is
-> decided as encoded here, D4 has fixed the receipt's single format, and D8 is
-> `refuse` for now: where an operation's scope requires human approval, a missing or
-> invalid approval refuses the attempt; holding the operation is not supported. The vectors for scopes (D5) and for retrieval and the other
-> receipt rules (the rest of D4) may still change.
+> **Status:** D3 (transport) and D5 (scopes) are decided as encoded here, D4 has fixed
+> the receipt's single format, and D8 is `refuse` for now: where an operation's scope
+> requires human approval, a missing or invalid approval refuses the attempt; holding
+> the operation is not supported. The vectors for retrieval and the other receipt rules
+> (the rest of D4) may still change.
 
 ARIA AP is the profile an agent uses to call a receiver with its ARIA credential: the
 receiver's identity, a signed request, an admission decision, a signed receipt, and that
@@ -73,13 +73,13 @@ agree, so implementations cannot diverge on a valid vector.
   (ZIP-215 or cofactored), so it really separates strict from lenient;
 - each of the 14 mutants in `model.mjs` must fail at least one sequence.
 
-## Provisional choices
+## Choices encoded
 
 | Decision (state) | Encoded here |
 |---|---|
 | D3 (decided) | RFC 9421, one signature labelled `aria`, tag `aria-ap/1`; a fresh single-use receiver challenge as `nonce` for **every** request, retrieval included, delivered in the receiver's identity statement (`aria-ap-identity/1`, 60 s). The WIMSE binding is a candidate alternative, not covered. |
 | D4 (receipt format decided; the rest open) | `aria-ap-receipt/1`: `id`, `request`, `receiver`, `issuedAt`, `outcome`, plus `type` and `proof`; everything but `proof.value` is signed. Refusals are signed only after authentication. `rejected/attempt` never moves an operation. A revoked credential authorizes no lookup; a current credential of the same DID retrieves the original receipt (REQ-037, SEQ-R2a). |
-| D5 (open) | New grants `namespace:resource:action`; signed 1.0 documents read under their own pattern; exact comparison; policy patterns may end in `:*` and a matching deny wins (`aria.scope_denied`, judged after `aria.scope_missing`). |
+| D5 (decided) | New grants `namespace:resource:action`; signed 1.0 documents read under their own pattern; exact comparison; policy patterns may end in `:*` and a matching deny wins (`aria.scope_denied`, judged after `aria.scope_missing`). |
 | D8 (`refuse`, for now) | `refuse` only: a missing, foreign or expired approval rejects the attempt and claims nothing. `hold` is deferred and has no vectors. |
 
 ## Coverage of the AP proposal §5.9

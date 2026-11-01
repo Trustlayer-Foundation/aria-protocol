@@ -1,5 +1,5 @@
 {
-  "status": "provisional — pending owner/TLF decision D5; C2 settles reading of already signed documents",
+  "status": "decided — D5: new grants are namespace:resource:action; signed 1.0 documents are read under their own pattern",
   "about": "Scope grammar and matching. `newGrant`: acceptable for new issuance (namespace:resource:action, three lowercase segments, no version). `document10`: acceptable inside an AID 1.0 document under that schema's own pattern. Credential scopes compare exactly; only a receiver's policy uses patterns, and a matching deny wins.",
   "grants": [
     { "value": "payments:transfer:create", "newGrant": true, "document10": true },

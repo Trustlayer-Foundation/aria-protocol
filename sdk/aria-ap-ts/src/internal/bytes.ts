@@ -66,7 +66,7 @@ export function instantOf(value: unknown): number | null {
 }
 
 /**
- * The profile's origin rule (provisional): `https://<host>[:<port>]`, or `http://` with a
+ * The profile's origin rule (D3): `https://<host>[:<port>]`, or `http://` with a
  * loopback host for local use; a lower-case host, no default port, path, query, fragment
  * or user information; exactly its own URL serialization. Never normalised: a value
  * that is not already canonical is refused.

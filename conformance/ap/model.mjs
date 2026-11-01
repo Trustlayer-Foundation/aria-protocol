@@ -1,4 +1,4 @@
-// Reference model of the ARIA AP operation rules (provisional), for vectors/sequences.json.
+// Reference model of the ARIA AP operation rules, for vectors/sequences.json.
 //
 // It is the smallest state machine that satisfies the sequences, not the SDK: receiver
 // challenges, the operation record with compare-and-set claims, the two receipt sources,

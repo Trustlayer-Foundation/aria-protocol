@@ -22,7 +22,7 @@ export type ResourceAuthorizer = (request: {
 }) => Promise<{ readonly allowed: true } | { readonly allowed: false; readonly code: string }>;
 
 /**
- * One rule of the receiver's scope policy (D5, provisional). `pattern` is a scope of
+ * One rule of the receiver's scope policy (D5). `pattern` is a scope of
  * three segments, or two followed by `:*` for any third. A matching deny wins;
  * otherwise a matching allow is needed.
  */

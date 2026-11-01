@@ -1,5 +1,5 @@
 {
-  "status": "partly decided — D3 (transport) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; D5 (scopes) is open; the open parts may still change",
+  "status": "partly decided — D3 (transport) and D5 (scopes) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; the open parts may still change",
   "generatedBy": "conformance/ap/generate.mjs",
   "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
   "algorithm": "sha-256 over the ARIA canonical JSON of the object below, written sha-256=:<base64>:",

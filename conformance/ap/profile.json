@@ -1,5 +1,5 @@
 {
-  "status": "partly decided — D3 (transport) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; D5 (scopes) is open; the open parts may still change",
+  "status": "partly decided — D3 (transport) and D5 (scopes) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; the open parts may still change",
   "profile": "aria-ap/1",
   "transport": {
     "binding": "RFC 9421 HTTP Message Signatures, one signature labelled 'aria'",
@@ -144,7 +144,7 @@
     "ATP-406/SCOPE-MISSING": "aria.scope_missing",
     "ATP-462/DEPTH": "aria.delegation_unsupported"
   },
-  "scopes": "D5 provisional: new grants are namespace:resource:action, three lowercase segments, no @version; 1.0 documents are read under their own pattern (two or more segments); credential scopes compare exactly, never as patterns; receiver policy patterns may end in :* and a matching deny wins",
+  "scopes": "D5: new grants are namespace:resource:action, three lowercase segments, no @version; 1.0 documents are read under their own pattern (two or more segments); credential scopes compare exactly, never as patterns; receiver policy patterns may end in :* and a matching deny wins",
   "approval": "D8 provisional: refuse — a missing approval rejects the attempt and claims nothing; holding for approval is deferred",
   "reconciliation": "an uncertain failure marks the claim, by compare-and-set, and keeps it locked; a release names the exact claim observed and an assurance that the old work cannot apply its effect later (transactional: the effect commits only with its recorded outcome; fenced: an external adapter guarantees final absence and that the old work cannot commit); an unmarked claim, a missing assurance or an observation of an earlier claim releases nothing; effects are counted when they land, apart from the record",
   "admissionLifetime": "an admission is judged when made and again when used: after the resource authorizer, before a claim is granted or a stored result is read, and after every storage wait, on every path that returns a result (a new claim, an existing record, a lost create race, a resumed operation); it keeps its status evidence and approval and expires with its request (signature expires plus skew); a lookup is judged again before and after its read. A lapsed admission is refused or expires without changing the recorded outcome or its receipts",

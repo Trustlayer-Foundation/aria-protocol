@@ -5,7 +5,7 @@ import { fromBase64url, instantOf, isProfileOrigin, utf8 } from './bytes';
 import { strictVerify } from './ed25519';
 import { PROFILE } from './request';
 
-// The receiver identity statement `aria-ap-identity/1` (provisional, D3), checked in
+// The receiver identity statement `aria-ap-identity/1` (D3), checked in
 // its fixed order. Credential verification and status are the caller's, through
 // `verify` and `stands`, so the same rules run over the credential verifier and over
 // the AP1 vectors' verified views.

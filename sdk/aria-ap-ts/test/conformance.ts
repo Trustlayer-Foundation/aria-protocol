@@ -1,4 +1,4 @@
-// Reading the AP1 vectors (conformance/ap, provisional) for the adapters. The
+// Reading the AP1 vectors (conformance/ap) for the adapters. The
 // vectors carry verified views of credentials, not AID documents: the adapters
 // stand in for the credential verifier with those views and run ARIA AP's own
 // rules unchanged. Credential verification itself is the credential package's.

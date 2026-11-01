@@ -1,4 +1,4 @@
-// AP1 scope vectors (D5, provisional), each against its owner: the AID 1.0 pattern
+// AP1 scope vectors (D5), each against its owner: the AID 1.0 pattern
 // through the credential verifier, exact admission and the receiver's policy through
 // ARIA AP. The new-grant grammar is issuance's (C2); here only its reuse in policy patterns.
 import { randomUUID } from 'node:crypto';

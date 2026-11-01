@@ -4,7 +4,7 @@ import type { Signer } from '../types';
 import { DIGEST, fromBase64url, instantOf, toBase64url, utf8, UUID } from './bytes';
 import { strictVerify } from './ed25519';
 
-// The receipt `aria-ap-receipt/1` (provisional, D4): a closed data model, signed
+// The receipt `aria-ap-receipt/1` (D4's single format): a closed data model, signed
 // over its ARIA canonical JSON without `proof.value`, so `alg` and `keyid` are signed.
 
 export const RECEIPT_TYPE = 'aria-ap-receipt/1';

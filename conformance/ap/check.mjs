@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Independent checker for the ARIA AP vectors (provisional profile). Exits 1 on any failure.
+// Independent checker for the ARIA AP vectors. Exits 1 on any failure.
 //
 // It shares no code with generate.mjs: the RFC 9421 signature base is rebuilt by
 // http-message-signatures, structured fields are parsed by structured-headers, canonical
@@ -622,7 +622,7 @@ function verifyHistorical(vector, context) {
   };
 }
 
-// ---------------------------------------------------------------- receiver identity (D3, provisional)
+// ---------------------------------------------------------------- receiver identity (D3)
 
 // The syntax comes from schema/aria-ap-identity-1.json; the order and the rules are written here.
 const STATEMENT = identitySchema.properties.statement;
@@ -691,7 +691,7 @@ async function identify(vector, context) {
   return { result: 'authenticated', credential: view.url, keyid: view.holderKey.id, challenge: s.challenge };
 }
 
-// ---------------------------------------------------------------- scopes (D5, provisional)
+// ---------------------------------------------------------------- scopes (D5)
 
 const NEW_GRANT = /^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/;
 const DOCUMENT_10 = new RegExp(aid10.properties.credentialSubject.properties.scope.items.pattern);

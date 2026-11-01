@@ -1,7 +1,7 @@
 import { AriaUsageError } from '@aria-registry/sdk';
 import type { ScopeRule } from '../admission';
 
-// The receiver's scope policy (D5, provisional): patterns are three-segment scopes, or
+// The receiver's scope policy (D5): patterns are three-segment scopes, or
 // two segments followed by `:*`. Credential scopes are never patterns; they compare exactly.
 
 const SEGMENT = '[a-z][a-z0-9_]*';

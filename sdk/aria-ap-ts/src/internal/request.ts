@@ -6,7 +6,7 @@ import { acceptableKey, strictVerify } from './ed25519';
 import { isInnerList, parseDictionary, parseItem, serializeBare, serializeInnerList, sfStringOf, type BareItem, type InnerList, type Item, type Member } from './sf';
 import { sha256 } from '@noble/hashes/sha2.js';
 
-// The ARIA AP HTTP profile (provisional, D3): RFC 9421 with one signature labelled
+// The ARIA AP HTTP profile (D3): RFC 9421 with one signature labelled
 // `aria`, the components each class fixes, a single-use receiver challenge as the
 // nonce, and the authentication order of conformance/ap/profile.json.
 

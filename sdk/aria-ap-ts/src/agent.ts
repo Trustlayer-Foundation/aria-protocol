@@ -5,7 +5,7 @@ import type { HttpRequestLike, Signer } from './types';
 
 /**
  * The receiver's signed answer to `GET /.well-known/aria/identity?nonce&audience`
- * (provisional, D3): its credential document and a statement bound to the
+ * (D3): its credential document and a statement bound to the
  * client's nonce, carrying a single-use challenge for the client's next request.
  */
 export interface IdentityResponse {

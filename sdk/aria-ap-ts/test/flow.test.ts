@@ -268,7 +268,7 @@ describe('authentication order', () => {
   });
 });
 
-describe('human approval (refuse, provisional D8)', () => {
+describe('human approval (refuse, D8 for now)', () => {
   it('without an approval the attempt is refused and claims nothing; a bound approval admits', async () => {
     const w = world({ hitl: ['payments:transfer:create'] });
     const first = await w.handle((await w.signTransfer(OP)).request);

@@ -1,5 +1,5 @@
 {
-  "status": "provisional — pending owner/TLF decisions D3, D4, D5 and D8; written before AP2",
+  "status": "partly decided — D3 (transport) and D5 (scopes) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; the open parts may still change",
   "about": "Behavioural sequences over one receiver and one client. Labels stand for values: operations (X), content fingerprints (F1, F2), attempts (a1, w1 for a receiver worker resuming), challenges (c1) and receipts (r1). `expect` is the receiver's answer; `client` is the client's operation state after the step. A step with `delivered: false` loses its response before the client sees it.",
   "steps": {
     "attempt": "an authenticated request of a receiptable class: challenge, then admission (allow or a denial code), then the operation record; `arrived: false` loses it before the receiver",
