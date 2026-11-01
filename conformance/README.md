@@ -22,11 +22,13 @@ it, and presents the result. Nobody has to take anybody's word for it.
 
 ```
 run.mjs                          the runner each implementation embeds
-package.json                     one dependency, a JSON-LD processor
+package.json                     a JSON-LD processor, a JSON Schema validator, a YAML parser
 vectors/
   canonical-json.json            canonical serialisation and identity commitment, byte for byte
   abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
   context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
+federation/                      RA-to-authority exchanges and the check of the federation
+                                 contract against them (see federation/README.md)
 ap/                              ARIA AP vectors and their independent checker: provisional,
                                  a package of its own (see ap/README.md)
 ```
@@ -93,6 +95,7 @@ the second one possible, which is the whole reason it exists before it is needed
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
 | 5 | Manifest validation cases accepted and rejected with the stated reason | authority and RA | drift between the two validators |
+| 6 | Federation exchanges: every request and answer matches the contract, and the authority answers each exactly | `federation/check.mjs`; the authority replays them | drift between the contract, the RA and the authority |
 
 **Check 2 is the one that matters most and the easiest to skip.** If the verify SDK
 needs *any* modification to accept newly issued credentials, the protocol changed
@@ -115,5 +118,5 @@ environment variable, from outside the repository.
 
 Each implementation embeds the harness for its language and points it at `vectors/`,
 exiting non-zero on any failure. `run.mjs` is the JavaScript one; it prints `PASS`,
-`FAIL` or `SKIP` per check, and skips rather than passes what it cannot test — today
-the `did:aria` cases, because no implementation exports a parser to run them against.
+`FAIL` or `SKIP` per check, and skips rather than passes what it cannot test; under
+`--strict` a check that cannot run fails.

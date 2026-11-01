@@ -80,6 +80,10 @@ jobs:
         working-directory: conformance
       - run: node run.mjs --strict
         working-directory: conformance
+      # The federation contract against itself and the shared RA-to-authority exchanges.
+      # The authority replays the same exchanges in its own tests.
+      - run: node federation/check.mjs
+        working-directory: conformance
       # ARIA AP (provisional): the committed vectors must be what the generator
       # produces, and the independent checker must pass them with its controls.
       - run: npm install --no-audit --no-fund
