@@ -4,7 +4,9 @@ Status: implemented. Of the decisions its wire profile depends on, three are tak
 D3, the transport, is this RFC 9421 profile (the receiver's identity statement, a
 challenge per request, the credential by reference); D4 fixes the receipt's single
 format, `aria-ap-receipt/1`, carrying the decision's HTTP status and code; D8 is
-`refuse` for now (no holding an operation, no approval fields in a receipt). D5
+`refuse` for now: when an operation's scope requires human approval, a missing or
+invalid approval refuses the attempt; holding the operation is not supported, and a
+receipt carries no approval fields. D5
 (scopes) and the rest of D4, including retrieval, are open: what they cover may still
 change. The vectors in [`conformance/ap`](../../conformance/ap/README.md) encode all of
 it. Package name provisional

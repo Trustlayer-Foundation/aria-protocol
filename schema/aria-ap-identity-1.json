@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/aria-ap-identity-1.json",
-  "title": "ARIA AP receiver identity response, statement type aria-ap-identity/1 (provisional: pending decision D3)",
-  "description": "A receiver's answer to GET /.well-known/aria/identity?nonce&audience: its AID 1.0 document and a statement bound to the client's nonce, carrying a single-use challenge for the client's next request. Provisional: the transport is not decided, and this schema changes with it. Conforming to it does not authenticate the receiver: a client also verifies the document under its trusted issuers, checks it is the credential the statement names, pins the receiver's DID and origin, matches its own audience and nonce, checks freshness, verifies the Ed25519 signature by that credential's holder key over the canonical JSON of the statement without proof.value, and requires the credential's status to be good now.",
+  "title": "ARIA AP receiver identity response, statement type aria-ap-identity/1",
+  "description": "A receiver's answer to GET /.well-known/aria/identity?nonce&audience: its AID 1.0 document and a statement bound to the client's nonce, carrying a single-use challenge for the client's next request. It belongs to the ARIA AP transport decided for 1.0 (D3). Conforming to it does not authenticate the receiver: a client also verifies the document under its trusted issuers, checks it is the credential the statement names, pins the receiver's DID and origin, matches its own audience and nonce, checks freshness, verifies the Ed25519 signature by that credential's holder key over the canonical JSON of the statement without proof.value, and requires the credential's status to be good now.",
   "type": "object",
   "additionalProperties": false,
   "required": ["credential", "statement"],

@@ -1,5 +1,5 @@
 {
-  "status": "provisional — pending owner/TLF decisions D3 (transport), D4 (receipt), D5 (scopes), D8 (human approval); not an adopted profile",
+  "status": "partly decided — D3 (transport) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; D5 (scopes) is open; the open parts may still change",
   "generatedBy": "conformance/ap/generate.mjs",
   "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
   "vectors": [

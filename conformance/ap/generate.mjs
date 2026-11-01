@@ -333,7 +333,7 @@ const CASES = [
   { id: 'REQ-024', title: 'a semantic header present but not covered', covers: ['fingerprint semantic headers'], spec: { descriptor: 'transfers.update', operation: OP.Y, body: '{"amount":"12.00"}', headers: [['if-match', '"v1"']], covered: profile.classes['unsafe-body'].components }, expect: unsigned401('signature') },
   { id: 'REQ-025', title: 'a semantic header changed after signing', covers: ['fingerprint semantic headers'], spec: { descriptor: 'transfers.update', operation: OP.Y, body: '{"amount":"12.00"}', headers: [['if-match', '"v1"']], after: replaceHeader('if-match', '"v2"') }, expect: unsigned401('signature') },
 
-  // Retrieval and receiver challenges (D3 provisional: a fresh challenge for every request).
+  // Retrieval and receiver challenges (D3: a fresh challenge for every request).
   { id: 'REQ-030', title: 'retrieval of operation X', covers: ['§5.9 #20'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}` }, expect: authenticated },
   { id: 'REQ-031', title: 'retrieval whose operation query changed after signing', covers: ['§5.9 #20'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, after: (r) => { r.target = `/v1/operations?operation=${OP.Y}`; } }, expect: unsigned401('signature') },
   { id: 'REQ-032', title: 'retrieval reusing the challenge an earlier lookup consumed', covers: ['fresh challenge per request'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, challenge: 'consumed by a lookup' }, context: { consumed: ['consumed by a lookup'] }, expect: unsigned401('challenge') },

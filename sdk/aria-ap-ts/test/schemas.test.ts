@@ -1,4 +1,4 @@
-// The provisional ARIA AP schemas (schema/aria-ap-*.json): the package ships them
+// The ARIA AP schemas (schema/aria-ap-*.json): the package ships them
 // byte for byte, they agree with the implementation and the AP1 vectors, and
 // conforming to them is not authenticity: signatures and bindings are checked apart.
 import { readFileSync } from 'node:fs';
@@ -35,11 +35,17 @@ describe('the packaged copies', () => {
     });
   }
 
-  it('each says it is provisional and that conforming to it proves no signature or authorization', () => {
+  it('each states its decision status and that conforming to it proves no signature or authorization', () => {
+    // D3 and the receipt format of D4 are decided; retrieval, the rest of D4, is not.
+    const status: Record<string, RegExp> = {
+      'aria-ap-identity-1.json': /decided for 1\.0 \(D3\)/,
+      'aria-ap-receipt-1.json': /is decided \(D4\).*still open/,
+      'aria-ap-lookup-1.json': /^(?=.*Provisional).*rest of D4/,
+    };
     for (const name of NAMES) {
       const s = JSON.parse(readFileSync(packaged(name), 'utf8'));
-      expect(s.title, name).toMatch(/provisional/);
-      expect(s.description, name).toMatch(/Provisional/);
+      expect(s.description, name).toMatch(status[name] ?? /^$/);
+      expect(s.description, name).toMatch(/Conforming to it (does not|says nothing)/);
     }
   });
 });

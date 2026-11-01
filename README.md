@@ -171,9 +171,11 @@ Notable fields:
 
 ## ARIA AP
 
-ARIA AP is the exchange between an agent and a receiving service (its transport and
-receipt format are decided; scopes and the rest of the receipt rules are open; without
-a valid human approval a request is refused, for now):
+ARIA AP is the exchange between an agent and a receiving service. Its transport and
+receipt format are decided; scopes and the rest of the receipt rules are open. When an
+operation's scope requires human approval, a missing or invalid approval refuses the
+attempt, for now; holding the operation for approval is not supported, and operations
+that need no approval are unaffected:
 
 1. **Who is the receiver.** The agent fetches the receiver's signed identity statement,
    with its AID, and checks it against the DID it expects at that origin.

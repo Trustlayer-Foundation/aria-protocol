@@ -2,7 +2,8 @@
 
 > **Status:** provisional while D5 and the rest of D4 are open. D3 (transport) is
 > decided as encoded here, D4 has fixed the receipt's single format, and D8 is
-> `refuse` for now. The vectors for scopes (D5) and for retrieval and the other
+> `refuse` for now: where an operation's scope requires human approval, a missing or
+> invalid approval refuses the attempt; holding the operation is not supported. The vectors for scopes (D5) and for retrieval and the other
 > receipt rules (the rest of D4) may still change.
 
 ARIA AP is the profile an agent uses to call a receiver with its ARIA credential: the

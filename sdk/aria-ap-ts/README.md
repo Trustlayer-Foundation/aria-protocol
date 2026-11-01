@@ -6,8 +6,8 @@ check a kept receipt later against retained evidence.
 
 **Version 1.0.0, a local candidate: not published and not an approved release.** The
 package name is provisional until its owner is confirmed, and `private` prevents
-publishing it. Its transport (D3), its receipt format (D4) and its refusal without
-approval (D8, for now) are decided; scopes (D5) and the rest of D4, including retrieval,
+publishing it. Its transport (D3), its receipt format (D4) and, for now, refusing an
+attempt whose required human approval is missing or invalid (D8) are decided; scopes (D5) and the rest of D4, including retrieval,
 are open and may still change. Vectors: [`conformance/ap`](../../conformance/ap/README.md);
 schemas: [`schema/`](../../schema/README.md).
 
