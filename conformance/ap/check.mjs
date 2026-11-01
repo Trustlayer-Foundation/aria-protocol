@@ -27,6 +27,8 @@ const fingerprints = load('./vectors/fingerprints.json');
 const receipts = load('./vectors/receipts.json');
 const sequences = load('./vectors/sequences.json');
 const scopes = load('./vectors/scopes.json');
+const identity = load('./vectors/identity.json');
+const identitySchema = load('../../schema/aria-ap-identity-1.json');
 const aid10 = load('../../schema/aid-1.0.json');
 
 const Point = ed25519.Point;
@@ -106,6 +108,12 @@ function fieldsOf(headers) {
   return fields;
 }
 
+// The byte sequence of member or parameter `name` in `text` is the canonical, padded base64 of its bytes.
+function canonicalBytes(text, name) {
+  const m = new RegExp(`(?:^|[,;])\\s*${name.replace(/[-.]/g, '\\$&')}=:([^:]*):`).exec(text);
+  return !!m && Buffer.from(m[1], 'base64').toString('base64') === m[1];
+}
+
 function sfString(value) {
   try {
     const [item, params] = parseItem(value);
@@ -171,6 +179,8 @@ async function authenticate(vector, context) {
   if (!request.target.startsWith('/') || request.target.includes('#')) return invalidRequest();
   const url = new URL(request.target, origin);
   if (url.origin !== origin) return invalidRequest();
+  // The target is taken exactly: one that is not its own serialization is refused, not normalised.
+  if (url.href !== origin + request.target) return invalidRequest();
   const d = context.descriptors.find((x) => x.method === request.method && x.path === url.pathname);
   if (!d) return invalidRequest();
   const cls = profile.classes[d.class];
@@ -238,7 +248,9 @@ async function authenticate(vector, context) {
     return authFailed('signature');
   }
   const skew = context.skewSeconds;
-  if (expires <= created || expires - created > context.maxWindowSeconds || created > now + skew || expires < now - skew) {
+  // Judged at entry, and again after the credential is resolved and after the challenge is consumed.
+  const inWindow = (t) => created <= t + skew && expires >= t - skew;
+  if (expires <= created || expires - created > context.maxWindowSeconds || !inWindow(now)) {
     return authFailed('window');
   }
 
@@ -252,12 +264,12 @@ async function authenticate(vector, context) {
     } catch {
       return authFailed('digest');
     }
-    if (!(member?.[0] instanceof ArrayBuffer) || b64(member[0]) !== b64(sha256(body))) return authFailed('digest');
+    if (!(member?.[0] instanceof ArrayBuffer) || b64(member[0]) !== b64(sha256(body)) || !canonicalBytes(cd[0], 'sha-256')) return authFailed('digest');
   }
 
-  // 9. A challenge this receiver issued, unexpired and not yet consumed.
+  // 9. A challenge this receiver issued, live strictly before its expiry, and not yet consumed.
   const issued = context.challenges.find((c) => c.value === nonce);
-  if (!issued || Date.parse(issued.expires) / 1000 < now || consumed.has(nonce)) return authFailed('challenge');
+  if (!issued || Date.parse(issued.expires) / 1000 <= now || consumed.has(nonce)) return authFailed('challenge');
 
   // 10. The exact credential named, its digest, its holder key and that key's acceptability.
   const ac = fields.get('aria-credential');
@@ -273,16 +285,20 @@ async function authenticate(vector, context) {
   }
   const credential = context.credentials.find((c) => c.url === credentialUrl);
   if (!credential || !(credentialDigest instanceof ArrayBuffer)) return authFailed('credential');
-  if (`sha-256=:${b64(credentialDigest)}:` !== credential.digest || keyid !== credential.holderKey.id) return authFailed('credential');
+  if (`sha-256=:${b64(credentialDigest)}:` !== credential.digest || keyid !== credential.holderKey.id || !canonicalBytes(ac[0], 'digest')) return authFailed('credential');
   const key = holderKeyBytes(credential.holderKey.publicKeyMultibase);
   if (!key || !acceptableKey(key)) return authFailed('credential');
 
-  // 11. The signature over the base rebuilt from the receiver's own origin.
+  // 11. The signature over the base rebuilt from the receiver's own origin; a covered field
+  // must appear once, and the signature's bytes must be spelled canonically.
+  if (covered.some((c) => !c.startsWith('@') && fields.get(c)?.length !== 1) || !canonicalBytes(sg[0], profile.transport.label)) return authFailed('signature');
   const { ok, base } = await withBase(messageOf(origin, request, fields), (signature, data) => strictVerify(signature, data, key));
   if (!ok) return authFailed('signature');
+  if (!inWindow(now + (vector.timeline?.resolvedAfter ?? 0))) return authFailed('window');
 
-  // 12. Consumed once authenticated (atomically, in a real store).
+  // 12. Consumed once authenticated (atomically, in a real store), and still inside the window after that.
   consumed.add(nonce);
+  if (!inWindow(now + (vector.timeline?.consumedAfter ?? vector.timeline?.resolvedAfter ?? 0))) return authFailed('window');
 
   // Admission's first step: the audience the signature covers.
   if (sfString(fields.get('aria-audience')[0]) !== context.receiver.did) {
@@ -517,6 +533,75 @@ function verifyReceipt(vector) {
   };
 }
 
+// ---------------------------------------------------------------- receiver identity (D3, provisional)
+
+// The syntax comes from schema/aria-ap-identity-1.json; the order and the rules are written here.
+const STATEMENT = identitySchema.properties.statement;
+const ORIGIN_RULES = STATEMENT.properties.origin.anyOf.map((a) => [new RegExp(a.pattern), new RegExp(a.not.pattern)]);
+const CREATED = new RegExp(STATEMENT.properties.created.pattern);
+const STATEMENT_NONCE = new RegExp(STATEMENT.properties.nonce.pattern);
+const STATEMENT_CHALLENGE = new RegExp(STATEMENT.properties.challenge.pattern);
+
+const hasExactly = (o, keys) =>
+  typeof o === 'object' && o !== null && !Array.isArray(o) && Object.keys(o).length === keys.length && keys.every((k) => Object.hasOwn(o, k));
+
+function canonicalOrigin(value) {
+  if (typeof value !== 'string' || !ORIGIN_RULES.some(([re, not]) => re.test(value) && !not.test(value))) return false;
+  try {
+    return new URL(value).origin === value;
+  } catch {
+    return false;
+  }
+}
+
+function seconds(value) {
+  if (typeof value !== 'string' || !CREATED.test(value)) return null;
+  const t = Date.parse(value);
+  return Number.isFinite(t) && new Date(t).toISOString() === value.replace('Z', '.000Z') ? t / 1000 : null;
+}
+
+// Unpadded base64url of exactly 64 bytes, spelled canonically.
+function proofBytes(value) {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{86}$/.test(value)) return null;
+  const bytes = Buffer.from(value, 'base64url');
+  return bytes.length === 64 && bytes.toString('base64url') === value ? new Uint8Array(bytes) : null;
+}
+
+async function identify(vector, context) {
+  const refused = (reason) => ({ result: 'refused', reason });
+  const pin = { ...context.pin, ...vector.pin };
+  const start = Date.parse(context.now) / 1000;
+  const response = vector.response;
+  const s = response?.statement;
+  if (!hasExactly(response, ['credential', 'statement']) || !hasExactly(s, STATEMENT.required) || !hasExactly(s.proof, ['alg', 'keyid', 'value'])) {
+    return refused('malformed');
+  }
+  const strings = STATEMENT.required.filter((k) => k !== 'proof');
+  if (s.type !== STATEMENT.properties.type.const || strings.some((k) => typeof s[k] !== 'string')) return refused('malformed');
+  if (!STATEMENT_NONCE.test(s.nonce) || !STATEMENT_CHALLENGE.test(s.challenge) || !canonicalOrigin(s.origin)) return refused('malformed');
+  const created = seconds(s.created);
+  if (created === null) return refused('malformed');
+
+  // The credential verifier's part, from the views: the document verifies and is valid now.
+  const view = context.credentials.find((c) => equal(c.document, response.credential));
+  if (!view || Date.parse(view.validFrom) / 1000 > start + context.skewSeconds || Date.parse(view.validUntil) / 1000 <= start) return refused('credential');
+  if (view.url !== s.credential || view.did !== s.subject) return refused('credential');
+  if (s.subject !== pin.did) return refused('unexpected_receiver');
+  if (!canonicalOrigin(pin.origin) || s.origin !== pin.origin) return refused('origin');
+  if (s.audience !== context.expected.audience) return refused('audience');
+  if (s.nonce !== context.expected.nonce) return refused('nonce');
+  const fresh = (t) => created <= t + context.skewSeconds && t - created <= context.maxAgeSeconds;
+  if (!fresh(start)) return refused('stale');
+  const signature = proofBytes(s.proof.value);
+  const { proof, ...unsigned } = s;
+  const signed = jcs({ ...unsigned, proof: { alg: proof.alg, keyid: proof.keyid } });
+  const key = holderKeyBytes(view.holderKey.publicKeyMultibase);
+  if (proof.alg !== 'ed25519' || proof.keyid !== view.holderKey.id || !signature || !key || !strictVerify(signature, signed, key)) return refused('signature');
+  if (view.status !== 'good') return refused('status');
+  if (!fresh(start + (vector.timeline?.statusAfter ?? 0))) return refused('stale');
+  return { result: 'authenticated', credential: view.url, keyid: view.holderKey.id, challenge: s.challenge };
+}
+
 // ---------------------------------------------------------------- scopes (D5, provisional)
 
 const NEW_GRANT = /^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/;
@@ -610,6 +695,22 @@ for (const v of receipts.vectors) {
     parsed.proof.value = sig.toString('base64url');
     const t = verifyReceipt({ ...v, receipt: JSON.stringify(parsed) });
     record('controls: signature bit flipped', v.id, equal(t, { result: 'invalid', reason: 'signature_invalid' }), { got: t });
+  }
+}
+
+// Receiver identity
+for (const v of identity.vectors) {
+  const got = await identify(v, identity.context);
+  record('identity', v.id, equal(got, v.expect), { expected: v.expect, got });
+  const mutated = v.expect.result === 'authenticated' ? { ...v.expect, challenge: `${v.expect.challenge}x` } : { ...v.expect, reason: v.expect.reason === 'stale' ? 'signature' : 'stale' };
+  record('controls: expectation mutated', v.id, !equal(got, mutated), { note: 'a mutated expectation still matched' });
+  if (v.expect.result === 'authenticated') {
+    const t = structuredClone(v);
+    const sig = Buffer.from(t.response.statement.proof.value, 'base64url');
+    sig[40] ^= 0x01;
+    t.response.statement.proof.value = sig.toString('base64url');
+    const got2 = await identify(t, identity.context);
+    record('controls: signature bit flipped', v.id, equal(got2, { result: 'refused', reason: 'signature' }), { got: got2 });
   }
 }
 

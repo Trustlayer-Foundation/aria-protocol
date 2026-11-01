@@ -1,0 +1,1401 @@
+{
+  "status": "provisional — pending owner/TLF decisions D3 (transport), D4 (receipt), D5 (scopes), D8 (human approval); not an adopted profile",
+  "generatedBy": "conformance/ap/generate.mjs",
+  "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
+  "context": {
+    "now": "2026-11-01T12:00:00Z",
+    "pin": {
+      "did": "did:aria:bank.example.test:transfers",
+      "origin": "https://bank.example.test"
+    },
+    "expected": {
+      "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+      "audience": "did:aria:customer.example.test:payments-agent"
+    },
+    "maxAgeSeconds": 60,
+    "skewSeconds": 5,
+    "credentials": [
+      {
+        "url": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+        "digest": "sha-256=:Z1y08mQgBxZ50GrYHwHaa6ixZHHm4Psyoeu1aqIPzSE=:",
+        "did": "did:aria:bank.example.test:transfers",
+        "holderKey": {
+          "id": "did:aria:bank.example.test:transfers#holder-key-1",
+          "type": "Ed25519VerificationKey2020",
+          "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+        },
+        "validFrom": "2026-10-01T00:00:00Z",
+        "validUntil": "2027-10-01T00:00:00Z",
+        "status": "good",
+        "document": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        }
+      },
+      {
+        "url": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+        "digest": "sha-256=:4b8dOi0TjoDbLBqmisXexCR7+fbMKMMjaao49wCcKlM=:",
+        "did": "did:aria:bank.example.test:transfers",
+        "holderKey": {
+          "id": "did:aria:bank.example.test:transfers#holder-key-2",
+          "type": "Ed25519VerificationKey2020",
+          "publicKeyMultibase": "zH42a5iR1drzqkb73AQGnvBkXriwg2DCGpud3JHerFMuU"
+        },
+        "validFrom": "2026-11-05T00:00:00Z",
+        "validUntil": "2027-11-05T00:00:00Z",
+        "status": "good",
+        "document": {
+          "id": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-2",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zH42a5iR1drzqkb73AQGnvBkXriwg2DCGpud3JHerFMuU"
+          }
+        }
+      },
+      {
+        "url": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+        "digest": "sha-256=:iSc9GRstIGmN/ySaGjo86+ENO7lEWIl1rmbjrNKaw4M=:",
+        "did": "did:aria:other.example.test:service",
+        "holderKey": {
+          "id": "did:aria:other.example.test:service#holder-key-1",
+          "type": "Ed25519VerificationKey2020",
+          "publicKeyMultibase": "zEvdiRAVaBJAAtcyV9aPQ3mgKaGh6VmT8YLsHDcBb6hiB"
+        },
+        "validFrom": "2026-10-01T00:00:00Z",
+        "validUntil": "2027-10-01T00:00:00Z",
+        "status": "good",
+        "document": {
+          "id": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+          "did": "did:aria:other.example.test:service",
+          "holderKey": {
+            "id": "did:aria:other.example.test:service#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zEvdiRAVaBJAAtcyV9aPQ3mgKaGh6VmT8YLsHDcBb6hiB"
+          }
+        }
+      },
+      {
+        "url": "https://registry.example.test/v1/credentials/b19b94e3-74c9-4888-a5fc-959b30065f4e",
+        "digest": "sha-256=:STcKnmy6VPHMRi0sl518z4CIHkf10JQKncydBNCVE0g=:",
+        "did": "did:aria:bank.example.test:transfers",
+        "holderKey": {
+          "id": "did:aria:bank.example.test:transfers#holder-key-3",
+          "type": "Ed25519VerificationKey2020",
+          "publicKeyMultibase": "zECEHyXYiZ8rRmdJXQ4NGAoHgxGJexiKVgYqLiqcrJ3vV"
+        },
+        "validFrom": "2026-10-01T00:00:00Z",
+        "validUntil": "2027-10-01T00:00:00Z",
+        "status": "revoked",
+        "document": {
+          "id": "https://registry.example.test/v1/credentials/b19b94e3-74c9-4888-a5fc-959b30065f4e",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-3",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zECEHyXYiZ8rRmdJXQ4NGAoHgxGJexiKVgYqLiqcrJ3vV"
+          }
+        }
+      }
+    ]
+  },
+  "vectors": [
+    {
+      "id": "IDN-001",
+      "title": "a current statement by the pinned receiver",
+      "covers": [
+        "identity"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "9tXdsGL0oYF0cS_ePaDDKQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "C5b5WPEZa2MoqKy7nHwwc5Y4eLdeCHAeNTQx48kQnLdufdOaVj4y1vKnz5QJQICJs5aaShSZfY5YYv9D98CWCA"
+          }
+        }
+      },
+      "expect": {
+        "result": "authenticated",
+        "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+        "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+        "challenge": "9tXdsGL0oYF0cS_ePaDDKQ"
+      }
+    },
+    {
+      "id": "IDN-002",
+      "title": "another receiver, with its own valid credential, answers",
+      "covers": [
+        "pin"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+          "did": "did:aria:other.example.test:service",
+          "holderKey": {
+            "id": "did:aria:other.example.test:service#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zEvdiRAVaBJAAtcyV9aPQ3mgKaGh6VmT8YLsHDcBb6hiB"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:other.example.test:service",
+          "credential": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "RkZRsLBr0awEigL-HllODQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:other.example.test:service#holder-key-1",
+            "value": "rPly0OiQ8op9YeqxJJJWbaqewZ2ni88997oct3jhAMJv8aqlnC56_tO2Huh_hks9YfKv1ouyMjDZUTbVxf-SAg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "unexpected_receiver"
+      }
+    },
+    {
+      "id": "IDN-003",
+      "title": "the statement names another origin",
+      "covers": [
+        "pin"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://payments.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "QeKb_uDxT-RWMecD7-AqQQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "Ly6YnM-oJNSJHfSAcjG6ytBlPd1oXx-kQqnDxgSHRSFBVzhmgULktw1BXz2ZGUwDxzLDZWYdF1bq21_7JX1hAQ"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "origin"
+      }
+    },
+    {
+      "id": "IDN-004",
+      "title": "a client pin outside the origin rule matches no statement",
+      "covers": [
+        "pin",
+        "origin"
+      ],
+      "pin": {
+        "origin": "https://BANK.example.test"
+      },
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "8OhiTIIIvQVAKy5d_BK1ew",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "vs42kQy8WUoZNjIAIn9SFN_A8RfwZ1T04DoiU9d6kyWWDGyDyZ6IabM-0BTISQqLMuTIiVVsDVqY_EN_jW2iAA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "origin"
+      }
+    },
+    {
+      "id": "IDN-005",
+      "title": "the statement is for another client",
+      "covers": [
+        "audience"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:other-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "CF35AFErB7OMu7DfmZW7Qw",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "o6ea885PV9UOQn5Gw9KIw7acsI1L3nz57UQ0hEpDrMlK7ZVIfWDN7wUkhr2gM-JpOmLf6xYBnQpfFEYa0irCBQ"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "audience"
+      }
+    },
+    {
+      "id": "IDN-006",
+      "title": "the statement answers another nonce",
+      "covers": [
+        "nonce"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "xBgZDKpeQgQQk894wCHDcnrC",
+          "challenge": "oXN5Fbq72HpZQEUe3ipvBA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "-nx1SC1ms1WMA5wBpiPVgqGXTlV_MfJGjzPkHQpfc4GKWHf6U4HNn4uydXMgjVO5OSVHiaEnbr8Rr8YW8eF_DA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "nonce"
+      }
+    },
+    {
+      "id": "IDN-007",
+      "title": "created exactly 60 s before now",
+      "covers": [
+        "freshness",
+        "boundary"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "0oFl9loofy6enE3SRhW5fg",
+          "created": "2026-11-01T11:59:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "_lgku3uwPxauWyCRxhdD95hk61zyeNzfSjnslLKyzy1NbcsGkvztOXdi7DCrogfaZ33KrxyIMnS_eH4-xpNMAg"
+          }
+        }
+      },
+      "expect": {
+        "result": "authenticated",
+        "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+        "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+        "challenge": "0oFl9loofy6enE3SRhW5fg"
+      }
+    },
+    {
+      "id": "IDN-008",
+      "title": "created 61 s before now",
+      "covers": [
+        "freshness",
+        "boundary"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "TK5Un-uHYZL2FBZlPV2GZA",
+          "created": "2026-11-01T11:58:59Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "oC1wDXS4puWwjiRh9Cx2sBLHHvT9veXLH_GNCP_yYs_Pm_UcrsixLnTjyH4F1pQNw5Lpez6stRIKelR9NiIpBw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "stale"
+      }
+    },
+    {
+      "id": "IDN-009",
+      "title": "created 5 s ahead, within the skew",
+      "covers": [
+        "freshness",
+        "boundary"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "M4j4-1EmVS_G4Qo7eRk7_A",
+          "created": "2026-11-01T12:00:05Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "nrFb8F-BwNM95Pqdz3qv6CxUXZRbJVJ6w2icFWtlihU_NpaYkrx-OTPjdSlKL1poyxk2KFd1cs6s11p1RD57Cg"
+          }
+        }
+      },
+      "expect": {
+        "result": "authenticated",
+        "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+        "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+        "challenge": "M4j4-1EmVS_G4Qo7eRk7_A"
+      }
+    },
+    {
+      "id": "IDN-010",
+      "title": "created 6 s ahead, beyond the skew",
+      "covers": [
+        "freshness",
+        "boundary"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "uqfM45Vdz5Dzs9-a4Cv5Ww",
+          "created": "2026-11-01T12:00:06Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "tIx7TKc1-fw9ggrLKPiiqWHCt7Mvo5PpnABKcx_oWRaRbjJYa0f_5kVal4ciPBj8TCPGYr3HARMzTM82-3HoDw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "stale"
+      }
+    },
+    {
+      "id": "IDN-011",
+      "title": "one signature bit flipped",
+      "covers": [
+        "signature"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "bWcGPKv62TMbH-MP9bNIxw",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "dKQXv3A688lrjPmEN8slYosr_aE99QF0ljF6mQ7mvgv8BREoMwgKc7y1-sxh6pzjrLRdpN3y-tavYtLsUvvuBQ"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-012",
+      "title": "keyid names another key of the DID, signed by the right key",
+      "covers": [
+        "signature",
+        "keyid"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "HZ7p0BAjUHXbx0ebsRseMQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-2",
+            "value": "ZsP4hGm-jidfV3nIb35My4SyaH7GZYmaOwrn1P6nE93fQZA21CIxfMZN7-I6XQ4e4oTWrkpLhmdOnR4L3xhTAw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-013",
+      "title": "signed by a key that is not the credential's holder key",
+      "covers": [
+        "signature"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "xU-3AF2NVz4fq9l1A7fwvA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "JxSl3H0V-KilKa7WU7ElRe-7PZyEu1W0eUv8VeQ3hoGuOCzLrMYZRJord8eVY9ddUx-PnsxuZa01eUiXv9_zBA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-014",
+      "title": "another proof algorithm",
+      "covers": [
+        "signature"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "-U3tnrb6H3t4Lqy6-5Wqig",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "es256",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "TTpy3UR8-0myYAKrgXSN10fA8MRn6LlHVTvLTJxP6Ji9HVrgC5mqfZlKTrkR7vvQlOgLA_P0XltDG56Prnb7CA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-015",
+      "title": "proof value with base64 padding",
+      "covers": [
+        "signature",
+        "encoding"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "4JGMgmsMOUTozdqk2ZBIZQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "aXXtslwPYFhovWHvCYMJA--vWz5NYw8uLj7odrIGLhOcltOygQ1LVRiZxr5v-xcowx2Fj_okcY3TsDvJJSCyCQ=="
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-016",
+      "title": "proof value with non-zero trailing bits (decodes to the same bytes)",
+      "covers": [
+        "signature",
+        "encoding"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "9LW5bddKT1KF6efgYzwJvA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "1Na1ewPMp3kUu2NyWtbJWt-TOekP22YByTt9FI_BkAVi3A2Qzj-3z5o6lwxP18RwWa88YGS6inVC24wwAQXvDR"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "signature"
+      }
+    },
+    {
+      "id": "IDN-017",
+      "title": "the statement names another credential than the one presented",
+      "covers": [
+        "credential"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "8zkL-t31GLCbQTPMuwUThg",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "Xrtfj8iGcKEiUxbUjSPE1uzm_iuQ7WXWHfjIl8N8MDefwdCckUjyKZtlc6g_PUx7bfJ8AQPPjks2Lor0BpSgBg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "credential"
+      }
+    },
+    {
+      "id": "IDN-018",
+      "title": "the statement's subject is not the credential's DID",
+      "covers": [
+        "credential"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:other-service",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "Bb5zh-WahKNwCsdzoNJncA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "3Z9kjsFbaS2UAu9MUkhErX-OpCQ70bWu8AI76YbbCURT09Xkp75FuAPxC5GABxZBocCUbEGilc4YlAipz1OiCQ"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "credential"
+      }
+    },
+    {
+      "id": "IDN-019",
+      "title": "the presented credential is not valid yet",
+      "covers": [
+        "credential"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-2",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zH42a5iR1drzqkb73AQGnvBkXriwg2DCGpud3JHerFMuU"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/605f323d-b101-4c35-b17c-b62063f05754",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "xNVuiGSIWkrs72eHb6nTpA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-2",
+            "value": "Y2zCv9Lyu3ovcjDPTVI8IdiknqOcmTLn6NDz50NYxRj9SL-zNC4CsDqLe4yX_tOpvNoFNWg-Ixya9dGZI6XFDA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "credential"
+      }
+    },
+    {
+      "id": "IDN-020",
+      "title": "a presented document the verifier does not accept (holder key substituted)",
+      "covers": [
+        "credential"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "z4vfnkHEz3k6eLgkwQVG7VezFZVVsKSAT9GpEXpLa2YXp"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "Za4iNrFJ9WEeNmUd4as2Rw",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "YHuHe_WAsl_eT0_vpyH1USi2SxijO_n_-1d321yp8QVT83U0obQysFOKDKxyzwVZZZ1RKzUyDflcYhgqjqf7Bw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "credential"
+      }
+    },
+    {
+      "id": "IDN-021",
+      "title": "an extra member in the statement, signed",
+      "covers": [
+        "malformed"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "GRpJPlgSfzOqyRmArmzUuQ",
+          "created": "2026-11-01T12:00:00Z",
+          "note": "x",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "uY6XQ8TR_coWWIVeTrX4mFYBanrbaYopk4cv3MnELwxrRH8bz2iXmQa7cImUJNOjQhOtnoANSBhj-t0fx7TMAg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-022",
+      "title": "no challenge, signed",
+      "covers": [
+        "malformed"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "Op8wJHabPlCVmM0uKObayMt6Cyhx5QtG-K83SZNT1_XJFyag_0YW9Z62J9lzkt4LgwqveM4fgh4Mvh4P9q1nBA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-023",
+      "title": "a creation date that does not exist",
+      "covers": [
+        "malformed",
+        "time"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "hNgZWZiJ31K-LrL0WUqo0g",
+          "created": "2026-11-31T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "QXeXssI1NX0wQnjwO4xSd2Audif-arHjbP55i_DLGBhiaSFJwszMS6P-BjK3vl0YPRMw6KmJ7ahwBrfG8VjaCA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-024",
+      "title": "a creation time with fractional seconds",
+      "covers": [
+        "malformed",
+        "time"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "akrWZ8N9qQwOsmSzvPaDjw",
+          "created": "2026-11-01T12:00:00.000Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "IbZz2vJFph-hv2ALqZNAl8ilymaIhr5_Xa_SLzJkZYITDuQbf9UPhoopvDyhF_PwQ-PkvvUlcTRGCb83MVS2CA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-025",
+      "title": "an origin with a path",
+      "covers": [
+        "malformed",
+        "origin"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test/",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "15RyMpWrXJ1bjvUEEsUEIQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "ZNBUptXBOA5Tthfn0rSiVoSyKhaju1t7SvBkome97WjlTQ0SsLm23yErf7MU_jT6jCoYFgGJeL7OFTzViKAzBg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-026",
+      "title": "an origin with the default port",
+      "covers": [
+        "malformed",
+        "origin"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test:443",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "OmliLdidpcrPd3vNGxXJnA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "VkxSxVab0Uz6x5h0CyUOKFEkRrSVeFdiloB51ZnA-rK-8lA-exQIhkmBaKruhUQPzEecWqVD7I8N-NWAXNpiBw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-027",
+      "title": "an origin that matches the syntax but is not valid IDNA",
+      "covers": [
+        "malformed",
+        "origin"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://xn--a.example",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "bb0W78u867v8mbXByqSibg",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "WCH_zoaZ32wwysCvsbrD2ODEDPidouKdi5dauZf8renltLixDVQAgHkVxDvOinY2EXI71JIO5keaf9iZtKC6Cw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-028",
+      "title": "another statement type",
+      "covers": [
+        "malformed"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/2",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "6K6vNLxM5NiABY-78vThSQ",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "w-WfJvqNlRA5l9Ots59IrKOg8tEwpvlzyCL-30tyyBG3Nk87bXjSX1hacYQJiBo4iMuRLppiaVqz7dyQ8AHFDg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-029",
+      "title": "a challenge outside the profile syntax",
+      "covers": [
+        "malformed",
+        "challenge"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "two words",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "T7ruVqjYn5MWodHb-0Hubfq1_BrSB9FU5RFkU6wkE6f9_RDH79D-0EP4pyCnO1iz9a2JwLsLUhyGMTDYaf1NAw"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "malformed"
+      }
+    },
+    {
+      "id": "IDN-030",
+      "title": "the receiver credential is revoked",
+      "covers": [
+        "status"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/b19b94e3-74c9-4888-a5fc-959b30065f4e",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-3",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zECEHyXYiZ8rRmdJXQ4NGAoHgxGJexiKVgYqLiqcrJ3vV"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/b19b94e3-74c9-4888-a5fc-959b30065f4e",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "Drt9nOOSymSpvP_XCk5wNw",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-3",
+            "value": "rse6OPWaqvyhlCAtr9mZGjsyv5slkw9uh1R23-M-QZnhwE5jvX-iCozzWTB8G8d-nL1yjrlCKgRpMq3NzhqmAg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "status"
+      }
+    },
+    {
+      "id": "IDN-031",
+      "title": "status established 60 s after creation",
+      "covers": [
+        "freshness",
+        "asynchronous"
+      ],
+      "timeline": {
+        "statusAfter": 60
+      },
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "1jrWsoX1ZXBzYcx05COrdA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "z4SH_a-3LRG800qDxZiUPq90MyooBrLOmpA6TM91x1Gh3LHkc45HslZFyUoC-x3F8DxPcqOyEDQWxUlOWyGeAA"
+          }
+        }
+      },
+      "expect": {
+        "result": "authenticated",
+        "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+        "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+        "challenge": "1jrWsoX1ZXBzYcx05COrdA"
+      }
+    },
+    {
+      "id": "IDN-032",
+      "title": "status established 61 s after creation",
+      "covers": [
+        "freshness",
+        "asynchronous"
+      ],
+      "timeline": {
+        "statusAfter": 61
+      },
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "DN9DGP55h-xxEh9TCznj0w",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "eHme66IFPxouclzTlxN3HqPJDn6cD8cuzzwU_3XIBxqkzCBKh6XqYd1b424hrf13E9j_Mj_5_jyuCcfWUvRdCQ"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "stale"
+      }
+    },
+    {
+      "id": "IDN-033",
+      "title": "order: stale and a wrong signature",
+      "covers": [
+        "order"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "did": "did:aria:bank.example.test:transfers",
+          "holderKey": {
+            "id": "did:aria:bank.example.test:transfers#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zCgR6B24TA8fPP3xFS31WaMNd44JuHdVpDu4RBpqNYSBv"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:bank.example.test:transfers",
+          "credential": "https://registry.example.test/v1/credentials/5781565b-d754-4897-90d2-70d69dd4c841",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "PMTezqdE1_bV7X3wzDe-BQ",
+          "created": "2026-11-01T11:58:59Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:bank.example.test:transfers#holder-key-1",
+            "value": "_E4czvqHTwgfm7gS_FIXMAMYFwslKo34O1dwvR_4u3Ctvn4ObiY3ZsbPm-HkkDI3yn3za-lIykrOxf5l6QhCBg"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "stale"
+      }
+    },
+    {
+      "id": "IDN-034",
+      "title": "order: another receiver with a wrong signature",
+      "covers": [
+        "order"
+      ],
+      "response": {
+        "credential": {
+          "id": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+          "did": "did:aria:other.example.test:service",
+          "holderKey": {
+            "id": "did:aria:other.example.test:service#holder-key-1",
+            "type": "Ed25519VerificationKey2020",
+            "publicKeyMultibase": "zEvdiRAVaBJAAtcyV9aPQ3mgKaGh6VmT8YLsHDcBb6hiB"
+          }
+        },
+        "statement": {
+          "type": "aria-ap-identity/1",
+          "subject": "did:aria:other.example.test:service",
+          "credential": "https://registry.example.test/v1/credentials/acc3c6fe-4aec-4109-9449-1ad39d04c557",
+          "origin": "https://bank.example.test",
+          "audience": "did:aria:customer.example.test:payments-agent",
+          "nonce": "gCLoAQ5z30xYKUfFhNlEvB8D",
+          "challenge": "lISuq_BirdlU1a8RkERwTA",
+          "created": "2026-11-01T12:00:00Z",
+          "proof": {
+            "alg": "ed25519",
+            "keyid": "did:aria:other.example.test:service#holder-key-1",
+            "value": "E5tlLMLZBeBlNgCZ1AlqsVXWHIa-ImMFlk76mkJJvbjhYxom-N_I45QT07xrwy7Ux05Ioml4LAbDVYStONgOCA"
+          }
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "reason": "unexpected_receiver"
+      }
+    }
+  ]
+}

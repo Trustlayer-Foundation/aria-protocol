@@ -29,6 +29,7 @@
     { "id": "SCP-P5", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }], "scope": "payments:transfer", "expect": "aria.scope_denied", "note": "a pattern matches exactly three segments" },
     { "id": "SCP-P6", "rules": [{ "effect": "allow", "pattern": "payments:*:create" }], "scope": "payments:transfer:create", "expect": "invalid_policy", "note": "only the last segment may be *" },
     { "id": "SCP-P7", "rules": [{ "effect": "allow", "pattern": "*" }], "scope": "payments:transfer:create", "expect": "invalid_policy" },
-    { "id": "SCP-P8", "rules": [{ "effect": "allow", "pattern": "payments:transfer:cre*" }], "scope": "payments:transfer:create", "expect": "invalid_policy" }
+    { "id": "SCP-P8", "rules": [{ "effect": "allow", "pattern": "payments:transfer:cre*" }], "scope": "payments:transfer:create", "expect": "invalid_policy" },
+    { "id": "SCP-P9", "rules": [{ "effect": "allow", "pattern": "payments:transfer:*" }], "scope": "payments:transfer:create:eu", "expect": "aria.scope_denied", "note": "a pattern matches exactly three segments: a four-segment 1.0 scope is not under it" }
   ]
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Generates the ARIA AP request, fingerprint and receipt vectors (provisional profile).
+// Generates the ARIA AP request, fingerprint, receipt and receiver identity vectors
+// (provisional profile).
 //
 // Keys are synthetic: each seed is SHA-256 of a public label below, so anyone can
 // rebuild them. They exist only to make these vectors and are never trusted anywhere.
@@ -216,7 +217,10 @@ function build(spec) {
   const signedValue = (component) => {
     if (component === '@method') return method;
     if (component === '@target-uri') return (spec.signedOrigin ?? ORIGIN) + target;
-    return header(headers, component);
+    // A repeated field is combined as RFC 9421 does; the profile refuses it (REQ-054).
+    // A repeated field is signed over its RFC 9421 combination (REQ-054); an absent one as before.
+    const values = headers.filter(([n]) => n === component).map(([, v]) => v);
+    return values.length > 1 ? values.join(', ') : header(headers, component);
   };
   const label = spec.challenge ?? spec.id;
   challengesUsed.add(label);
@@ -250,7 +254,7 @@ function build(spec) {
   const labelName = spec.label ?? 'aria';
   if (!spec.unsigned) {
     headers.push(['signature-input', `${labelName}=${signatureParams}${spec.extraSignatureInput ?? ''}`]);
-    headers.push(['signature', `${labelName}=:${b64(signature)}:${spec.extraSignature ?? ''}`]);
+    headers.push(['signature', `${labelName}=:${encodeSignature(signature, spec.signatureEncoding)}:${spec.extraSignature ?? ''}`]);
   }
 
   const request = { method, target, headers, body: body === null ? null : body };
@@ -263,6 +267,18 @@ function build(spec) {
     descriptor: d,
     operation: spec.operation ?? OP.X,
   };
+}
+
+// Base64 spellings of the same 64 bytes that a lenient decoder accepts and the profile refuses.
+function encodeSignature(signature, how) {
+  const text = b64(signature);
+  if (how === 'unpadded') return text.replace(/=+$/, '');
+  if (how === 'noncanonical') {
+    const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const at = text.length - 3; // the last data character, whose four low bits are padding
+    return text.slice(0, at) + ALPHABET[ALPHABET.indexOf(text[at]) | 1] + text.slice(at + 1);
+  }
+  return text;
 }
 
 const replaceHeader = (name, value) => (r) => {
@@ -357,6 +373,20 @@ const CASES = [
   // Audience: checked after authentication (proposal §5.4).
   { id: 'REQ-070', title: 'signed for another receiver DID', covers: ['§5.4 audience'], spec: { descriptor: 'transfers.create', audience: 'did:aria:other.example.test:service' }, expect: refused(403, 'aria.audience_mismatch', { signed: true, applies: 'attempt' }) },
   { id: 'REQ-071', title: 'retrieval signed for another receiver DID', covers: ['§5.4 audience', '§5.9 #20'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, audience: 'did:aria:other.example.test:service' }, expect: refused(403, 'aria.audience_mismatch', { signed: false }), note: 'A retrieval produces no receipt, so its refusal is a problem document.' },
+
+  // Exact parsing choices: refused, never normalised or combined.
+  { id: 'REQ-053', title: 'a target the URL parser would normalise', covers: ['parsing'], spec: { descriptor: 'transfers.create', target: '/v1/./transfers' }, expect: unsigned400, note: 'The target is taken exactly: one that is not its own serialization is refused, not normalised.' },
+  { id: 'REQ-054', title: 'a covered header repeated, signed over its combined value', covers: ['parsing'], spec: { descriptor: 'transfers.create', headers: [['aria-audience', sfString(RECEIVER_DID)]] }, expect: unsigned401('signature'), note: 'A repeated covered field is refused, though the signature matches its RFC 9421 combination.' },
+  { id: 'REQ-055', title: 'the signature with non-zero padding bits in its base64', covers: ['parsing', 'canonical byte sequences'], spec: { descriptor: 'transfers.create', signatureEncoding: 'noncanonical' }, expect: unsigned401('signature'), note: 'The same 64 bytes to a lenient decoder; only the canonical spelling is accepted.' },
+  { id: 'REQ-056', title: 'the signature base64 without its padding', covers: ['parsing', 'canonical byte sequences'], spec: { descriptor: 'transfers.create', signatureEncoding: 'unpadded' }, expect: unsigned401('signature') },
+
+  // Challenge expiry is exclusive.
+  { id: 'REQ-072', title: 'a challenge expiring exactly now', covers: ['challenge expiry'], spec: { descriptor: 'transfers.create', challenge: 'at-expiry' }, expect: unsigned401('challenge'), note: 'A challenge is live strictly before its expiry.' },
+
+  // Freshness after asynchronous steps: the window is judged again after resolving the credential and after consuming the challenge.
+  { id: 'REQ-090', title: 'credential resolution ends at the last instant of the window', covers: ['freshness after asynchronous steps'], spec: { descriptor: 'transfers.create' }, timeline: { resolvedAfter: 30 }, expect: authenticated, note: 'expires is now + 25 s; with the 5 s skew the window ends at now + 30 s.' },
+  { id: 'REQ-091', title: 'credential resolution ends after the window', covers: ['freshness after asynchronous steps'], spec: { descriptor: 'transfers.create' }, timeline: { resolvedAfter: 31 }, expect: unsigned401('window') },
+  { id: 'REQ-092', title: 'the challenge is consumed after the window ended', covers: ['freshness after asynchronous steps'], spec: { descriptor: 'transfers.create' }, timeline: { consumedAfter: 31 }, expect: unsigned401('window'), note: 'The challenge stays consumed.' },
 ];
 
 const requestVectors = CASES.map((c) => {
@@ -369,6 +399,7 @@ const requestVectors = CASES.map((c) => {
     ...(c.note ? { note: c.note } : {}),
     ...(c.context ? { context: Object.fromEntries(Object.entries(c.context).map(([k, labels]) => [k, labels.map(challenge)])) } : {}),
     ...(c.lenient ? { lenient: c.lenient } : {}),
+    ...(c.timeline ? { timeline: c.timeline } : {}),
     request: built.request,
     expect,
   };
@@ -384,7 +415,7 @@ const requestContext = {
   credentials: Object.values(SENDERS),
   challenges: [...challengesUsed]
     .filter((label) => label !== 'never issued')
-    .map((label) => ({ value: challenge(label), expires: iso(label === 'expired' ? NOW - 1 : NOW + 50) })),
+    .map((label) => ({ value: challenge(label), expires: iso(label === 'expired' ? NOW - 1 : label === 'at-expiry' ? NOW : NOW + 50) })),
 };
 
 // ---------------------------------------------------------------- fingerprints
@@ -536,6 +567,116 @@ const receiptVectors = RECEIPTS.map((c) => ({
   expect: c.expect,
 }));
 
+// ---------------------------------------------------------------- receiver identity
+
+// The receiver's identity statement (`aria-ap-identity/1`) answering the client's nonce,
+// with the credential document it names. Documents are stand-ins committed to by each
+// view's digest; a view also says when it is valid and its status at NOW.
+const IDENTITY_NONCE = b64url(sha256(utf8('aria-ap-1 identity nonce')).slice(0, 18));
+const REVOKED_KEY = key('revoked receiver holder key');
+const IDENTITY_VIEWS = {
+  r1: { ...RECEIVERS.r1, status: 'good', signer: KEYS.r1 },
+  r2: { ...RECEIVERS.r2, status: 'good', signer: KEYS.r2 },
+  other: { ...RECEIVERS.other, status: 'good', signer: KEYS.other },
+  revoked: {
+    ...credential('revoked receiver', RECEIVER_DID, 3, REVOKED_KEY.publicKey),
+    validFrom: '2026-10-01T00:00:00Z',
+    validUntil: '2027-10-01T00:00:00Z',
+    status: 'revoked',
+    signer: REVOKED_KEY,
+  },
+};
+const documentOf = (v) => ({ id: v.url, did: v.did, holderKey: v.holderKey });
+
+// spec: by (the view that signs and is presented), fields (statement members, set before
+// signing), omit (members removed before signing), proof (alg/keyid overrides, signed),
+// signer (another key), document (another presented document), value (how proof.value
+// is spelled after signing).
+function identityResponse(id, spec = {}) {
+  const view = IDENTITY_VIEWS[spec.by ?? 'r1'];
+  const s = {
+    type: 'aria-ap-identity/1',
+    subject: view.did,
+    credential: view.url,
+    origin: ORIGIN,
+    audience: SENDER_DID,
+    nonce: IDENTITY_NONCE,
+    challenge: challenge(`identity ${id}`),
+    created: iso(NOW),
+    ...spec.fields,
+  };
+  for (const k of spec.omit ?? []) delete s[k];
+  const proof = { alg: 'ed25519', keyid: view.holderKey.id, ...spec.proof };
+  const signature = ed25519.sign(utf8(canonical({ ...s, proof })), (spec.signer ?? view.signer).seed);
+  let value = b64url(signature);
+  if (spec.value === 'flipped') {
+    const flipped = Uint8Array.from(signature);
+    flipped[40] ^= 0x01;
+    value = b64url(flipped);
+  } else if (spec.value === 'padded') value = `${value}==`;
+  else if (spec.value === 'noncanonical') value = value.slice(0, -1) + B64URL[B64URL.indexOf(value.at(-1)) | 1];
+  return { credential: spec.document ?? documentOf(view), statement: { ...s, proof: { ...proof, value } } };
+}
+const B64URL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+const identityOk = (id, by = 'r1') => ({ result: 'authenticated', credential: IDENTITY_VIEWS[by].url, keyid: IDENTITY_VIEWS[by].holderKey.id, challenge: challenge(`identity ${id}`) });
+const identityRefused = (reason) => ({ result: 'refused', reason });
+
+const IDENTITY_CASES = [
+  { id: 'IDN-001', title: 'a current statement by the pinned receiver', covers: ['identity'], expect: identityOk },
+  { id: 'IDN-002', title: 'another receiver, with its own valid credential, answers', covers: ['pin'], spec: { by: 'other' }, expect: identityRefused('unexpected_receiver') },
+  { id: 'IDN-003', title: 'the statement names another origin', covers: ['pin'], spec: { fields: { origin: 'https://payments.example.test' } }, expect: identityRefused('origin') },
+  { id: 'IDN-004', title: 'a client pin outside the origin rule matches no statement', covers: ['pin', 'origin'], pin: { origin: 'https://BANK.example.test' }, expect: identityRefused('origin') },
+  { id: 'IDN-005', title: 'the statement is for another client', covers: ['audience'], spec: { fields: { audience: 'did:aria:customer.example.test:other-agent' } }, expect: identityRefused('audience') },
+  { id: 'IDN-006', title: 'the statement answers another nonce', covers: ['nonce'], spec: { fields: { nonce: b64url(sha256(utf8('aria-ap-1 another nonce')).slice(0, 18)) } }, expect: identityRefused('nonce') },
+  { id: 'IDN-007', title: 'created exactly 60 s before now', covers: ['freshness', 'boundary'], spec: { fields: { created: iso(NOW - 60) } }, expect: identityOk },
+  { id: 'IDN-008', title: 'created 61 s before now', covers: ['freshness', 'boundary'], spec: { fields: { created: iso(NOW - 61) } }, expect: identityRefused('stale') },
+  { id: 'IDN-009', title: 'created 5 s ahead, within the skew', covers: ['freshness', 'boundary'], spec: { fields: { created: iso(NOW + 5) } }, expect: identityOk },
+  { id: 'IDN-010', title: 'created 6 s ahead, beyond the skew', covers: ['freshness', 'boundary'], spec: { fields: { created: iso(NOW + 6) } }, expect: identityRefused('stale') },
+  { id: 'IDN-011', title: 'one signature bit flipped', covers: ['signature'], spec: { value: 'flipped' }, expect: identityRefused('signature') },
+  { id: 'IDN-012', title: 'keyid names another key of the DID, signed by the right key', covers: ['signature', 'keyid'], spec: { proof: { keyid: `${RECEIVER_DID}#holder-key-2` } }, expect: identityRefused('signature') },
+  { id: 'IDN-013', title: 'signed by a key that is not the credential\'s holder key', covers: ['signature'], spec: { signer: KEYS.attacker }, expect: identityRefused('signature') },
+  { id: 'IDN-014', title: 'another proof algorithm', covers: ['signature'], spec: { proof: { alg: 'es256' } }, expect: identityRefused('signature') },
+  { id: 'IDN-015', title: 'proof value with base64 padding', covers: ['signature', 'encoding'], spec: { value: 'padded' }, expect: identityRefused('signature') },
+  { id: 'IDN-016', title: 'proof value with non-zero trailing bits (decodes to the same bytes)', covers: ['signature', 'encoding'], spec: { value: 'noncanonical' }, expect: identityRefused('signature') },
+  { id: 'IDN-017', title: 'the statement names another credential than the one presented', covers: ['credential'], spec: { fields: { credential: RECEIVERS.r2.url } }, expect: identityRefused('credential') },
+  { id: 'IDN-018', title: 'the statement\'s subject is not the credential\'s DID', covers: ['credential'], spec: { fields: { subject: 'did:aria:bank.example.test:other-service' } }, expect: identityRefused('credential') },
+  { id: 'IDN-019', title: 'the presented credential is not valid yet', covers: ['credential'], spec: { by: 'r2' }, expect: identityRefused('credential') },
+  { id: 'IDN-020', title: 'a presented document the verifier does not accept (holder key substituted)', covers: ['credential'], spec: { signer: KEYS.attacker, document: { ...documentOf(IDENTITY_VIEWS.r1), holderKey: { ...IDENTITY_VIEWS.r1.holderKey, publicKeyMultibase: `z${base58(KEYS.attacker.publicKey)}` } } }, expect: identityRefused('credential') },
+  { id: 'IDN-021', title: 'an extra member in the statement, signed', covers: ['malformed'], spec: { fields: { note: 'x' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-022', title: 'no challenge, signed', covers: ['malformed'], spec: { omit: ['challenge'] }, expect: identityRefused('malformed') },
+  { id: 'IDN-023', title: 'a creation date that does not exist', covers: ['malformed', 'time'], spec: { fields: { created: '2026-11-31T12:00:00Z' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-024', title: 'a creation time with fractional seconds', covers: ['malformed', 'time'], spec: { fields: { created: '2026-11-01T12:00:00.000Z' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-025', title: 'an origin with a path', covers: ['malformed', 'origin'], spec: { fields: { origin: `${ORIGIN}/` } }, expect: identityRefused('malformed') },
+  { id: 'IDN-026', title: 'an origin with the default port', covers: ['malformed', 'origin'], spec: { fields: { origin: `${ORIGIN}:443` } }, expect: identityRefused('malformed') },
+  { id: 'IDN-027', title: 'an origin that matches the syntax but is not valid IDNA', covers: ['malformed', 'origin'], spec: { fields: { origin: 'https://xn--a.example' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-028', title: 'another statement type', covers: ['malformed'], spec: { fields: { type: 'aria-ap-identity/2' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-029', title: 'a challenge outside the profile syntax', covers: ['malformed', 'challenge'], spec: { fields: { challenge: 'two words' } }, expect: identityRefused('malformed') },
+  { id: 'IDN-030', title: 'the receiver credential is revoked', covers: ['status'], spec: { by: 'revoked' }, expect: identityRefused('status') },
+  { id: 'IDN-031', title: 'status established 60 s after creation', covers: ['freshness', 'asynchronous'], timeline: { statusAfter: 60 }, expect: identityOk },
+  { id: 'IDN-032', title: 'status established 61 s after creation', covers: ['freshness', 'asynchronous'], timeline: { statusAfter: 61 }, expect: identityRefused('stale') },
+  { id: 'IDN-033', title: 'order: stale and a wrong signature', covers: ['order'], spec: { fields: { created: iso(NOW - 61) }, value: 'flipped' }, expect: identityRefused('stale') },
+  { id: 'IDN-034', title: 'order: another receiver with a wrong signature', covers: ['order'], spec: { by: 'other', value: 'flipped' }, expect: identityRefused('unexpected_receiver') },
+];
+
+const identityContext = {
+  now: iso(NOW),
+  pin: { did: RECEIVER_DID, origin: ORIGIN },
+  expected: { nonce: IDENTITY_NONCE, audience: SENDER_DID },
+  maxAgeSeconds: profile.identity.maxAgeSeconds,
+  skewSeconds: profile.transport.skewSeconds,
+  credentials: Object.values(IDENTITY_VIEWS).map(({ signer: _, ...v }) => ({ ...v, document: documentOf(v) })),
+};
+const identityVectors = IDENTITY_CASES.map((c) => ({
+  id: c.id,
+  title: c.title,
+  covers: c.covers,
+  ...(c.pin ? { pin: c.pin } : {}),
+  ...(c.timeline ? { timeline: c.timeline } : {}),
+  response: identityResponse(c.id, c.spec),
+  expect: typeof c.expect === 'function' ? c.expect(c.id) : c.expect,
+}));
+
 // ---------------------------------------------------------------- write
 
 const header0 = {
@@ -549,4 +690,5 @@ const write = (name, value) => writeFileSync(new URL(name, outDir), `${JSON.stri
 write('requests.json', { ...header0, context: requestContext, vectors: requestVectors });
 write('fingerprints.json', { ...header0, ...fingerprintVectors });
 write('receipts.json', { ...header0, vectors: receiptVectors });
-console.log(`requests ${requestVectors.length}, fingerprints ${fingerprintVectors.cases.length}, receipts ${receiptVectors.length}`);
+write('identity.json', { ...header0, context: identityContext, vectors: identityVectors });
+console.log(`requests ${requestVectors.length}, fingerprints ${fingerprintVectors.cases.length}, receipts ${receiptVectors.length}, identity ${identityVectors.length}`);

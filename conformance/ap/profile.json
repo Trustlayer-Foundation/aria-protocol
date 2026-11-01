@@ -16,6 +16,27 @@
       "aria-operation": "sf-string: the logical operation id (UUID), the same on every retry"
     }
   },
+  "identity": {
+    "type": "aria-ap-identity/1",
+    "request": "GET /.well-known/aria/identity?nonce=<base64url, 22-128 characters>&audience=<client DID>",
+    "response": "the receiver's credential document and a statement: type, subject, credential, origin, audience, nonce, challenge, created, proof { alg, keyid, value }; exactly these members",
+    "signed": "the ARIA canonical JSON of the statement with proof.value removed (proof.alg and proof.keyid are signed); strict Ed25519 by the named credential's holder key",
+    "maxAgeSeconds": 60,
+    "skewSeconds": 5,
+    "order": [
+      "malformed: the members above and no others; type; strings; nonce and challenge syntax; origin canonical (https://host[:port], or http:// on a loopback host; it serializes as a URL to itself, valid IDNA included); created RFC 3339 UTC to the second, a date that exists",
+      "credential: the presented document verifies now under the client's trusted issuers, and is the credential the statement names, of the statement's subject",
+      "unexpected_receiver: the subject is the pinned DID",
+      "origin: the origin is the pinned origin; a pin outside the origin rule matches no statement",
+      "audience: the client's own DID",
+      "nonce: the client's own nonce",
+      "stale: created <= now + skew and now - created <= 60 s",
+      "signature: proof.alg ed25519, proof.keyid the credential's holderKey.id, a canonical 64-byte value, strict Ed25519",
+      "status: the credential's status establishes it stands now",
+      "stale: judged again once status is established"
+    ],
+    "use": "a verified receiver keeps its credential, status evidence and statement deadline; signing a request for it judges, at entry and again after the signer returns, the statement deadline and the credential's standing, and refuses a request whose own signature window ended while it was signed. A recorded receipt is not reinterpreted when its receiver later lapses."
+  },
   "classes": {
     "unsafe-body": {
       "methods": ["POST", "PUT", "PATCH"],
@@ -47,20 +68,22 @@
   },
   "semanticHeaders": "every semantic header the descriptor declares and the request carries is covered after the class components, and enters the fingerprint",
   "authenticationOrder": [
-    "400 aria.request_invalid: a supported method and exactly one described operation (method and exact path)",
+    "400 aria.request_invalid: a supported method and exactly one described operation (method and exact path); the target is taken as sent: appended to the configured origin it must serialize as a URL to the same text, so dot segments and other spellings a parser would normalise are refused",
     "400: body rules of the class; for unsafe-body, the descriptor's one media type after normalisation",
     "400: only declared query parameters, each at most once; retrieval names one operation UUID",
     "400: ARIA-Operation exactly once as a UUID sf-string on receiptable classes, absent on retrieval",
     "401 signature: exactly one signature, labelled aria",
     "401 unsigned_operation | digest | signature: covered components are exactly the required ones, without parameters or repeats",
-    "401 signature | window: parameters exactly created, expires, nonce, keyid, alg, tag; window at most 60 s and current within the skew",
-    "401 digest: Content-Digest sha-256 of the exact content",
-    "401 challenge: the nonce is a challenge this receiver issued, unexpired and unconsumed",
-    "401 credential: the exact credential named, its digest, keyid equal to its holderKey.id, the key acceptable",
-    "401 signature: strict Ed25519 over the base rebuilt from the receiver's configured origin",
-    "the challenge is consumed atomically; the request is authenticated",
+    "401 signature | window: parameters exactly created, expires, nonce, keyid, alg, tag; window at most 60 s and current within the skew (created <= now + skew and expires >= now - skew)",
+    "401 digest: Content-Digest sha-256 of the exact content, its bytes spelled canonically",
+    "401 challenge: the nonce is a challenge this receiver issued, unconsumed and live strictly before its expiry (refused at the expiry instant)",
+    "401 credential: the exact credential named, verifying now (an expired or not yet valid credential is refused here), its digest spelled canonically and equal, keyid equal to its holderKey.id, the key acceptable",
+    "401 signature: every covered field present exactly once (a repeated field is refused, never combined), the signature bytes spelled canonically, strict Ed25519 over the base rebuilt from the receiver's configured origin",
+    "401 window: the window judged again after the credential is resolved and the signature verified",
+    "the challenge is consumed atomically; 401 window: judged again after consumption (the challenge stays consumed); the request is authenticated",
     "403 aria.audience_mismatch: the first admission check (signed rejected/attempt, or a problem document for retrieval)"
   ],
+  "encodings": "every byte sequence (signature, Content-Digest, the aria-credential digest, a proof value) is accepted only in its canonical spelling: sf-binary is padded base64 with zero trailing bits, a proof value is unpadded base64url with zero trailing bits; another spelling of the same bytes is refused by the check that reads it",
   "ed25519": "holder key canonical, not small order, torsion free; R canonical, not small order, torsion free; S < L; then RFC 8032 verification (both equations then agree)",
   "unsupported": ["HEAD", "OPTIONS", "TRACE", "CONNECT", "GET with a body", "streamed bodies or trailers"],
   "fingerprint": {
@@ -89,9 +112,9 @@
   },
   "reasons": {
     "aria.request_invalid": { "http": 400, "signed": false },
-    "aria.authentication_failed": { "http": 401, "signed": false, "subtypes": ["signature", "window", "digest", "challenge", "unsigned_operation", "credential"], "note": "challenge covers replay: a consumed challenge is refused" },
+    "aria.authentication_failed": { "http": 401, "signed": false, "subtypes": ["signature", "window", "digest", "challenge", "unsigned_operation", "credential"], "note": "challenge covers replay: a consumed challenge is refused; credential covers a credential already expired or not yet valid when presented" },
     "aria.audience_mismatch": { "http": 403, "signed": true, "applies": "attempt" },
-    "aria.credential_expired": { "http": 403, "signed": true, "applies": "attempt" },
+    "aria.credential_expired": { "http": 403, "signed": true, "applies": "attempt", "note": "the credential authenticated, then its validity ended before admission or before the admission was used" },
     "aria.credential_revoked": { "http": 403, "signed": true, "applies": "attempt" },
     "aria.credential_superseded": { "http": 403, "signed": true, "applies": "attempt" },
     "aria.level_insufficient": { "http": 403, "signed": true, "applies": "attempt" },
@@ -113,7 +136,7 @@
   "atpMapping": {
     "ATP-200": "admission allow (flagged in monitor/warn); never a receipt state",
     "ATP-401/SIG|MALFORMED|REQUEST-WINDOW|DIGEST|REPLAY": "aria.authentication_failed or aria.request_invalid, unsigned",
-    "ATP-401/EXPIRED": "aria.credential_expired",
+    "ATP-401/EXPIRED": "expired when presented: aria.authentication_failed (credential), 401 unsigned; validity ended between authentication and admission: aria.credential_expired, 403 signed rejected/attempt",
     "ATP-410/REVOKED": "aria.credential_revoked",
     "ATP-412/STALE": "aria.status_unavailable",
     "ATP-421/AUDIENCE": "aria.audience_mismatch (HTTP 403)",
@@ -124,6 +147,6 @@
   "scopes": "D5 provisional: new grants are namespace:resource:action, three lowercase segments, no @version; 1.0 documents are read under their own pattern (two or more segments); credential scopes compare exactly, never as patterns; receiver policy patterns may end in :* and a matching deny wins",
   "approval": "D8 provisional: refuse — a missing approval rejects the attempt and claims nothing; holding for approval is deferred",
   "reconciliation": "an uncertain failure marks the claim, by compare-and-set, and keeps it locked; a release names the exact claim observed and an assurance that the old work cannot apply its effect later (transactional: the effect commits only with its recorded outcome; fenced: an external adapter guarantees final absence and that the old work cannot commit); an unmarked claim, a missing assurance or an observation of an earlier claim releases nothing; effects are counted when they land, apart from the record",
-  "admissionLifetime": "an admission is judged when made and again when used: after the resource authorizer, before a claim is granted and after the storage write; it keeps its status evidence and approval and expires with its request (signature expires plus skew); a lookup is judged again before its receipts are released",
+  "admissionLifetime": "an admission is judged when made and again when used: after the resource authorizer, before a claim is granted or a stored result is read, and after every storage wait, on every path that returns a result (a new claim, an existing record, a lost create race, a resumed operation); it keeps its status evidence and approval and expires with its request (signature expires plus skew); a lookup is judged again before and after its read. A lapsed admission is refused or expires without changing the recorded outcome or its receipts",
   "revocationLookup": "D4 provisional: a revoked credential authorizes no lookup; a currently valid credential of the same DID may retrieve the original receipt; revocation never deletes or reclassifies the operation"
 }

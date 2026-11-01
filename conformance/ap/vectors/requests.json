@@ -340,6 +340,38 @@
       {
         "value": "9_o4k8tYgn_q4pM_2oPv5Q",
         "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "k3_QVd8FRENgZdkU-J-5hQ",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "wVbqHou-BjOM6S0HXHQrpQ",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "HUzcbtZhQ5KF6AE7KB1QIQ",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "i880zZey_iequQV3fRYW3A",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "yYqHOJs1iB0ap6gDfK_MnA",
+        "expires": "2026-11-01T12:00:00Z"
+      },
+      {
+        "value": "cZDugErTWEFAcM9w4U1Xmg",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "xjFDfjfJ9z-7I5qajMcniA",
+        "expires": "2026-11-01T12:00:50Z"
+      },
+      {
+        "value": "dj67H6j1gtpRUoeR0Wi8bQ",
+        "expires": "2026-11-01T12:00:50Z"
       }
     ]
   },
@@ -3227,6 +3259,439 @@
         "result": "refused",
         "http": 403,
         "code": "aria.audience_mismatch",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-053",
+      "title": "a target the URL parser would normalise",
+      "covers": [
+        "parsing"
+      ],
+      "note": "The target is taken exactly: one that is not its own serialization is refused, not normalised.",
+      "request": {
+        "method": "POST",
+        "target": "/v1/./transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"k3_QVd8FRENgZdkU-J-5hQ\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:cUeIJzYjMkfh3s9ZIxMBrNqwsXHhKgpFAA3M/KxiyLpXpnb9J4jqgp3ZHLxxzlnIJfsVTdw9XgqulsrjOUNjBQ==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 400,
+        "code": "aria.request_invalid",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-054",
+      "title": "a covered header repeated, signed over its combined value",
+      "covers": [
+        "parsing"
+      ],
+      "note": "A repeated covered field is refused, though the signature matches its RFC 9421 combination.",
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"wVbqHou-BjOM6S0HXHQrpQ\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:GNwbl2fmi27YnLv9xCrv0fWkuJJy488CIaz6IbYPjJJ5vXx9CECxgVca6hk3OaZiDVzCSRlTNeEmO81ikdWzBA==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "signature",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-055",
+      "title": "the signature with non-zero padding bits in its base64",
+      "covers": [
+        "parsing",
+        "canonical byte sequences"
+      ],
+      "note": "The same 64 bytes to a lenient decoder; only the canonical spelling is accepted.",
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"HUzcbtZhQ5KF6AE7KB1QIQ\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:Zn13CmMplppAUna4y4fdXRS95LvF5O7QNz5oDo+ZTxvWZk6inSkyeSMq6vLVTeezfPccZXz1DIOj1yvFELI0Ch==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "signature",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-056",
+      "title": "the signature base64 without its padding",
+      "covers": [
+        "parsing",
+        "canonical byte sequences"
+      ],
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"i880zZey_iequQV3fRYW3A\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:vNHBT6sI1p6AjqboiSbl+53/IXuaFjyUcd4V2kWk2lSRfVng2tPYg+4eQ5PcqUqExFolQRli4Nn6QaYhrjNvCg:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "signature",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-072",
+      "title": "a challenge expiring exactly now",
+      "covers": [
+        "challenge expiry"
+      ],
+      "note": "A challenge is live strictly before its expiry.",
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"yYqHOJs1iB0ap6gDfK_MnA\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:2YO08PBfNXTsB8rV+nggRm8si6sIFJGFuY9pwsZeuIMiAqQS/1UoUqKCWYNBhdcpwRU35tSjnbVe4TxebkfuDw==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "challenge",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-090",
+      "title": "credential resolution ends at the last instant of the window",
+      "covers": [
+        "freshness after asynchronous steps"
+      ],
+      "note": "expires is now + 25 s; with the 5 s skew the window ends at now + 30 s.",
+      "timeline": {
+        "resolvedAfter": 30
+      },
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"cZDugErTWEFAcM9w4U1Xmg\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:pKGf/07Ew43R/S1mIwAytB12vRHjGCpibHgNgOXtgrOWbwi1w/pqUnuFT4XitNOLhUG+bF22ShSwJEAMjCTICw==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "authenticated",
+        "descriptor": "transfers.create",
+        "class": "unsafe-body",
+        "sender": {
+          "did": "did:aria:customer.example.test:payments-agent",
+          "credential": "https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc"
+        },
+        "requestDigest": "sha-256=:GqTtLeCe1mtoUe4sbITihAxit+WTlJIYxM6Ft4cK0uw=:",
+        "operation": "55ee2e26-ffcc-40ca-b388-d12966453e48",
+        "fingerprint": "sha-256=:HZUv0aA3eHF8qOGoOO6G1xXYAYwi09LjMhU3rioJaqg=:"
+      }
+    },
+    {
+      "id": "REQ-091",
+      "title": "credential resolution ends after the window",
+      "covers": [
+        "freshness after asynchronous steps"
+      ],
+      "timeline": {
+        "resolvedAfter": 31
+      },
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"xjFDfjfJ9z-7I5qajMcniA\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:WyDEupHI8ReaiUTGx+SDadQOPFXwxGfpcVlfuYkLsHMyVAE9EcBo3hQil79Pdw3fKm3l8wouwp5CFp9otdo7Ag==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "window",
+        "signed": false
+      }
+    },
+    {
+      "id": "REQ-092",
+      "title": "the challenge is consumed after the window ended",
+      "covers": [
+        "freshness after asynchronous steps"
+      ],
+      "note": "The challenge stays consumed.",
+      "timeline": {
+        "consumedAfter": 31
+      },
+      "request": {
+        "method": "POST",
+        "target": "/v1/transfers",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "content-digest",
+            "sha-256=:MW4kst1J5xyFus6UuMkCdhyTdPNH4hfVTQZxSQGEc+0=:"
+          ],
+          [
+            "aria-operation",
+            "\"55ee2e26-ffcc-40ca-b388-d12966453e48\""
+          ],
+          [
+            "aria-credential",
+            "\"https://registry.example.test/v1/credentials/0a202e5a-7469-4b05-b60e-51e44ab770cc\";digest=:1D/vs9tGQ1IUKrh5twORvPr5J4u0c7mSOly2OGyUZW8=:"
+          ],
+          [
+            "aria-audience",
+            "\"did:aria:bank.example.test:transfers\""
+          ],
+          [
+            "signature-input",
+            "aria=(\"@method\" \"@target-uri\" \"content-type\" \"content-digest\" \"aria-operation\" \"aria-credential\" \"aria-audience\");created=1793534395;expires=1793534425;nonce=\"dj67H6j1gtpRUoeR0Wi8bQ\";keyid=\"did:aria:customer.example.test:payments-agent#holder-key-1\";alg=\"ed25519\";tag=\"aria-ap/1\""
+          ],
+          [
+            "signature",
+            "aria=:T2JBzlnVO2l7tvZGYhQcNFZjmMfttbPEBGiBPqc17mhHvKqS7F4ut5p+0K8XOQt9y/zjw0vgStJtQQ+UvT/nCA==:"
+          ]
+        ],
+        "body": {
+          "utf8": "{\"amount\":\"10.00\",\"currency\":\"EUR\",\"to\":\"acc-2\"}"
+        }
+      },
+      "expect": {
+        "result": "refused",
+        "http": 401,
+        "code": "aria.authentication_failed",
+        "subtype": "window",
         "signed": false
       }
     }
