@@ -20,21 +20,21 @@
   },
   "packages": [
     {
-      "name": "@aria-registry/sdk",
+      "name": "@trustlayer-foundation/aria-sdk",
       "path": "sdk/aria-ts",
       "version": "1.0.0",
-      "nameStatus": "provisional (D9)",
-      "integrity": "sha512-X7GihoIYo0w/Io8WL6LIFyV8mq/kDG5qyjFB2vHZ9AWrP3FzAtpwr1P3hr4pEogcJmkqgFtunSAaMAmnTywbXQ=="
+      "nameStatus": "confirmed",
+      "integrity": "sha512-DlD3F0vfrrgmFhuM1DPIy8LBjYz9d9pojJ9bIVzGQnH//HArvygDdfrO+nZkYYIhtUqE2LAkL01awzjeMN1VJw=="
     },
     {
-      "name": "@aria-registry/ap",
+      "name": "@trustlayer-foundation/aria-ap",
       "path": "sdk/aria-ap-ts",
       "version": "1.0.0",
-      "nameStatus": "provisional (D9)",
+      "nameStatus": "confirmed",
       "peerDependencies": {
-        "@aria-registry/sdk": "^1.0.0"
+        "@trustlayer-foundation/aria-sdk": "^1.0.0"
       },
-      "integrity": "sha512-vfqmCdTIPHi4xlQwn45PUYYYOZe6VN+utAUHTalu27Fa11irk6hL8irOhzXBQCCrUoiGqmtk4aAXMJ4qPLd8IQ=="
+      "integrity": "sha512-ugzukWhhlMDxwCgntMlhoBNOvLgq33lmcgd2GJuITR+o0duHRBiNjGPGHz0z39mehGLyxSwWKbPXEvFt0DrAqg=="
     }
   ],
   "schemas": [
@@ -299,13 +299,14 @@
       "on": "2026-11-01"
     },
     {
-      "id": "D4-rest",
-      "subject": "retrieval and the remaining receipt rules",
-      "state": "pending"
+      "id": "D9",
+      "subject": "package names: @trustlayer-foundation/aria-sdk and @trustlayer-foundation/aria-ap 1.0.0, in the npm organization trustlayer-foundation",
+      "state": "decided",
+      "on": "2026-11-01"
     },
     {
-      "id": "D9",
-      "subject": "package names",
+      "id": "D4-rest",
+      "subject": "retrieval and the remaining receipt rules",
       "state": "pending"
     },
     {
@@ -322,7 +323,7 @@
   "compatibility": [
     "credentials already issued keep their signed bytes, identifiers, context URL and resolution paths",
     "schema/aid-v1.2.json stays published while any credential declaring spec_version 1.2 is valid",
-    "@aria-registry/verify 1.x stays on npm, unchanged; deprecating it is a separate step after the 1.0 packages are published",
+    "@aria-registry/verify 1.x is no longer served by npm (404 since 1 November 2026); the W3C registry entry that cites it must move to the 1.0 packages (INVARIANTS, npm package names)",
     "ATP identifiers stay as deprecated compatibility identifiers: the v=ATP1 record, ATP- codes and the ATP schemas at their URLs",
     "https://aria.bar/ns/v1 is unchanged"
   ]
