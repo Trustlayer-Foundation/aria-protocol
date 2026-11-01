@@ -17,7 +17,7 @@ model.mjs               reference state machine for the sequences, with delibera
 vectors/requests.json   59 requests and the receiver's expected answer
 vectors/fingerprints.json  operation fingerprints and which ones must match
 vectors/receipts.json   34 receipts, each with the client's kept evidence and a mode
-vectors/sequences.json  20 sequences of attempts, outcomes, lookups and client state
+vectors/sequences.json  23 sequences of attempts, outcomes, lookups and client state
 vectors/scopes.json     scope grammar, exact admission and policy patterns
 ```
 
@@ -59,7 +59,7 @@ agree, so implementations cannot diverge on a valid vector.
   be refused;
 - each strict-Ed25519 vector must be accepted by the lenient verifier it targets
   (ZIP-215 or cofactored), so it really separates strict from lenient;
-- each of the 11 mutants in `model.mjs` must fail at least one sequence.
+- each of the 14 mutants in `model.mjs` must fail at least one sequence.
 
 ## Provisional choices
 
@@ -94,7 +94,10 @@ agree, so implementations cannot diverge on a valid vector.
 
 Beyond the list: strict possession (REQ-060–REQ-068), challenges (REQ-032, REQ-033,
 REQ-038, REQ-039, SEQ-CH1–CH3), window and digest (REQ-041–REQ-046), reconciliation
-and compare-and-set storage (SEQ-REC1–REC2, SEQ-CAS1–CAS3), a business rejection
+and compare-and-set storage (SEQ-REC1–REC5: an uncertain claim stays locked without an
+assurance, a running worker is never released, a remote effect that lands after local
+uncertainty runs once, an observation of an older claim never releases its successor;
+SEQ-CAS1–CAS3), a business rejection
 (SEQ-R2f) and two terminal receipts (SEQ-INC1).
 
 ## Not covered yet

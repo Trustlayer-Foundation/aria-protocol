@@ -3,13 +3,14 @@
   "about": "Behavioural sequences over one receiver and one client. Labels stand for values: operations (X), content fingerprints (F1, F2), attempts (a1, w1 for a receiver worker resuming), challenges (c1) and receipts (r1). `expect` is the receiver's answer; `client` is the client's operation state after the step. A step with `delivered: false` loses its response before the client sees it.",
   "steps": {
     "attempt": "an authenticated request of a receiptable class: challenge, then admission (allow or a denial code), then the operation record; `arrived: false` loses it before the receiver",
-    "settle": "the claimed attempt's handler records its outcome, effect and receipt in one transaction",
-    "fail": "the claimed attempt's handler threw: rolled-back (known not committed) or uncertain",
-    "reconcile": "the adopter reports, from its own record of the effect, whether the operation committed",
+    "settle": "the claimed attempt's handler records its outcome and receipt; the effect is in the same transaction, unless external, when it was counted by an effect step",
+    "fail": "the claimed attempt's handler threw: rolled-back (known not committed) releases the claim; uncertain marks it, and it stays locked",
+    "reconcile": "the adopter reports, from its own record of the effect, whether the operation committed; a release names the observed claim (observed) and why the old work cannot apply its effect later (assurance: transactional or fenced)",
     "resume": "a receiver worker continues an accepted operation after a fresh admission",
     "lookup": "an authenticated retrieval of the operation's receipts, with the sender's current or revoked credential",
     "client-observe": "the client receives a receipt that verifies (here: a second terminal one)",
-    "check": "the receiver's record of the operation, its effects, and whether the client ever sent it"
+    "check": "the receiver's record of the operation, its effects, and whether the client ever sent it",
+    "effect": "an external effect of the attempt's claim lands at its destination, counted whether or not its outcome is then recorded"
   },
   "sequences": [
     {
@@ -191,7 +192,7 @@
     },
     {
       "id": "SEQ-REC1",
-      "title": "uncertain failure keeps the claim; only an explicit \"not committed\" releases it",
+      "title": "uncertain failure keeps the claim locked; only an assured \"not committed\" about that exact claim releases it",
       "covers": ["N2", "reconciliation"],
       "issued": ["c1", "c2", "c3", "c4"],
       "steps": [
@@ -200,7 +201,8 @@
         { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.operation_in_progress" } }, "client": "unknown" },
         { "do": "lookup", "operation": "X", "challenge": "c3", "credential": "current", "expect": { "http": 200, "current": null, "history": [] }, "client": "unknown" },
         { "do": "reconcile", "operation": "X", "committed": true, "expect": { "error": "invariant_violation" } },
-        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "released": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "expect": { "kept": "unassured" } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "assurance": "transactional", "expect": { "released": true } },
         { "do": "attempt", "attempt": "a3", "operation": "X", "fingerprint": "F1", "challenge": "c4", "admission": "allow", "expect": { "claimed": true } },
         { "do": "settle", "attempt": "a3", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
         { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
@@ -221,6 +223,51 @@
       ]
     },
     {
+      "id": "SEQ-REC3",
+      "title": "a running worker is never released: reconciliation keeps an unmarked claim, and its external effect lands once",
+      "covers": ["reconciliation", "review F1: live worker"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "assurance": "transactional", "expect": { "kept": "active" } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.operation_in_progress" } }, "client": "unknown" },
+        { "do": "effect", "attempt": "a1", "expect": { "applied": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "external": true, "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-REC4",
+      "title": "an external effect may still land after local uncertainty: without an assurance the operation stays locked, and the worker settles it once",
+      "covers": ["reconciliation", "review F1: remote completion"],
+      "issued": ["c1", "c2", "c3"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "fail", "attempt": "a1", "how": "uncertain", "expect": { "kept": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "expect": { "kept": "unassured" } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "http": 409, "receipt": { "state": "rejected", "applies": "attempt", "code": "aria.operation_in_progress" } }, "client": "unknown" },
+        { "do": "effect", "attempt": "a1", "expect": { "applied": true } },
+        { "do": "settle", "attempt": "a1", "outcome": "completed", "external": true, "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "delivered": false },
+        { "do": "attempt", "attempt": "a3", "operation": "X", "fingerprint": "F1", "challenge": "c3", "admission": "allow", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
+      "id": "SEQ-REC5",
+      "title": "an observation of an older claim never releases its successor",
+      "covers": ["reconciliation", "review F1: stale observation"],
+      "issued": ["c1", "c2"],
+      "steps": [
+        { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "fail", "attempt": "a1", "how": "uncertain", "expect": { "kept": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "assurance": "fenced", "expect": { "released": true } },
+        { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "observed": "a1", "assurance": "transactional", "expect": { "error": "stale_observation" } },
+        { "do": "settle", "attempt": "a2", "outcome": "completed", "receipt": "r1", "expect": { "http": 201, "receipt": "r1" }, "client": "completed" },
+        { "do": "check", "operation": "X", "expect": { "effects": 1, "record": "completed", "receipts": ["r1"], "everSent": true } }
+      ]
+    },
+    {
       "id": "SEQ-CAS1",
       "title": "a stale worker can neither settle nor release another worker's claim",
       "covers": ["compare-and-set storage"],
@@ -228,7 +275,7 @@
       "steps": [
         { "do": "attempt", "attempt": "a1", "operation": "X", "fingerprint": "F1", "challenge": "c1", "admission": "allow", "expect": { "claimed": true } },
         { "do": "fail", "attempt": "a1", "how": "uncertain", "expect": { "kept": true } },
-        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "released": true } },
+        { "do": "reconcile", "operation": "X", "committed": false, "expect": { "released": true }, "observed": "a1", "assurance": "transactional" },
         { "do": "attempt", "attempt": "a2", "operation": "X", "fingerprint": "F1", "challenge": "c2", "admission": "allow", "expect": { "claimed": true } },
         { "do": "settle", "attempt": "a1", "outcome": "completed", "receipt": "r9", "expect": { "error": "stale_claim" } },
         { "do": "fail", "attempt": "a1", "how": "rolled-back", "expect": { "error": "stale_claim" } },

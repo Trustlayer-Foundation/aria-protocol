@@ -34,6 +34,9 @@ export const MUTANTS = [
   'no-cas',
   'resume-twice',
   'reconcile-regenerates',
+  'reconcile-unmarked',
+  'reconcile-unassured',
+  'stale-observation',
   'lookup-revoked',
   'attempt-refusal-moves',
   'accepted-downgrades',
@@ -42,6 +45,9 @@ export const MUTANTS = [
 export function createReference({ issued = [], mutant = null } = {}) {
   const challenges = { issued: new Set(issued), consumed: new Set() };
   const records = new Map();
+  // Effects that reached the world, counted when they happen, apart from the record.
+  const effects = new Map();
+  const effected = (operation) => effects.set(operation, (effects.get(operation) ?? 0) + 1);
   const receipts = new Map();
   const attempts = new Map();
   const clients = new Map();
@@ -114,7 +120,7 @@ export function createReference({ issued = [], mutant = null } = {}) {
         if (is('admission-completes')) {
           created.state = 'completed';
           created.claim = null;
-          created.effects = 1;
+          effected(s.operation);
           created.receipts.push(`${s.attempt}-admitted`);
           return newReceipt(s.operation, `${s.attempt}-admitted`, 'completed');
         }
@@ -133,8 +139,10 @@ export function createReference({ issued = [], mutant = null } = {}) {
       if (record.claim !== s.attempt && !is('no-cas')) return { error: 'stale_claim' };
       record.state = typeof s.outcome === 'string' ? s.outcome : 'rejected';
       record.claim = null;
+      record.uncertain = false;
       record.revision += 1;
-      if (s.outcome === 'completed') record.effects += 1;
+      // A transactional effect commits with its outcome; an external one was counted when it landed.
+      if (s.outcome === 'completed' && !s.external) effected(operation);
       record.receipts.push(s.receipt);
       return newReceipt(operation, s.receipt, s.outcome);
     },
@@ -143,7 +151,11 @@ export function createReference({ issued = [], mutant = null } = {}) {
       const operation = attempts.get(s.attempt);
       const record = operation && records.get(operation);
       if (!record || record.claim !== s.attempt) return { error: 'stale_claim' };
-      if (s.how === 'uncertain' && !is('uncertain-releases')) return { kept: true };
+      if (s.how === 'uncertain' && !is('uncertain-releases')) {
+        record.uncertain = true;
+        record.revision += 1;
+        return { kept: true };
+      }
       release(operation, record);
       return { released: true };
     },
@@ -153,6 +165,9 @@ export function createReference({ issued = [], mutant = null } = {}) {
       if (!record) return s.committed ? { error: 'invariant_violation' } : { absent: true };
       if (record.claim) {
         if (s.committed) return { error: 'invariant_violation' };
+        if (s.observed !== record.claim && !is('stale-observation')) return { error: 'stale_observation' };
+        if (!record.uncertain && !is('reconcile-unmarked')) return { kept: 'active' };
+        if (!s.assurance && !is('reconcile-unassured')) return { kept: 'unassured' };
         release(s.operation, record);
         return { released: true };
       }
@@ -173,6 +188,11 @@ export function createReference({ issued = [], mutant = null } = {}) {
       return { claimed: true };
     },
 
+    effect(s) {
+      effected(attempts.get(s.attempt));
+      return { applied: true };
+    },
+
     lookup(s) {
       if (!consume(s.challenge)) return unauthenticated;
       if (s.credential === 'revoked' && !is('lookup-revoked')) return { http: 403, code: 'aria.credential_revoked', signed: false };
@@ -189,7 +209,7 @@ export function createReference({ issued = [], mutant = null } = {}) {
     check(s) {
       const record = records.get(s.operation);
       return {
-        effects: record?.effects ?? 0,
+        effects: effects.get(s.operation) ?? 0,
         record: record?.state ?? 'absent',
         receipts: record ? [...record.receipts] : [],
         everSent: client(s.operation).everSent,
@@ -203,6 +223,7 @@ export function createReference({ issued = [], mutant = null } = {}) {
     else {
       record.state = 'accepted';
       record.claim = null;
+      record.uncertain = false;
       record.revision += 1;
     }
   }
@@ -213,7 +234,7 @@ export function createReference({ issued = [], mutant = null } = {}) {
       if (!handler) throw new Error(`unknown step ${s.do}`);
       const result = handler(s);
       const operation = s.operation ?? attempts.get(s.attempt);
-      const delivered = s.delivered !== false && !['check', 'reconcile', 'resume'].includes(s.do);
+      const delivered = s.delivered !== false && !['check', 'reconcile', 'resume', 'effect'].includes(s.do);
       if (delivered && operation) {
         if (s.do === 'client-observe') observeReceipt(operation, receipts.get(s.receipt.label));
         else observe(operation, result);
