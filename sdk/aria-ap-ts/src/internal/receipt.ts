@@ -195,7 +195,11 @@ export type ReceiptFailure =
   | 'status_mismatch'
   | 'not_operation';
 
-export type ReceiptMode = { readonly mode: 'decision'; readonly transportStatus: number } | { readonly mode: 'retrieval'; readonly transportStatus?: number };
+export type ReceiptMode =
+  | { readonly mode: 'decision'; readonly transportStatus: number }
+  | { readonly mode: 'retrieval'; readonly transportStatus?: number }
+  /** Retained evidence checked later: no transport to compare with. */
+  | { readonly mode: 'historical' };
 
 export type Checked = { readonly ok: true; readonly receipt: Receipt; readonly attempt: SentAttempt } | { readonly ok: false; readonly reason: ReceiptFailure };
 

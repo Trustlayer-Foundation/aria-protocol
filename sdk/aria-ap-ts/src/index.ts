@@ -40,6 +40,7 @@ export type {
 
 export { OperationTracker } from './receipt';
 export type { Receipt, ReceiptCheck, ReceiptFailure, ReceiptResult, ReceiptStatement, ReceiverPin, SentAttempt, OperationState, Observation } from './receipt';
+export type { HistoricalCheck, HistoricalEvidence, HistoricalFindings, HistoricalReceiptFailure, HistoricalReceiptResult, HistoricalStatement } from './receipt';
 
 export type { IdentityResponse, IdentityStatement, ReceiverIdentityFailure, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
 

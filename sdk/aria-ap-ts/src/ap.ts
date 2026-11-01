@@ -7,14 +7,14 @@ import { newReceiptId, refusalOf, register, type AdmissionSnapshot, type Interna
 import { judge, lookupRefusal, refusalFor } from './internal/judge';
 import type { ApprovalSnapshot } from './internal/policy';
 import { issue, recall } from './internal/provenance';
-import { checkReceipt, isReceiverCode, RECEIPT_TYPE, REASONS, signReceipt, type ReceiverKey } from './internal/receipt';
+import { checkReceipt, isReceiverCode, readReceipt, RECEIPT_TYPE, REASONS, signReceipt, type ReceiverKey } from './internal/receipt';
 import { authenticate, checkDescriptors, CLASSES, fieldsOf, PROFILE, prepareSignature } from './internal/request';
 import { scopePolicyOf } from './internal/scope-policy';
 import { serializeInnerList } from './internal/sf';
 import { AdmissionExpired } from './errors';
 import type { AttemptRefusal } from './operations';
 import type { ChallengeStore, OperationDescriptor, PresentationContext, PresentationResult, ReceiverSelf } from './presentation';
-import type { Receipt, ReceiptCheck, ReceiptResult, ReceiptStatement, ReceiverPin } from './receipt';
+import type { HistoricalCheck, HistoricalReceiptResult, HistoricalStatement, Receipt, ReceiptCheck, ReceiptResult, ReceiptStatement, ReceiverPin } from './receipt';
 import type { HttpRequestLike } from './types';
 
 /** Trusted configuration, from the adopter. */
@@ -53,9 +53,17 @@ export interface Ap {
   signRequest(input: SignRequestInput): Promise<SignedAttempt>;
   /** Checks a receipt against the receiver the attempts were signed for and the attempts the client kept. */
   verifyReceipt(receipt: unknown, check: ReceiptCheck): Promise<ReceiptResult>;
+  /**
+   * Checks a receipt long after the exchange against retained evidence: the exact
+   * receiver credential it names, authentic but possibly expired, and optionally what
+   * a retained list said about it. Authenticity and bindings decide validity; the
+   * findings report validity at `issuedAt` and the retained status. Never current
+   * authorization: nothing that admits, signs or tracks accepts its statement.
+   */
+  verifyHistoricalReceipt(receipt: unknown, check: HistoricalCheck): Promise<HistoricalReceiptResult>;
 }
 
-const TRUST_INTERFACE = ['verifyCredential', 'checkStatus', 'facts', 'standing'] as const;
+const TRUST_INTERFACE = ['verifyCredential', 'checkStatus', 'facts', 'standing', 'historicalFacts'] as const;
 const CHALLENGE_TTL_SECONDS = 60;
 const ORIGIN_RULE = 'an origin is https://host[:port], or http:// on a loopback host, in its canonical form without path, query, fragment or user information';
 
@@ -69,6 +77,23 @@ interface ReceiverSnapshot {
   readonly key: ReceiverKey;
 }
 
+
+/** What a verified receipt says, as plain data. */
+function statementView(x: Receipt) {
+  return {
+    receiptId: x.id,
+    operationId: x.request.id,
+    state: x.outcome.state,
+    applies: x.outcome.applies,
+    status: x.outcome.status,
+    code: x.outcome.code,
+    issuedAt: x.issuedAt,
+    receiver: { ...x.receiver },
+    sender: { ...x.request.sender },
+    requestDigest: x.request.digest,
+    digest: digestField(utf8(canonicalJson(x))),
+  };
+}
 
 /** Creates an instance over `config.credentials`, which it keeps as given: it is the adopter's verifier, not a copy. */
 export function createAp(config: ApConfig): Ap {
@@ -350,21 +375,32 @@ export function createAp(config: ApConfig): Ap {
       if (check.mode !== 'decision' && check.mode !== 'retrieval') throw new AriaUsageError('a receipt is checked as a decision or a retrieval');
       const r = checkReceipt(receipt, receiver.key, check.attempts ?? [], mode);
       if (!r.ok) return r;
-      const x = r.receipt;
-      const view = {
-        receiptId: x.id,
-        operationId: x.request.id,
-        state: x.outcome.state,
-        applies: x.outcome.applies,
-        status: x.outcome.status,
-        code: x.outcome.code,
-        issuedAt: x.issuedAt,
-        receiver: { ...x.receiver },
-        sender: { ...x.request.sender },
-        requestDigest: x.request.digest,
-        digest: digestField(utf8(canonicalJson(x))),
-      };
+      const view = statementView(r.receipt);
       return { ok: true, statement: issue(ap, 'receipt', view as never as ReceiptStatement, view), attempt: r.attempt };
+    },
+
+    async verifyHistoricalReceipt(receipt, check) {
+      const read = readReceipt(receipt);
+      if (!read.ok) return read;
+      // The exact credential the receipt names, established by the credential verifier; refuses anything it did not produce.
+      const evidence = check?.evidence;
+      if (evidence?.credential === undefined) return { ok: false, reason: 'evidence_missing' };
+      const f = credentials.historicalFacts(evidence.credential, evidence.status);
+      const named = (read.receipt.receiver as { credential: string }).credential;
+      if (f.binding.credentialId !== named) return { ok: false, reason: 'evidence_missing' };
+      const key = { did: f.did, credentialId: f.binding.credentialId, keyId: f.holderKey.id, publicKey: f.holderKey.publicKey };
+      const r = checkReceipt(receipt, key, check.attempts ?? [], { mode: 'historical' });
+      if (!r.ok) return r as { ok: false; reason: Exclude<typeof r.reason, 'status_mismatch' | 'not_operation'> };
+      const x = r.receipt;
+      const t = Date.parse(x.issuedAt);
+      const findings = {
+        issuedAtWithinValidity: Date.parse(f.validFrom) <= t && t < Date.parse(f.validUntil),
+        retainedStatus: f.retainedStatus?.state ?? ('not_retained' as const),
+        retainedStatusPeriod: f.retainedStatus ? { validFrom: f.retainedStatus.validFrom, validUntil: f.retainedStatus.validUntil } : null,
+        signingTime: 'receiver_claim' as const,
+      };
+      const view = statementView(x);
+      return { ok: true, statement: issue(ap, 'historical-receipt', view as never as HistoricalStatement, view), attempt: r.attempt, findings: Object.freeze(findings) };
     },
   };
   Object.freeze(ap);

@@ -149,6 +149,7 @@ try {
   const pairDir = consumer('pair', [sdkTar, apTar]);
   scenarios.push(scenario(pairDir, 'pair.mjs'));
   scenarios.push(scenario(pairDir, 'ap-exchange.mjs'));
+  scenarios.push(scenario(pairDir, 'historical.mjs'));
   const second = join(pairDir, 'second');
   mkdirSync(second);
   writeFileSync(join(second, 'package.json'), JSON.stringify({ name: 'second-copy', private: true, type: 'module' }));

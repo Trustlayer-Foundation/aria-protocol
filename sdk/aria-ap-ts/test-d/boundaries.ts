@@ -1,8 +1,8 @@
 // Compile-time boundaries of the ARIA AP API. Each `@ts-expect-error` must stay an
 // error: `tsc` fails if one of these lines starts to compile. The same boundaries
 // are checked again at run time, since a cast gets past any type.
-import { OperationLedger, OperationTracker, type Admission, type Ap, type OperationClaim, type Receipt, type ReceiverSelf, type SentAttempt, type Signer, type VerifiedPresentation, type VerifiedReceiver } from '@aria-registry/ap';
-import type { CredentialFacts, Standing, StatusEvidence, VerifiedCredential } from '@aria-registry/sdk';
+import { OperationLedger, OperationTracker, type Admission, type Ap, type HistoricalStatement, type OperationClaim, type Receipt, type ReceiptStatement, type ReceiverSelf, type SentAttempt, type Signer, type VerifiedPresentation, type VerifiedReceiver } from '@aria-registry/ap';
+import type { AuthenticCredential, CredentialFacts, RetainedStatus, Standing, StatusEvidence, VerifiedCredential } from '@aria-registry/sdk';
 
 declare const ap: Ap;
 declare const ledger: OperationLedger;
@@ -19,6 +19,9 @@ declare const receiver: VerifiedReceiver;
 declare const attempts: readonly SentAttempt[];
 declare const signer: Signer;
 declare const tracker: OperationTracker;
+declare const authentic: AuthenticCredential;
+declare const retained: RetainedStatus;
+declare const historical: HistoricalStatement;
 
 export async function boundaries(): Promise<void> {
   // No admission without proof of the holder key.
@@ -85,5 +88,17 @@ export async function boundaries(): Promise<void> {
   // The tracker keeps signed attempts, with the receiver they were signed for.
   // @ts-expect-error a bare sent attempt does not say which receiver to check against
   tracker.record(attempts[0]!);
+
+  // Historical authenticity authorizes nothing now, and is not a live result.
+  // @ts-expect-error an authentic credential is not a verified one
+  await ap.signRequest({ request: { method: 'POST', target: '/', headers: {} }, class: 'unsafe-body', receiver, credential: authentic, signer });
+  // @ts-expect-error a retained status is not status evidence
+  await ap.admit({ presentation, status: retained, authorize: async () => ({ allowed: true }) });
+  // @ts-expect-error a historical statement is not a live receipt statement
+  const live: ReceiptStatement = historical;
+  // @ts-expect-error historical evidence takes an authentic credential, not a verified one
+  await ap.verifyHistoricalReceipt(receipt, { attempts, evidence: { credential } });
+  await ap.verifyHistoricalReceipt(receipt, { attempts, evidence: { credential: authentic, status: retained } });
+  void live;
   void presentation;
 }

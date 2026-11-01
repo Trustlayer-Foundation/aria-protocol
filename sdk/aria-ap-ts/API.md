@@ -59,6 +59,7 @@ is consumed by the request that uses it.
 | `VerifiedPresentation` | The caller signed this request with the holder key of an exact verified credential, for this receiver, operation and content | That it may do it |
 | `Admission` | `allow`, `deny` or `indeterminate`, with a fixed reason | That the operation ran |
 | `ReceiptStatement` | The expected receiver signed this statement about one kept attempt | That the effect is true outside the receiver; a valid receipt can say `rejected` |
+| `HistoricalStatement` | The receiver credential the receipt names, retained and authentic, signed this statement about one kept attempt | That the credential stands now, or that anything is authorized now |
 
 Only `allow` lets an operation be claimed. There is no mode in which a failed check
 becomes `allow`; a receiver observing a policy logs the `deny`, and what it then runs is
@@ -218,6 +219,42 @@ content, not by its `id`, which the receiver chooses: the same `id` with other c
 also `inconsistent`, and every statement is kept as evidence. Once an attempt was
 recorded, `everSent` stays true.
 
+## Historical receipts
+
+`verifyHistoricalReceipt(receipt, { attempts, evidence })` checks a receipt long after the
+exchange, against what the client kept: its attempts, the receiver's credential document
+and, optionally, a status list. The credential verifier establishes the evidence, without
+the current time: `verifyAuthenticity` over the retained document and `readRetainedStatus`
+over the retained list (see the ARIA SDK's «Historical authenticity»).
+
+- **Validity is authenticity and binding.** The evidence must be the exact receiver
+  credential the receipt names; without it, or with another document of the same DID,
+  the answer is `evidence_missing`. Then the same checks as a live receipt: receiver and
+  key (`receiver_mismatch`), signature, and the kept attempt the digest selects
+  (`binding`, `binding_unverifiable`). There is no transport status to compare.
+- **The findings are reported, not folded into validity:** whether `issuedAt` falls in
+  the credential's signed validity (`validFrom` inclusive, `validUntil` exclusive), what
+  the retained list said and for which period (`active`, `revoked` or `not_retained`),
+  and `signingTime: 'receiver_claim'`: `issuedAt` is the receiver's assertion, not an
+  independent timestamp. A receipt can be valid and its credential revoked later.
+- **It authorizes nothing now.** A `HistoricalStatement` is its own kind of result: no
+  tracker, admission or signing accepts it, and an `AuthenticCredential` is refused
+  wherever a verified credential is required. Evidence the verifier did not produce, or a
+  retained status about another document, is a usage error.
+
+```ts
+const authentic = verifier.verifyAuthenticity(kept.receiverDocument);
+const read = authentic.ok ? await verifier.readRetainedStatus(authentic.credential, kept.statusList) : null;
+const r = await ap.verifyHistoricalReceipt(kept.receipt, {
+  attempts: kept.attempts,
+  evidence: authentic.ok ? { credential: authentic.credential, ...(read?.ok ? { status: read.status } : {}) } : {},
+});
+if (r.ok) console.log(r.statement.state, r.findings);
+```
+
+What is kept is plain JSON (the receipt, the attempts, the documents); a new process, with
+a new verifier, checks it again.
+
 ## Schemas (provisional)
 
 One JSON Schema (draft 2020-12) per wire document, in the protocol's
@@ -271,9 +308,6 @@ the strict parsing refuses.
 
 ## Not offered yet
 
-- **Historical verification** of a kept receipt offline, against the retained receiver
-  credential: it needs the ARIA SDK to establish a retained credential's authenticity
-  without its current validity.
 - **Holding an operation for approval** (`hold`, D8), **delegation**, a credential **by
   value**, and the WIMSE binding.
 

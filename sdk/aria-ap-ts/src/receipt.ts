@@ -1,4 +1,4 @@
-import { AriaUsageError, type Did, type Produced } from '@aria-registry/sdk';
+import { AriaUsageError, type AuthenticCredential, type Did, type Produced, type RetainedStatus } from '@aria-registry/sdk';
 import type { SignedAttempt, VerifiedReceiver } from './agent';
 import type { Ap } from './ap';
 import { internalsOf } from './internal/instance';
@@ -76,7 +76,9 @@ export type ReceiptFailure =
   | 'not_operation';
 
 /** What a valid receipt says. A valid receipt can say `rejected`: validity is not success. */
-export interface ReceiptStatement extends Produced<'receipt'> {
+export interface ReceiptStatement extends StatementFields, Produced<'receipt'> {}
+
+interface StatementFields {
   readonly receiptId: string;
   readonly operationId: string;
   readonly state: 'accepted' | 'completed' | 'rejected';
@@ -95,6 +97,50 @@ export interface ReceiptStatement extends Produced<'receipt'> {
 export type ReceiptResult =
   | { readonly ok: true; readonly statement: ReceiptStatement; readonly attempt: SentAttempt }
   | { readonly ok: false; readonly reason: ReceiptFailure };
+
+/**
+ * What the client kept to check a receipt long after the exchange, established
+ * with the credential verifier: authenticity only, never current standing.
+ */
+export interface HistoricalEvidence {
+  /** The receiver credential the receipt names, from `verifyAuthenticity` over the retained document. */
+  readonly credential?: AuthenticCredential;
+  /** What a retained, signed list said about it, from `readRetainedStatus`. */
+  readonly status?: RetainedStatus;
+}
+
+export interface HistoricalCheck {
+  /** Every attempt the client kept for this operation; the receipt's digest selects one. */
+  readonly attempts: readonly SentAttempt[];
+  readonly evidence: HistoricalEvidence;
+}
+
+/** What the retained evidence says about a receipt that verifies, reported apart from its authenticity. */
+export interface HistoricalFindings {
+  /** Whether `issuedAt` falls in the credential's signed validity (`validFrom` inclusive, `validUntil` exclusive). */
+  readonly issuedAtWithinValidity: boolean;
+  /** What the retained list said during its own validity; `not_retained` without one. */
+  readonly retainedStatus: 'active' | 'revoked' | 'not_retained';
+  readonly retainedStatusPeriod: { readonly validFrom: string; readonly validUntil: string } | null;
+  /** `issuedAt` is the receiver's claim, not an independent timestamp. */
+  readonly signingTime: 'receiver_claim';
+}
+
+/**
+ * A past receipt that verifies under the retained receiver credential. Evidence of
+ * what the receiver stated then: not current authorization, and an
+ * `OperationTracker` does not accept it.
+ */
+export interface HistoricalStatement extends StatementFields, Produced<'historical-receipt'> {}
+
+export type HistoricalReceiptFailure =
+  | Exclude<ReceiptFailure, 'status_mismatch' | 'not_operation'>
+  /** No authentic document of the exact receiver credential the receipt names. */
+  | 'evidence_missing';
+
+export type HistoricalReceiptResult =
+  | { readonly ok: true; readonly statement: HistoricalStatement; readonly attempt: SentAttempt; readonly findings: HistoricalFindings }
+  | { readonly ok: false; readonly reason: HistoricalReceiptFailure };
 
 export type OperationState = 'unknown' | 'accepted' | 'completed' | 'rejected' | 'inconsistent';
 
