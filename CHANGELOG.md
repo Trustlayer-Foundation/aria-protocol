@@ -7,6 +7,33 @@ All notable changes to the ARIA Protocol specification.
 
 ## Unreleased
 
+### Changed — the edition of 1 November 2026, adopted by TLF
+
+- **Specification, revised edition (decision D7).** §3, §5, §6, §7 and §8 of
+  [aria.bar/spec](https://aria.bar/spec) follow revisions r3 and r4: issuance under the
+  federation contract, one `_aria-bind` record per account and domain, both signature
+  halves required for as long as a credential is valid and judged as one, human
+  approval refused when missing, a status list valid 24 hours and re-signed hourly, and
+  ARIA AP as the admission protocol. ATP/1 becomes a deprecated appendix.
+- **Federation contract 1.0.0.** `federation/openapi.yaml` and `exchange.schema.json`
+  are no longer drafts.
+- **Scopes (D5).** An authority issues exactly three lower-case segments,
+  `namespace:resource:action`, with no version; a 1.0 credential issued earlier may
+  carry two or more and stays readable. Wildcards exist only in a receiver's policy,
+  where a matching deny prevails. `conformance/vectors/scopes.json` follows.
+- **Holder key (D6).** `z` and base58btc of the raw 32-byte Ed25519 key is ARIA's own
+  encoding, not Multikey, whose form adds `0xed01`. Nothing signed changes.
+
+### Added — the ARIA SDK and ARIA AP 1.0.0, and the demonstration issuer's key set
+
+- **Two packages**, `sdk/aria-ts` (credentials and their status) and `sdk/aria-ap-ts`
+  (requests, admission, operations and receipts), version 1.0.0, pinned by integrity in
+  the release manifest `release/aria-1.0.json`.
+- **Key set (D1, D2).** `schema/aria-keyset-1.json` and the demonstration issuer's set,
+  `release/trust/registry.aria.bar.keyset.json`, whose anchor the manifest pins. The SDK
+  trusts no issuer by default; today's issuer is a demonstration, and production 1.0
+  will use a new TLF issuer and keys.
+
 ### Added — `@aria-registry/verify` checks the presented credential's own status
 
 A DID can hold a succession of credentials once the registry renews them: a renewal

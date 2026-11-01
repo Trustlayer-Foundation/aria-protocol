@@ -9,13 +9,11 @@ what is here.
 
 | Edition | Status | What it covers |
 |---|---|---|
-| **7 September 2026** | Published at aria.bar/spec; the edition in force | The text as first released. Sections whose claims are under review are marked there: the end of the composite mode in 2029 (§5), per-half signature reporting, scope versions (§6), the three human-approval tiers (§6), revocation in under 60 seconds and freshness (§7), and ATP/1 (§8), now deprecated in favour of ARIA AP |
-| **ARIA 1.0, revised** | In preparation; TLF adopts it (decision D7) | The same edition with those sections rewritten to what this repository implements and the owner has decided: ARIA AP over RFC 9421 with one receipt format, refusal without a required approval, explicit trust and a published key set, the federation contract. Proposed texts are prepared; none is adopted |
+| **1 November 2026** | Published at aria.bar/spec; the edition of ARIA 1.0 | The 7 September text with §3, §5, §6, §7 and §8 revised as TLF adopted them (decision D7): issuance under the federation contract 1.0.0 with one `_aria-bind` record per account and domain; both signature halves required for as long as a credential is valid, judged as one; scopes of three segments in new issuance (D5); the holder key in ARIA's own encoding (D6); human approval refused when missing; a signed status list valid 24 hours and re-signed hourly; ARIA AP as the admission protocol, with ATP/1 kept as a deprecated appendix |
+| **7 September 2026** | Superseded by the edition of 1 November 2026 | The text as first released |
 
 The release manifest of ARIA 1.0 names the edition it ships with and pins the text by
-hash. Until the revised edition is adopted, where the text and this repository
-disagree, the schemas and vectors here describe what is implemented, and the
-specification's sections marked under review say so.
+hash. Where the text and a schema disagree, the schema is right and the text is a bug.
 
 ## Artefacts
 
@@ -25,7 +23,7 @@ specification's sections marked under review say so.
 | AID schema for credentials issued before the cutover (`spec_version` 1.2); stays published while any is in circulation | [`../schema/aid-v1.2.json`](../schema/aid-v1.2.json) |
 | ARIA AP: receiver identity, receipt and retrieval schemas | [`../schema/`](../schema/README.md) (`aria-ap-*.json`) |
 | An issuer's published key set | [`../schema/aria-keyset-1.json`](../schema/aria-keyset-1.json) |
-| Federation contract (registration authority → authority), draft | [`../federation/openapi.yaml`](../federation/openapi.yaml), [`../federation/exchange.schema.json`](../federation/exchange.schema.json) |
+| Federation contract (registration authority → authority), 1.0.0 | [`../federation/openapi.yaml`](../federation/openapi.yaml), [`../federation/exchange.schema.json`](../federation/exchange.schema.json) |
 | JSON-LD context | [`../context/v1.jsonld`](../context/v1.jsonld) |
 | Conformance vectors and harnesses | [`../conformance/`](../conformance/) |
 | The invariants that cannot change | [`../INVARIANTS.md`](../INVARIANTS.md) |

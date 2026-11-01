@@ -87,7 +87,7 @@ if (result.ok) {
 }
 ```
 
-**Trust is yours to state.** The SDK trusts no issuer by default: you give it each issuer you accept, with its keys, the highest level you accept from it and the status lists it may use. A published key set to obtain those keys from is pending.
+**Trust is yours to state.** The SDK trusts no issuer by default: you give it each issuer you accept, with its keys, the highest level you accept from it and the status lists it may use. Today's issuer, `did:aria:registry.aria.bar` at api.aria.bar, is a demonstration: its credentials are not a production guarantee (see below).
 
 **What this establishes, and what it does not.** `verifyCredential` checks the AID 1.0
 schema, a trusted issuer, the proof profile, both halves of the composite signature
@@ -109,8 +109,16 @@ each with a fingerprint: `sha256:` and the SHA-256 of the canonical JSON of its
 `key_id`, `suite` and two public keys. Being listed grants no trust. Pin the
 fingerprint you obtained out of band — from the release manifest or the issuer's
 documentation — and take the key it names; the fingerprint is recomputed, never read
-from the document. **No issuer publishes a key set yet:** the endpoint and the values a
-production issuer would publish (decision D2) are pending.
+from the document.
+
+**Today's issuer is a demonstration.** agent.bar is a complete working demonstration, and
+the issuer behind it, `did:aria:registry.aria.bar`, serves its key set at
+`https://api.aria.bar/v1/keyset` from the release that publishes the SDK packages. Its
+anchor is `sha256:9dfe4d89b7af711e5daf79864d26e92ec16873e2913409bd3eb6943937fc340f`,
+pinned in the release manifest (`release/aria-1.0.json`, `trust`). Trust it, if you do,
+under a profile you name `demo`: its credentials are not a production guarantee, and
+the identity checks behind them are the demonstration's. Production ARIA 1.0 will use a
+new TLF issuer and keys.
 
 ```javascript
 import { canonicalJson, createVerifier } from '@aria-registry/sdk';
