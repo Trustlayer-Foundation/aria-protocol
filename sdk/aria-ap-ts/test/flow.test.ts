@@ -185,11 +185,13 @@ describe('one operation, one effect', () => {
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));
     const [a, b] = await Promise.all([w.signTransfer(OP), w.signTransfer(OP)]);
-    const slow = w.handle(a.request, undefined, async () => (await gate, 'ok'));
-    const fast = await w.handle(b.request);
-    expect(fast.receipt?.outcome).toMatchObject({ state: 'rejected', applies: 'attempt', status: 409, code: 'aria.operation_in_progress' });
+    // Either attempt may claim first (status is fetched and decompressed off the thread);
+    // the one that does holds its claim until released, so the other answers first.
+    const both = [a, b].map((x) => w.handle(x.request, undefined, async () => (await gate, 'ok')));
+    const first = await Promise.race(both);
+    expect(first.receipt?.outcome).toMatchObject({ state: 'rejected', applies: 'attempt', status: 409, code: 'aria.operation_in_progress' });
     release();
-    expect((await slow).status).toBe(201);
+    expect((await Promise.all(both)).map((r) => r.status).sort()).toEqual([201, 409]);
     expect(w.effects).toBe(1);
   });
 
