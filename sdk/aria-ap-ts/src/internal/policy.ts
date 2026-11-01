@@ -1,6 +1,7 @@
-import type { AdmissionReason } from '../admission';
+import type { AdmissionReason, ScopeRule } from '../admission';
 import { TRUST_LEVELS, type CredentialFacts, type Standing, type TrustLevel } from '@aria-registry/sdk';
 import type { MissingApproval } from '../presentation';
+import { scopeAllowed } from './scope-policy';
 
 /** An approval as the receiver's approval system supplied it, already copied. */
 export interface ApprovalSnapshot {
@@ -22,6 +23,8 @@ export interface PolicyInput {
   readonly operationId: string | null;
   readonly fingerprint: string;
   readonly approval: ApprovalSnapshot | null;
+  /** The receiver's scope policy, already checked; `null` when it has none. */
+  readonly scopePolicy: readonly ScopeRule[] | null;
   /** The instant the standing was judged; approvals expire against the same clock. */
   readonly now: number;
 }
@@ -56,6 +59,7 @@ export function evaluate(input: PolicyInput): PolicyOutcome {
 
   if (TRUST_LEVELS.indexOf(credential.trustLevel) < TRUST_LEVELS.indexOf(input.operation.minLevel)) return { decision: 'deny', reason: 'level_insufficient' };
   if (!credential.scopes.includes(input.operation.scope)) return { decision: 'deny', reason: 'scope_missing' };
+  if (input.scopePolicy && !scopeAllowed(input.scopePolicy, input.operation.scope)) return { decision: 'deny', reason: 'scope_denied' };
   if (credential.delegationDepth !== 0) return { decision: 'deny', reason: 'delegation_unsupported' };
 
   if (credential.hitlRequired.includes(input.operation.scope)) {

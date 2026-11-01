@@ -360,7 +360,7 @@ export class OperationLedger {
   #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot): Begin | null;
   #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot, undo: () => Promise<boolean>): Promise<Begin> | null;
   #stillAdmitted(key: OperationKey, attempt: Claimed['attempt'], a: AdmissionSnapshot, undo?: () => Promise<boolean>): Begin | Promise<Begin> | null {
-    const outcome = judge(this.#internals, a.presentation, a.status, a.approval);
+    const outcome = judge(this.#internals, a.presentation, a.status, a.approval, a.scopePolicy);
     if (outcome.decision === 'allow') return null;
     const refuse = (): Begin => {
       if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');

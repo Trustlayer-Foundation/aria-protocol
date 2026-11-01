@@ -1,4 +1,5 @@
 import { AriaUsageError, type Did, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
+import type { ScopeRule } from '../admission';
 import type { AttemptRefusal } from '../operations';
 import type { OperationDescriptor } from '../presentation';
 import type { ApprovalSnapshot } from './policy';
@@ -45,6 +46,7 @@ export interface AdmissionSnapshot {
   /** The evidence the decision used, judged again when the admission is used. */
   readonly status: StatusEvidence;
   readonly approval: ApprovalSnapshot | null;
+  readonly scopePolicy: readonly ScopeRule[] | null;
 }
 
 export interface RefusalSnapshot {

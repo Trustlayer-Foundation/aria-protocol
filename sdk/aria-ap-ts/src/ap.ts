@@ -1,14 +1,15 @@
 import { AriaUsageError, canonicalJson, type CredentialFacts, type StatusEvidence, type Verifier, type VerifiedCredential } from '@aria-registry/sdk';
 import type { Admission, AdmissionInput, AdmissionReason, ApprovalEvidence, LookupAdmission, LookupInput } from './admission';
 import type { IdentityResponse, IdentityStatement, ReceiverIdentityResult, SignedAttempt, SignRequestInput, VerifiedReceiver } from './agent';
-import { digestField, fromBase64, fromBase64url, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
-import { strictVerify } from './internal/ed25519';
+import { digestField, fromBase64, instantOf, instantText, isProfileOrigin, toBase64, toBase64url, utf8, UUID } from './internal/bytes';
+import { checkIdentity, CHALLENGE, IDENTITY_TYPE, NONCE, STATEMENT_MAX_AGE_MS } from './internal/identity';
 import { newReceiptId, refusalOf, register, type AdmissionSnapshot, type Internals, type PresentationSnapshot, type RefusalSnapshot } from './internal/instance';
 import { judge, lookupRefusal, refusalFor } from './internal/judge';
 import type { ApprovalSnapshot } from './internal/policy';
 import { issue, recall } from './internal/provenance';
 import { checkReceipt, isReceiverCode, RECEIPT_TYPE, REASONS, signReceipt, type ReceiverKey } from './internal/receipt';
 import { authenticate, checkDescriptors, CLASSES, fieldsOf, PROFILE, prepareSignature } from './internal/request';
+import { scopePolicyOf } from './internal/scope-policy';
 import { serializeInnerList } from './internal/sf';
 import { AdmissionExpired } from './errors';
 import type { AttemptRefusal } from './operations';
@@ -55,11 +56,7 @@ export interface Ap {
 }
 
 const TRUST_INTERFACE = ['verifyCredential', 'checkStatus', 'facts', 'standing'] as const;
-const IDENTITY_TYPE = 'aria-ap-identity/1';
-const STATEMENT_MAX_AGE_MS = 60_000;
 const CHALLENGE_TTL_SECONDS = 60;
-const NONCE = /^[A-Za-z0-9_-]{22,128}$/;
-const CHALLENGE = /^[A-Za-z0-9._~+/=-]{8,256}$/;
 const ORIGIN_RULE = 'an origin is https://host[:port], or http:// on a loopback host, in its canonical form without path, query, fragment or user information';
 
 interface ReceiverSnapshot {
@@ -72,8 +69,6 @@ interface ReceiverSnapshot {
   readonly key: ReceiverKey;
 }
 
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
-const exactly = (o: unknown, keys: readonly string[]): o is Record<string, unknown> => isObject(o) && Object.keys(o).length === keys.length && keys.every((k) => Object.hasOwn(o, k));
 
 /** Creates an instance over `config.credentials`, which it keeps as given: it is the adopter's verifier, not a copy. */
 export function createAp(config: ApConfig): Ap {
@@ -172,8 +167,9 @@ export function createAp(config: ApConfig): Ap {
       if (p.descriptor.class === 'retrieval') throw new AriaUsageError('a retrieval is admitted with admitLookup');
       if (typeof input.authorize !== 'function') throw new AriaUsageError('admission needs the resource decision of the application (authorize)');
       const approval = approvalOf(input.approval);
+      const scopePolicy = scopePolicyOf(input.scopePolicy);
       // Read through the credential verifier, which refuses evidence it did not produce for this exact result.
-      let outcome = judge(internals, p, input.status, approval);
+      let outcome = judge(internals, p, input.status, approval, scopePolicy);
       if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');
       let code: string | undefined;
       if (outcome.decision === 'allow') {
@@ -184,11 +180,11 @@ export function createAp(config: ApConfig): Ap {
           outcome = { decision: 'deny', reason: 'forbidden' };
         } else {
           // The authorizer took time: standing, approval and the deadline are judged again.
-          outcome = judge(internals, p, input.status, approval);
+          outcome = judge(internals, p, input.status, approval, scopePolicy);
           if (outcome.decision === 'expired') throw new AdmissionExpired('deadline');
         }
       }
-      const snapshot: AdmissionSnapshot = { decision: outcome.decision, presentation: p, status: input.status, approval };
+      const snapshot: AdmissionSnapshot = { decision: outcome.decision, presentation: p, status: input.status, approval, scopePolicy };
       if (outcome.decision === 'allow') return issue(ap, 'admission', { decision: 'allow', presentation: input.presentation } as never, snapshot);
       const answer = refusalFor(outcome, code);
       const refusal = refusalOf(ap, {
@@ -257,44 +253,32 @@ export function createAp(config: ApConfig): Ap {
     },
 
     async verifyReceiverIdentity(response, pin, expected) {
-      const fail = (reason: Extract<ReceiverIdentityResult, { ok: false }>['reason']): ReceiverIdentityResult => ({ ok: false, reason });
-      const keys = ['type', 'subject', 'credential', 'origin', 'audience', 'nonce', 'challenge', 'created', 'proof'];
-      const s = isObject(response) ? response.statement : undefined;
-      if (!exactly(response, ['credential', 'statement']) || !exactly(s, keys) || !exactly(s.proof, ['alg', 'keyid', 'value'])) return fail('malformed');
-      if (s.type !== IDENTITY_TYPE || keys.slice(1, -1).some((k) => typeof s[k] !== 'string') || !CHALLENGE.test(s.challenge as string) || !NONCE.test(s.nonce as string) || !isProfileOrigin(s.origin)) return fail('malformed');
-      const proof = s.proof as Record<string, unknown>;
-      const created = instantOf(s.created);
-      if (created === null) return fail('malformed');
-
-      const verified = credentials.verifyCredential(response.credential);
-      if (!verified.ok) return fail('credential');
-      const f = credentials.facts(verified.credential);
-      if (f.binding.credentialId !== s.credential || f.did !== s.subject) return fail('credential');
-      if (s.subject !== pin.did) return fail('unexpected_receiver');
-      // A pin outside the origin rule matches no statement.
-      if (!isProfileOrigin(pin.origin) || s.origin !== pin.origin) return fail('origin');
-      if (s.audience !== expected.audience) return fail('audience');
-      if (s.nonce !== expected.nonce) return fail('nonce');
-      const t = now();
-      if (created > t + PROFILE.skewSeconds * 1000 || t - created > STATEMENT_MAX_AGE_MS) return fail('stale');
-      const signature = typeof proof.value === 'string' ? fromBase64url(proof.value) : null;
-      const { proof: _, ...unsigned } = s;
-      const bytes = utf8(canonicalJson({ ...unsigned, proof: { alg: proof.alg, keyid: proof.keyid } }));
-      if (proof.alg !== 'ed25519' || proof.keyid !== f.holderKey.id || !signature || !strictVerify(signature, bytes, f.holderKey.publicKey)) return fail('signature');
-      const status = await credentials.checkStatus(verified.credential);
-      const standing = credentials.standing(verified.credential, status);
-      if (standing.state !== 'good') return fail('status');
-      // Fetching status took time: the statement, and the challenge it carries, must still be fresh.
-      if (now() - created > STATEMENT_MAX_AGE_MS) return fail('stale');
-
+      const handles = { credential: null as VerifiedCredential | null, status: null as StatusEvidence | null };
+      const checked = await checkIdentity(response, pin, expected, {
+        now,
+        verify: (document) => {
+          const verified = credentials.verifyCredential(document);
+          if (!verified.ok) return null;
+          const f = credentials.facts(verified.credential);
+          return { holder: { credentialId: f.binding.credentialId, did: f.did, keyId: f.holderKey.id, publicKey: f.holderKey.publicKey }, handle: verified.credential };
+        },
+        stands: async (credential) => {
+          const status = await credentials.checkStatus(credential);
+          handles.credential = credential;
+          handles.status = status;
+          return credentials.standing(credential, status).state === 'good';
+        },
+      });
+      if (!checked.ok) return checked;
+      const { holder } = checked;
       const snapshot: ReceiverSnapshot = {
-        freshUntil: created + STATEMENT_MAX_AGE_MS,
-        credential: verified.credential,
-        status,
+        freshUntil: checked.created + STATEMENT_MAX_AGE_MS,
+        credential: handles.credential!,
+        status: handles.status!,
         pin: { origin: pin.origin, did: pin.did },
-        key: { did: f.did, credentialId: f.binding.credentialId, keyId: f.holderKey.id, publicKey: f.holderKey.publicKey },
+        key: { did: holder.did as ReceiverKey['did'], credentialId: holder.credentialId, keyId: holder.keyId, publicKey: holder.publicKey },
       };
-      const view = { pin: snapshot.pin, credential: verified.credential, challenge: s.challenge };
+      const view = { pin: snapshot.pin, credential: checked.handle, challenge: checked.challenge };
       return { ok: true, receiver: issue(ap, 'receiver', view as never as VerifiedReceiver, snapshot) };
     },
 

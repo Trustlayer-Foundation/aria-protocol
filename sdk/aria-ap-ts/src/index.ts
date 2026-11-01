@@ -19,7 +19,7 @@ export type {
 } from './presentation';
 export { MemoryChallengeStore } from './challenges';
 
-export type { Admission, Admitted, AdmissionInput, AdmissionReason, ApprovalEvidence, ResourceAuthorizer, LookupInput, LookupAdmission } from './admission';
+export type { Admission, Admitted, AdmissionInput, AdmissionReason, ApprovalEvidence, ResourceAuthorizer, ScopeRule, LookupInput, LookupAdmission } from './admission';
 
 export { OperationLedger, MemoryOperationStorage } from './operations';
 export type {

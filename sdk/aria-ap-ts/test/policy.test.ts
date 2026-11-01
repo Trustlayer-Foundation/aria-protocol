@@ -22,6 +22,7 @@ const base: PolicyInput = {
   operationId: 'op-1',
   fingerprint: 'fp-1',
   approval: null,
+  scopePolicy: null,
   now: NOW,
 };
 const approval = { sender: DID, credentialId: facts.binding.credentialId, operationId: 'op-1', fingerprint: 'fp-1', expiresAt: NOW + 60_000 };

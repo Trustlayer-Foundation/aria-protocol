@@ -79,7 +79,7 @@ function holder(issuer: ReturnType<typeof newIssuer>, did: string, n: number, ov
   return { document: sign(doc, issuer), signer: signer(secret, `${did}#holder-key-${n}`), url: doc.id };
 }
 
-export function world(options: { level?: TrustLevel; hitl?: string[]; statusMaxAgeSeconds?: number } = {}) {
+export function world(options: { level?: TrustLevel; hitl?: string[]; scopes?: string[]; statusMaxAgeSeconds?: number } = {}) {
   let t = NOW;
   const clock = () => new Date(t);
   const issuer = newIssuer();

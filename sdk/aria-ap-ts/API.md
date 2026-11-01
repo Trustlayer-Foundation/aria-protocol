@@ -120,9 +120,10 @@ rate-limit it. `MemoryChallengeStore` refuses to hold more than `maxLive` (defau
 
 Order: audience; the credential's standing (`not_valid_now` → `credential_expired`,
 `unknown` → `indeterminate`, `revoked`, `superseded`); level against the operation's
-minimum; scope (exact); delegation (unsupported); human approval, judged at the
-standing's instant; then the application's `authorize`, called only when all of these
-pass. A refusal by `authorize` carries the receiver's own code (`bank.account_not_granted`)
+minimum; scope (exact: the credential's scopes are never patterns); the receiver's scope
+policy, when `admit` is given one (`aria.scope_denied`); delegation (unsupported); human
+approval, judged at the standing's instant; then the application's `authorize`, called
+only when all of these pass. A refusal by `authorize` carries the receiver's own code (`bank.account_not_granted`)
 and is a 403 attempt refusal. Refusals are signed `rejected/attempt` receipts and claim
 nothing; `indeterminate` is a signed 503 `aria.status_unavailable`.
 
@@ -139,6 +140,25 @@ that lapsed refuses the attempt (signed, as at admission); a deadline that passe
 own resource decision is valid for that same lifetime; revalidating it longer is the
 adopter's. Operation descriptors are checked: a minimum level outside `TRUST_LEVELS` or an
 approval policy other than `refuse` is a usage error.
+
+The scope policy (provisional, D5) is a list of `{ effect: 'allow' | 'deny', pattern }`
+rules over the operation's scope. A pattern is a three-segment scope or two segments
+followed by `:*`, which matches any third segment and nothing longer or shorter. A matching
+deny wins whatever the order; otherwise a matching allow is needed, so an empty policy
+admits nothing. Any other pattern (`payments:*:create`, `*`, `payments:transfer:cre*`) is a
+usage error. The admission keeps a copy, so `begin` judges it with the same rules.
+
+```ts
+await ap.admit({
+  presentation,
+  status,
+  scopePolicy: [
+    { effect: 'allow', pattern: 'payments:transfer:*' },
+    { effect: 'deny', pattern: 'payments:transfer:delete' },
+  ],
+  authorize,
+});
+```
 
 A retrieval is admitted by `admitLookup` (provisional, D4): a credential of the
 operation's sender DID whose standing is `good` reads that operation's receipts; a

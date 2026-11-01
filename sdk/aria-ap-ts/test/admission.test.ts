@@ -37,6 +37,7 @@ function decide(v: ReturnType<typeof setup>['v'], c: VerifiedCredential, status:
     operationId: 'op-1',
     fingerprint: 'fp-1',
     approval: null,
+    scopePolicy: null,
     now: Date.parse(standing.judgedAt),
   };
   return evaluate(input);

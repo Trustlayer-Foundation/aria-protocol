@@ -1,5 +1,6 @@
 import type { StatusEvidence } from '@aria-registry/sdk';
 import type { Internals, PresentationSnapshot } from './instance';
+import type { ScopeRule } from '../admission';
 import { evaluate, type ApprovalSnapshot, type PolicyOutcome } from './policy';
 
 /**
@@ -7,7 +8,7 @@ import { evaluate, type ApprovalSnapshot, type PolicyOutcome } from './policy';
  * same status evidence, approval expiry at that instant, and the presentation's
  * deadline. An admission is judged when it is made and again when it is used.
  */
-export function judge(internals: Internals, p: PresentationSnapshot, status: StatusEvidence, approval: ApprovalSnapshot | null): PolicyOutcome | { readonly decision: 'expired' } {
+export function judge(internals: Internals, p: PresentationSnapshot, status: StatusEvidence, approval: ApprovalSnapshot | null, scopePolicy: readonly ScopeRule[] | null): PolicyOutcome | { readonly decision: 'expired' } {
   if (internals.now() > p.expiresAt) return { decision: 'expired' };
   const standing = internals.credentials.standing(p.credential, status);
   const d = p.descriptor;
@@ -19,6 +20,7 @@ export function judge(internals: Internals, p: PresentationSnapshot, status: Sta
     operationId: p.operationId,
     fingerprint: p.fingerprint!,
     approval,
+    scopePolicy,
     now: Date.parse(standing.judgedAt),
   });
 }

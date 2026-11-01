@@ -304,6 +304,17 @@ describe('R1: every path that returns a stored result judges the admission again
     await expect(w.ledger.resume(keyOf(id), a)).rejects.toThrow(AdmissionExpired);
   });
 
+  it('R1e: resume whose admission expires while the record is read returns nothing stored; control inside the deadline', async () => {
+    const w = world();
+    const id = randomUUID();
+    const first = await w.handle((await w.signTransfer(id)).request);
+    await expect(new OperationLedger(w.bankAp, slowRead(w, NOW + 40_000), w.self).resume(keyOf(id), await admitted(w, id))).rejects.toThrow(AdmissionExpired);
+    expect((await w.storage.get(keyOf(id)))?.receipts).toEqual([first.receipt]);
+    w.at(NOW);
+    expect(await new OperationLedger(w.bankAp, slowRead(w, NOW + 1_000), w.self).resume(keyOf(id), await admitted(w, id))).toEqual({ kind: 'existing', governing: first.receipt, status: 201 });
+    expect(w.effects).toBe(1);
+  });
+
   it('R1d: losing the create race to another worker while the admission expires returns nothing stored', async () => {
     const w = world();
     const id = randomUUID();
@@ -371,6 +382,28 @@ describe('R2: a verified receiver is judged when it is used to sign', () => {
     const r2 = await w2.receiver();
     w2.at(NOW + 5_000);
     expect((await w2.signTransfer(randomUUID(), '10.00', r2)).sent).not.toBeNull();
+  });
+
+  it('R2d: a statement that goes stale while signing refuses the request, its own window still open', async () => {
+    const w = world();
+    const receiver = await w.receiver();
+    w.at(NOW + 55_000);
+    await expect(signWith(w, receiver, 62_000)).rejects.toThrow(/no longer fresh/);
+    const w2 = world();
+    const r2 = await w2.receiver();
+    w2.at(NOW + 55_000);
+    expect((await signWith(w2, r2, 59_000)).sent).not.toBeNull();
+  });
+
+  it('R2e: receiver status that passes its maximum age while signing refuses the request, its own window still open', async () => {
+    const w = world({ statusMaxAgeSeconds: 70 });
+    const receiver = await w.receiver();
+    w.at(NOW + 5_000);
+    await expect(signWith(w, receiver, 15_000)).rejects.toThrow(/no longer stands/);
+    const w2 = world({ statusMaxAgeSeconds: 70 });
+    const r2 = await w2.receiver();
+    w2.at(NOW + 5_000);
+    expect((await signWith(w2, r2, 9_000)).sent).not.toBeNull();
   });
 
   it('a request whose own signature window ends while signing is refused, the receiver still fresh', async () => {

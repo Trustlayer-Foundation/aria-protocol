@@ -24,7 +24,8 @@ own. Install both; a service that only checks credentials needs only the ARIA SD
 - `test-d/`: the boundaries the types enforce.
 
 `pnpm typecheck` compiles the sources, examples, tests and boundary checks against the
-ARIA SDK's sources. `pnpm test` runs the AP1 vectors (requests, fingerprints, receipts,
-and the sequences against the real ledger and tracker), the exchange end to end over a
-real verifier, and over local HTTP. `pnpm build` writes `dist/` against the ARIA SDK's
+ARIA SDK's sources. `pnpm test` runs the AP1 vectors (requests through the real
+challenge store, fingerprints, receipts, receiver identity, scopes, and the sequences
+against the real ledger and tracker), the exchange end to end over a real verifier, and
+over local HTTP. `pnpm build` writes `dist/` against the ARIA SDK's
 built types (build that first).

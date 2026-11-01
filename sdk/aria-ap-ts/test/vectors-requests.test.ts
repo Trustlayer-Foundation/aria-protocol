@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '@aria-registry/sdk';
 import { digestField, utf8 } from '../src/internal/bytes';
+import { MemoryChallengeStore } from '../src';
 import { authenticate, fieldsOf, signatureBase } from '../src/internal/request';
 import { holderOf, load, requestOf, type View } from './conformance';
 
@@ -9,20 +10,34 @@ const requests = load('vectors/requests.json');
 const fingerprints = load('vectors/fingerprints.json');
 const ctx = requests.context;
 
-/** What the receiver answers, in the vectors' terms. */
+/** What the receiver answers, in the vectors' terms, with the real challenge store and the vector's timeline. */
 async function answer(vector: any): Promise<Record<string, unknown>> {
-  const consumed = new Set<string>(vector.context?.consumed ?? []);
-  const live = (nonce: string) => {
-    const issued = ctx.challenges.find((c: { value: string }) => c.value === nonce);
-    return !!issued && Date.parse(issued.expires) >= Date.parse(ctx.now) && !consumed.has(nonce);
-  };
+  const start = Date.parse(ctx.now);
+  let t = start;
+  const pending: string[] = [];
+  const store = new MemoryChallengeStore(() => new Date(t), { token: () => pending.shift()! });
+  const did = ctx.receiver.did;
+  // Each vector challenge is issued for 60 s so that it expires when the vector says.
+  for (const c of ctx.challenges) {
+    t = Date.parse(c.expires) - 60_000;
+    pending.push(c.value);
+    await store.issue(did, 60);
+  }
+  t = start;
+  for (const c of vector.context?.consumed ?? []) await store.consume(c, did);
+  const timeline = vector.timeline ?? {};
   const result = await authenticate(requestOf(vector.request), {
     origin: ctx.receiver.origin,
     operations: ctx.descriptors,
-    now: () => Date.parse(ctx.now),
-    challengeLive: async (nonce) => live(nonce),
-    consume: async (nonce) => live(nonce) && consumed.add(nonce) !== undefined,
+    now: () => t,
+    challengeLive: (nonce) => store.live(nonce, did),
+    consume: async (nonce) => {
+      const ok = await store.consume(nonce, did);
+      if (timeline.consumedAfter !== undefined) t = start + timeline.consumedAfter * 1000;
+      return ok;
+    },
     resolve: async (url, digest) => {
+      if (timeline.resolvedAfter !== undefined) t = start + timeline.resolvedAfter * 1000;
       const view = (ctx.credentials as View[]).find((c) => c.url === url);
       return view && view.digest === digest ? holderOf(view) : null;
     },

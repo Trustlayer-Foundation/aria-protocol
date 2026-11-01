@@ -21,6 +21,16 @@ export type ResourceAuthorizer = (request: {
   readonly presentation: VerifiedPresentation;
 }) => Promise<{ readonly allowed: true } | { readonly allowed: false; readonly code: string }>;
 
+/**
+ * One rule of the receiver's scope policy (D5, provisional). `pattern` is a scope of
+ * three segments, or two followed by `:*` for any third. A matching deny wins;
+ * otherwise a matching allow is needed.
+ */
+export interface ScopeRule {
+  readonly effect: 'allow' | 'deny';
+  readonly pattern: string;
+}
+
 export interface AdmissionInput {
   /** Required: there is no admission without proof of the holder key. */
   readonly presentation: VerifiedPresentation;
@@ -31,6 +41,11 @@ export interface AdmissionInput {
    */
   readonly status: StatusEvidence;
   readonly approval?: ApprovalEvidence;
+  /**
+   * The receiver's policy over the operation's scope, judged after the credential's
+   * own scopes: a scope it does not admit is `aria.scope_denied`. Kept with the admission.
+   */
+  readonly scopePolicy?: readonly ScopeRule[];
   readonly authorize: ResourceAuthorizer;
 }
 
@@ -42,6 +57,7 @@ export type AdmissionReason =
   | 'credential_superseded'
   | 'level_insufficient'
   | 'scope_missing'
+  | 'scope_denied'
   | 'approval_required'
   | 'approval_invalid'
   | 'delegation_unsupported'
