@@ -1,7 +1,7 @@
 # Specification
 
 The canonical, normative text of ARIA is published at **[aria.bar/spec](https://aria.bar/spec)**
-(12 normative sections and 5 appendices, CC-BY-4.0). This repository holds the
+(12 normative sections and 6 appendices, CC-BY-4.0). This repository holds the
 machine-readable artefacts that text refers to, and says which edition of it goes with
 what is here.
 
