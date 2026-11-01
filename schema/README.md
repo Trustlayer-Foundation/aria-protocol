@@ -13,9 +13,9 @@ conformance vectors check those separately.
 | Schema | Document | Status |
 |---|---|---|
 | [`aid-1.0.json`](aid-1.0.json) | The ARIA Identity Document, `spec_version: "1.0"` | Draft until the issuance cutover; embedded byte for byte in the ARIA SDK |
-| [`aria-ap-receipt-1.json`](aria-ap-receipt-1.json) | An ARIA AP receipt, `aria-ap-receipt/1` | **Provisional** (decisions D3, D4); shipped byte for byte in ARIA AP |
-| [`aria-ap-identity-1.json`](aria-ap-identity-1.json) | An ARIA AP receiver identity response, statement `aria-ap-identity/1` | **Provisional** (D3); shipped byte for byte in ARIA AP |
-| [`aria-ap-lookup-1.json`](aria-ap-lookup-1.json) | The answer to an ARIA AP retrieval: `current` and `history` | **Provisional** (D4); shipped byte for byte in ARIA AP |
+| [`aria-ap-receipt-1.json`](aria-ap-receipt-1.json) | An ARIA AP receipt, `aria-ap-receipt/1` | Format decided (D4: one format with the HTTP status and code); shipped byte for byte in ARIA AP |
+| [`aria-ap-identity-1.json`](aria-ap-identity-1.json) | An ARIA AP receiver identity response, statement `aria-ap-identity/1` | Decided (D3); shipped byte for byte in ARIA AP |
+| [`aria-ap-lookup-1.json`](aria-ap-lookup-1.json) | The answer to an ARIA AP retrieval: `current` and `history` | **Provisional** (the rest of D4); shipped byte for byte in ARIA AP |
 
 The ARIA AP schemas change with the decisions they depend on. Rules JSON Schema cannot
 express (strict parsing of receipts, signatures, bindings) are in their `$comment` and in

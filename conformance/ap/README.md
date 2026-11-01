@@ -1,9 +1,9 @@
 # ARIA AP conformance (provisional)
 
-> **Status:** provisional. The vectors encode the options recommended for decisions
-> D3 (transport), D4 (receipt), D5 (scopes) and D8 (human approval). None of those
-> decisions is taken; the profile is not adopted and nothing here is frozen. Expect
-> the vectors to change when the decisions are made.
+> **Status:** provisional while D5 and the rest of D4 are open. D3 (transport) is
+> decided as encoded here, D4 has fixed the receipt's single format, and D8 is
+> `refuse` for now. The vectors for scopes (D5) and for retrieval and the other
+> receipt rules (the rest of D4) may still change.
 
 ARIA AP is the profile an agent uses to call a receiver with its ARIA credential: the
 receiver's identity, a signed request, an admission decision, a signed receipt, and that
@@ -74,12 +74,12 @@ agree, so implementations cannot diverge on a valid vector.
 
 ## Provisional choices
 
-| Decision | Encoded here |
+| Decision (state) | Encoded here |
 |---|---|
-| D3 | RFC 9421, one signature labelled `aria`, tag `aria-ap/1`; a fresh single-use receiver challenge as `nonce` for **every** request, retrieval included, delivered in the receiver's identity statement (`aria-ap-identity/1`, 60 s). The WIMSE binding is a candidate alternative, not covered. |
-| D4 | `aria-ap-receipt/1`: `id`, `request`, `receiver`, `issuedAt`, `outcome`, plus `type` and `proof`; everything but `proof.value` is signed. Refusals are signed only after authentication. `rejected/attempt` never moves an operation. A revoked credential authorizes no lookup; a current credential of the same DID retrieves the original receipt (REQ-037, SEQ-R2a). |
-| D5 | New grants `namespace:resource:action`; signed 1.0 documents read under their own pattern; exact comparison; policy patterns may end in `:*` and a matching deny wins (`aria.scope_denied`, judged after `aria.scope_missing`). |
-| D8 | `refuse` only: a missing, foreign or expired approval rejects the attempt and claims nothing. `hold` is deferred and has no vectors. |
+| D3 (decided) | RFC 9421, one signature labelled `aria`, tag `aria-ap/1`; a fresh single-use receiver challenge as `nonce` for **every** request, retrieval included, delivered in the receiver's identity statement (`aria-ap-identity/1`, 60 s). The WIMSE binding is a candidate alternative, not covered. |
+| D4 (receipt format decided; the rest open) | `aria-ap-receipt/1`: `id`, `request`, `receiver`, `issuedAt`, `outcome`, plus `type` and `proof`; everything but `proof.value` is signed. Refusals are signed only after authentication. `rejected/attempt` never moves an operation. A revoked credential authorizes no lookup; a current credential of the same DID retrieves the original receipt (REQ-037, SEQ-R2a). |
+| D5 (open) | New grants `namespace:resource:action`; signed 1.0 documents read under their own pattern; exact comparison; policy patterns may end in `:*` and a matching deny wins (`aria.scope_denied`, judged after `aria.scope_missing`). |
+| D8 (`refuse`, for now) | `refuse` only: a missing, foreign or expired approval rejects the attempt and claims nothing. `hold` is deferred and has no vectors. |
 
 ## Coverage of the AP proposal §5.9
 

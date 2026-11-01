@@ -20,8 +20,8 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA AP
 1.0.0**, and the schemas, documentation, examples and conformance that go with them.
 Both SDKs are **a local candidate: not published and not an approved release**; ARIA
-AP's wire profile is provisional until its open decisions are taken. The canonical text
-is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
+AP's transport and receipt format are decided; its scope grammar and the rest of its
+receipt rules are still open. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
 [Historical compatibility](#historical-compatibility) below, outside this path.
 
@@ -171,8 +171,9 @@ Notable fields:
 
 ## ARIA AP
 
-ARIA AP is the exchange between an agent and a receiving service (provisional profile:
-its transport, receipt, scope and human-approval rules await decisions):
+ARIA AP is the exchange between an agent and a receiving service (its transport and
+receipt format are decided; scopes and the rest of the receipt rules are open; without
+a valid human approval a request is refused, for now):
 
 1. **Who is the receiver.** The agent fetches the receiver's signed identity statement,
    with its AID, and checks it against the DID it expects at that origin.

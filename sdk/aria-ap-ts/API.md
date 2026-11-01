@@ -1,10 +1,13 @@
 # ARIA AP 1.0 — API contract
 
-Status: implemented against a **provisional** wire profile. The vectors in
-[`conformance/ap`](../../conformance/ap/README.md) encode the options recommended for
-decisions D3 (transport), D4 (receipt), D5 (scopes) and D8 (human approval), none of
-which is taken; the identity statement below is provisional under D3 as well. Expect the
-wire format to change when they are decided. Package name provisional
+Status: implemented. Of the decisions its wire profile depends on, three are taken:
+D3, the transport, is this RFC 9421 profile (the receiver's identity statement, a
+challenge per request, the credential by reference); D4 fixes the receipt's single
+format, `aria-ap-receipt/1`, carrying the decision's HTTP status and code; D8 is
+`refuse` for now (no holding an operation, no approval fields in a receipt). D5
+(scopes) and the rest of D4, including retrieval, are open: what they cover may still
+change. The vectors in [`conformance/ap`](../../conformance/ap/README.md) encode all of
+it. Package name provisional
 (`@aria-registry/ap`) until its owner is confirmed. Version 1.0.0 is a local candidate:
 private, not published, not an approved release.
 
@@ -65,7 +68,7 @@ Only `allow` lets an operation be claimed. There is no mode in which a failed ch
 becomes `allow`; a receiver observing a policy logs the `deny`, and what it then runs is
 not admitted.
 
-## Request profile (provisional, D3)
+## Request profile (D3)
 
 RFC 9421 with one signature labelled `aria`, tag `aria-ap/1`, Ed25519, `keyid` the
 credential's holder key. Each class fixes its covered components exactly:
@@ -98,7 +101,7 @@ An expired or not-yet-valid credential does not authenticate (401 `credential`):
 credential verifier produces no result for it. `aria.credential_expired` is the admission
 answer when validity ends between authentication and admission.
 
-## Receiver identity (provisional, D3)
+## Receiver identity (D3)
 
 `identify` answers `{ credential, statement }`: the receiver's AID document and a
 statement `aria-ap-identity/1` with `subject`, `credential`, `origin`, `audience`,
@@ -201,7 +204,7 @@ Otherwise the operation stays locked:
 - A committed effect already has its stored outcome: `reconcile` returns that receipt,
   never a new one; an open claim reported committed throws `InvariantViolation`.
 
-Receipts (`aria-ap-receipt/1`, provisional D4) have two sources only: a settled outcome
+Receipts (`aria-ap-receipt/1`, the format D4 fixes) have two sources only: a settled outcome
 and an attempt refusal. The governing receipt is the final one if any, else the latest
 `accepted`; history is never rewritten.
 
@@ -299,7 +302,8 @@ a URL whose serialization is the value itself, which includes valid IDNA:
 `https://xn--a.example` matches the schema's pattern but is refused by the SDK, both when
 emitting and when receiving.
 
-They are provisional with D3 and D4. Conforming to a schema is neither a valid signature
+The identity and receipt schemas follow D3 and the receipt format of D4; the lookup
+schema stays provisional with the rest of D4. Conforming to a schema is neither a valid signature
 nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers
 only, at most 4096 bytes, which JSON Schema cannot express), verifies signatures, pins the
 receiver's exact credential and binds each receipt to a kept attempt. Against the AP1

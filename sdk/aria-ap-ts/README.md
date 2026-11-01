@@ -6,10 +6,10 @@ check a kept receipt later against retained evidence.
 
 **Version 1.0.0, a local candidate: not published and not an approved release.** The
 package name is provisional until its owner is confirmed, and `private` prevents
-publishing it. The wire profile is provisional: its vectors in
-[`conformance/ap`](../../conformance/ap/README.md) and its schemas in
-[`schema/`](../../schema/README.md) encode recommended options for decisions that are
-still open, and the format will change when they are taken.
+publishing it. Its transport (D3), its receipt format (D4) and its refusal without
+approval (D8, for now) are decided; scopes (D5) and the rest of D4, including retrieval,
+are open and may still change. Vectors: [`conformance/ap`](../../conformance/ap/README.md);
+schemas: [`schema/`](../../schema/README.md).
 
 **It builds on the ARIA SDK.** ARIA AP takes the credential verifier of
 [`@aria-registry/sdk`](../aria-ts/README.md) (`createAp({ credentials: verifier })`) and reads
