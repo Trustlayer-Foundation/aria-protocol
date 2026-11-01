@@ -11,7 +11,8 @@
 // The manifest must have its whole shape: every decision the release depends on,
 // every published schema and every conformance file, so that evidence cannot
 // disappear instead of being resolved. Every pinned file is compared by SHA-256, and
-// each trust profile's anchor is recomputed from the first key of its key set.
+// each trust profile's anchor is recomputed from the first key of its key set. What
+// the README and the federation contract say must agree with the decisions taken.
 // Each archive is opened: its integrity, and the name, version, peer range and
 // publication metadata of the package.json it carries. A candidate may leave
 // decisions pending and carry private packages; --final refuses both, and refuses
@@ -131,6 +132,30 @@ for (const t of manifest.trust?.profiles ?? []) {
   const identity = first && canonical({ key_id: first.key_id, suite: first.suite, public_key_mldsa65: first.public_key_mldsa65, public_key_ed25519: first.public_key_ed25519 });
   const anchor = identity && `sha256:${createHash('sha256').update(identity).digest('hex')}`;
   if (!anchor || anchor !== t.anchor) problems.push(`${at}: the first key's fingerprint is ${anchor}, the anchor says ${t.anchor}`);
+}
+
+// ── What the entry points say about decided items ───────────────────────────
+// A decision taken in the manifest must not be described as open where a reader
+// starts: the README, the federation contract's version, ARIA AP's profile. Each
+// rule reads one clause at a time, so an open item beside a decided one is allowed.
+const decided = (id) => recorded.get(id)?.state === 'decided';
+const clauses = (text) => text.split(/(?<=[.;])\s+|\n\s*\n|\n(?=\s*(?:[-*|]|\d+\.) )/);
+const readme = readFileSync(join(root, 'README.md'), 'utf8');
+const openapiVersion = /^\s{2}version:\s*(\S+)/m.exec(readFileSync(join(root, 'federation/openapi.yaml'), 'utf8'))?.[1];
+const exchangeTitle = JSON.parse(readFileSync(join(root, 'federation/exchange.schema.json'), 'utf8')).title ?? '';
+if (decided('D5')) {
+  for (const c of clauses(readme)) {
+    if (/\bscope/i.test(c) && /\b(?:open|pending|provisional|undecided)\b/i.test(c) && !/open to any|vocabulary/i.test(c)) problems.push(`README: D5 is decided, yet "${c.trim().slice(0, 90)}"`);
+  }
+  const profile = JSON.parse(readFileSync(join(root, 'conformance/ap/profile.json'), 'utf8'));
+  if (/provisional/i.test(profile.scopes ?? '')) problems.push('conformance/ap/profile.json: D5 is decided, yet its scopes are provisional');
+}
+if (decided('D7')) {
+  if (manifest.federation?.version !== openapiVersion || /draft/i.test(manifest.federation?.version ?? '')) problems.push(`federation: D7 is decided; the manifest says ${manifest.federation?.version}, openapi.yaml ${openapiVersion}`);
+  if (/draft/i.test(openapiVersion ?? '') || /draft/i.test(exchangeTitle)) problems.push('federation: D7 is decided, yet the contract is labelled a draft');
+  for (const c of clauses(readme)) {
+    if (/\b2029\b/.test(c) || /under review/i.test(c)) problems.push(`README: D7 is decided, yet "${c.trim().slice(0, 90)}"`);
+  }
 }
 
 // ── Packages: the checkout, and each archive as it would be published ───────

@@ -99,7 +99,7 @@
     "sha256": "sha256:b1402e0390be9178a91f51f7d308caddd006230bce79fd16ffca063c7f56417e"
   },
   "federation": {
-    "version": "1.0.0-draft",
+    "version": "1.0.0",
     "state": "version 1.0.0, adopted by TLF (D7) and implemented by the authority",
     "files": {
       "openapi": {
@@ -131,7 +131,7 @@
         "statusLists": [
           "https://api.aria.bar/v1/status/1"
         ],
-        "note": "active_from is the earliest date the key is evidenced (30 March 2026), at or before its first issuance; it is outside the pinned fingerprint"
+        "note": "active_from (30 March 2026, the key’s earliest appearance in source) is operator-supplied metadata, outside the pinned fingerprint, for TLF to confirm or replace before the key set is served (B1b)"
       }
     ]
   },

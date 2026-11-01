@@ -19,9 +19,10 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 **ARIA 1.0 is relaunched in this repository, with its history.** Its delivery is one
 set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA AP
 1.0.0**, and the schemas, documentation, examples and conformance that go with them.
-Both SDKs are **a local candidate: not published and not an approved release**; ARIA
-AP's transport and receipt format are decided; its scope grammar and the rest of its
-receipt rules are still open. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
+Both SDKs are packed as the release archives the [release manifest](release/README.md)
+pins, **not yet published on npm**: publication waits for the owner's approval and the
+confirmed package names (D9). ARIA AP's transport, receipt format and scope grammar are
+decided; the rest of its receipt rules, retrieval included, is still open. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
 [Historical compatibility](#historical-compatibility) below, outside this path.
 
@@ -48,7 +49,7 @@ after a lost answer. It replaces an earlier admission protocol, now deprecated (
 | **Live spec** | [aria.bar/spec](https://aria.bar/spec) |
 | **API (public, no auth)** | [api.aria.bar](https://api.aria.bar) |
 | **Registry (sign up)** | [registry.aria.bar](https://registry.aria.bar) |
-| **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0, local candidate, not published |
+| **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0, not yet on npm |
 | **NIST filing** | NIST-2025-0035, March 9, 2026 |
 | **NCCoE response** | AI-Identity@nist.gov, April 2, 2026 |
 
@@ -63,8 +64,8 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 | `conformance/` | Vectors and harnesses any implementation runs, in any language | `conformance/ap/` (ARIA AP) is provisional |
 | `federation/` | The contract between registration authorities and the issuing authority | |
 | `examples/` | Reference credentials and usage examples; [`examples/README.md`](examples/README.md) is the index | |
-| `sdk/aria-ts/` | **ARIA SDK** (`@aria-registry/sdk`): credential verification and the status of the exact document | 1.0.0, local candidate, not published |
-| `sdk/aria-ap-ts/` | **ARIA AP** (`@aria-registry/ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, local candidate, not published |
+| `sdk/aria-ts/` | **ARIA SDK** (`@aria-registry/sdk`): credential verification and the status of the exact document | 1.0.0, not yet on npm |
+| `sdk/aria-ap-ts/` | **ARIA AP** (`@aria-registry/ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, not yet on npm |
 
 The two SDKs are separate packages. A service that only checks credentials installs the
 ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
@@ -74,7 +75,7 @@ artifacts, alone and together.
 
 ## Verify a credential
 
-With the ARIA SDK (local candidate; build it from `sdk/aria-ts`):
+With the ARIA SDK (not yet on npm; build it from `sdk/aria-ts`):
 
 ```typescript
 import { createVerifier } from '@aria-registry/sdk';
@@ -215,7 +216,7 @@ Notable fields:
 | `id` (top-level) | Unique credential-instance URL — `https://api.aria.bar/v1/credentials/{uuidv7}`. New on every issuance. Equivalent to a TLS certificate serial number. Per W3C VC 2.0 §4.4. |
 | `credentialSubject.id` | The agent DID (`did:aria:…`). Stable across reissuances. |
 | `credentialSubject.spec_version` | `"1.0"` under ARIA 1.0 (earlier credentials: [Historical compatibility](#historical-compatibility)). Verifiers distinguish the issuance regime by issuer DID, never by this value. |
-| `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Possession is proved by a request ARIA AP signs with the corresponding private key (local candidate, provisional profile). Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
+| `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Possession is proved by a request ARIA AP signs with the corresponding private key. Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
 | `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability. |
 | `credentialSubject.principal.type` | `Person` (a natural person) or `Organization` (any legal entity), as schema.org types. Decides the next field: an `Organization` carries `legalName`, a `Person` never does. Absent on credentials issued before the field existed; those carry `legalName` whatever the principal was. |
 | `credentialSubject.principal.verificationStatus` | Machine-readable provenance of `principal.legalName`. Enum: `self-declared` (L0, L1), `registry-confirmed` (L2 — confirmed against the Authoritative Source), `legal-verified` (L3 — primary register + Binding Officer). Verifiers MUST consult this before treating `legalName` as authoritative. `legalName` is an **organization** name: natural-person principals MUST NOT populate it (COM-09, L0-03). |
@@ -225,8 +226,9 @@ Notable fields:
 
 ## ARIA AP
 
-ARIA AP is the exchange between an agent and a receiving service. Its transport and
-receipt format are decided; scopes and the rest of the receipt rules are open. When an
+ARIA AP is the exchange between an agent and a receiving service. Its transport,
+receipt format and scopes are decided; the rest of the receipt rules, retrieval
+included, is open. When an
 operation's scope requires human approval, a missing or invalid approval refuses the
 attempt, for now; holding the operation for approval is not supported, and operations
 that need no approval are unaffected:
@@ -252,10 +254,10 @@ Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas
 ## Cryptography
 
 - **Primary:** ML-DSA-65 (FIPS 204) — post-quantum, lattice-based
-- **Classical:** Ed25519 (RFC 8032) — transition signature
+- **Classical:** Ed25519 (RFC 8032)
 - **Mode:** Composite AND — both signatures must verify
 - **Suite:** `mldsa65-ed25519-2026`
-- **Transition:** the specification's plan to end the composite mode on December 31, 2029 is under review by TLF. Until it decides, both halves are required, and no date disables either
+- **No end date:** both halves are required for as long as a credential is valid, and no date disables either (edition of 1 November 2026, §5). A successor suite, if any, comes with a new `spec_version`; credentials already issued are verified under their own
 
 ## Standards alignment
 
