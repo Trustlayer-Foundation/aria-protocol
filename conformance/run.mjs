@@ -27,13 +27,16 @@ const report = (name, ok, detail) => {
   if (!ok) failures += 1;
 };
 const skip = (name, why) => console.log(`SKIP  ${name} — ${why}`);
+// Under --strict a check that cannot run fails: a release gate cannot rest on a skip.
+const strict = process.argv.includes('--strict');
+const unavailable = (name, why) => (strict ? report(name, false, why) : skip(name, why));
 
 // ── 1 · canonical serialisation, byte for byte ────────────────────────────────
 async function canonicalJsonCheck(sdkEntry) {
   const name = 'canonical serialisation matches the vectors byte for byte';
-  if (!sdkEntry) return skip(name, 'no SDK entry point given (--sdk)');
+  if (!sdkEntry) return unavailable(name, 'no SDK entry point given (--sdk)');
   const { canonicalJson } = await import(pathToFileURL(sdkEntry).href);
-  if (typeof canonicalJson !== 'function') return skip(name, 'the SDK does not export canonicalJson');
+  if (typeof canonicalJson !== 'function') return unavailable(name, 'the SDK does not export canonicalJson');
   const { vectors: cases } = load('canonical-json.json');
   const bad = cases.filter((c) => canonicalJson(c.input) !== c.expected_canonical_json);
   report(name, bad.length === 0, `${cases.length - bad.length}/${cases.length}`);
@@ -66,7 +69,7 @@ async function abnfCheck(sdkEntry) {
     parse = sdk.parseDid ?? sdk.isValidDid ?? null;
   }
   if (!parse) {
-    return skip(name, `${total} cases ready; no implementation exports a did:aria parser yet`);
+    return unavailable(name, `${total} cases ready; no implementation exports a did:aria parser yet`);
   }
   const wrong = [
     ...cases.accept.filter((c) => !parse(c.did)),

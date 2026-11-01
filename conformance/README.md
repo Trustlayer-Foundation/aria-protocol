@@ -43,7 +43,8 @@ first): its `canonicalJson` against the serialisation vectors and its `parseDid`
 against the 22 `did:aria` cases.
 
 Without the processor the expansion check skips and says so. CI passes `--strict`,
-which turns that skip into a failure: a check that quietly skips proves nothing.
+which turns every skip into a failure (no SDK, an SDK without `canonicalJson` or
+`parseDid`, no processor): a check that quietly skips proves nothing.
 
 `expand-live.mjs` is the same check with nothing pinned — it fetches a credential
 and the context over the network, exactly as published, and expands in safe mode.
