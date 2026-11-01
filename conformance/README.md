@@ -38,6 +38,10 @@ cd conformance && npm install      # a JSON-LD processor, for the expansion chec
 node run.mjs --sdk path/to/entry.mjs
 ```
 
+Without `--sdk` it tests the ARIA SDK's build, `sdk/aria-ts/dist` (`pnpm build` there
+first): its `canonicalJson` against the serialisation vectors and its `parseDid`
+against the 22 `did:aria` cases.
+
 Without the processor the expansion check skips and says so. CI passes `--strict`,
 which turns that skip into a failure: a check that quietly skips proves nothing.
 

@@ -67,16 +67,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+        with: { version: 10 }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: sdk/verify-ts/pnpm-lock.yaml
+      # The ARIA SDK's build: the harness tests its canonical JSON and did:aria parser.
       - run: pnpm install --frozen-lockfile
-        working-directory: sdk/verify-ts
+        working-directory: sdk/aria-ts
       - run: pnpm build
-        working-directory: sdk/verify-ts
+        working-directory: sdk/aria-ts
       - run: npm install --no-audit --no-fund
         working-directory: conformance
       - run: node run.mjs --strict

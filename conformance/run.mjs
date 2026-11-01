@@ -9,7 +9,8 @@
  * Offline by design: the W3C context is pinned in `vectors/context-credentials-v2.json`
  * rather than fetched, so a run is deterministic and a network outage is not a failure.
  *
- * Usage: node conformance/run.mjs [--sdk <path to the verify SDK entry>]
+ * Usage: node conformance/run.mjs [--sdk <path to the SDK entry>] [--strict]
+ * Without --sdk it tests the ARIA SDK's build (`sdk/aria-ts/dist`) when present.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
@@ -204,7 +205,7 @@ async function principalKindCheck(strict) {
 const argSdk = process.argv.indexOf('--sdk');
 let sdkEntry = argSdk > -1 ? process.argv[argSdk + 1] : null;
 if (!sdkEntry) {
-  for (const guess of ['sdk/verify-ts/dist/index.mjs', 'sdk/verify-ts/dist/index.js']) {
+  for (const guess of ['sdk/aria-ts/dist/index.js']) {
     if (existsSync(join(root, guess))) { sdkEntry = join(root, guess); break; }
   }
 }
