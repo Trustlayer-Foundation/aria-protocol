@@ -1,0 +1,302 @@
+{
+  "release": "ARIA 1.0",
+  "state": "candidate",
+  "_comment": "What ARIA 1.0 ships, pinned by hash, and what it leaves open. release/check.mjs compares it with this repository, the package archives and the site. A candidate may leave decisions pending; the final release may not. Nothing here is published until the owner authorizes each step of the release plan.",
+  "edition": {
+    "label": "7 September 2026",
+    "url": "https://aria.bar/spec",
+    "repository": "tunolabs/aria-landing",
+    "state": "in force; sections under review are marked on the site; a revised edition waits for decision D7",
+    "files": [
+      {
+        "path": "src/components/spec/SpecDocument.tsx",
+        "sha256": "sha256:2bd2733057f73d1bda3472030f4254478cb872e6303ee844af12f0192360e27f"
+      },
+      {
+        "path": "src/lib/spec-data.ts",
+        "sha256": "sha256:0c99fff6bc648b3b7cbaaa25929ad531b1e450ea98496358c05fed1761ac0fd3"
+      }
+    ]
+  },
+  "packages": [
+    {
+      "name": "@aria-registry/sdk",
+      "path": "sdk/aria-ts",
+      "version": "1.0.0",
+      "nameStatus": "provisional (D9)",
+      "integrity": "sha512-E70FvrjlE2PDy5Ri3Bf2IZ9hxvkzQk7lCEJdVoGY1wZQmnvaRadJq/HkWLJ4S/vVyyVJJ+OTXV/gdmWLBEUULA=="
+    },
+    {
+      "name": "@aria-registry/ap",
+      "path": "sdk/aria-ap-ts",
+      "version": "1.0.0",
+      "nameStatus": "provisional (D9)",
+      "peerDependencies": {
+        "@aria-registry/sdk": "^1.0.0"
+      },
+      "integrity": "sha512-0b77fjrVtE/JMun3/8DD2IVx0U/MYItnsxtLxb9Q2WHRy7WYcBkjmHbse5shz2rMlMBjcQuZMh8IaewBhrKRGg=="
+    }
+  ],
+  "schemas": [
+    {
+      "path": "schema/aid-1.0.json",
+      "id": "https://aria.bar/schema/aid-1.0.json",
+      "status": "the AID 1.0 credential schema; draft until the issuance cutover",
+      "sha256": "sha256:5fc3c39daa4a86529c9749093705343f021e285db43548faa64e2c675af5387c"
+    },
+    {
+      "path": "schema/aid-v1.2.json",
+      "id": "https://aria.bar/schema/aid-v1.2.json",
+      "status": "historical: credentials issued before the cutover",
+      "sha256": "sha256:ac17719e1b5943a1843546b3df929a3b31320cf51c2c3f223c71e8ab496cdc96"
+    },
+    {
+      "path": "schema/aria-ap-identity-1.json",
+      "id": "https://aria.bar/schema/aria-ap-identity-1.json",
+      "status": "ARIA AP receiver identity (D3 decided)",
+      "sha256": "sha256:fadb8fd7a14bf64c4cbbeedebac63fc09ae177898eb2a5e20df2a966a50acac2"
+    },
+    {
+      "path": "schema/aria-ap-lookup-1.json",
+      "id": "https://aria.bar/schema/aria-ap-lookup-1.json",
+      "status": "ARIA AP retrieval (provisional: the rest of D4)",
+      "sha256": "sha256:aa075fc876bf895912585e9b4f5787bb175d04919ec298f3a8bf5c9260e32dbb"
+    },
+    {
+      "path": "schema/aria-ap-receipt-1.json",
+      "id": "https://aria.bar/schema/aria-ap-receipt-1.json",
+      "status": "ARIA AP receipt (format decided under D4)",
+      "sha256": "sha256:c3a41a4cc01dd486ca33c0fe7fd0d15bc664e588bb7c18854ace7846af637d5e"
+    },
+    {
+      "path": "schema/aria-keyset-1.json",
+      "id": "https://aria.bar/schema/aria-keyset-1.json",
+      "status": "an issuer key set (draft: values are D2)",
+      "sha256": "sha256:d258c52fd12e61fab04158e2e56ddc6418a83c03b2e8816f9f2b79a0cb2791b8"
+    },
+    {
+      "path": "schema/atp-policy-v1.json",
+      "id": "https://aria.bar/schema/atp-policy-v1.json",
+      "status": "historical: ATP, deprecated in favour of ARIA AP",
+      "sha256": "sha256:afb07f379b2d43e90b768f1af9192b286388c4d3002f2ba3725d596b6e044d8e"
+    },
+    {
+      "path": "schema/enrollment-manifest-v1.json",
+      "id": "https://aria.bar/schema/enrollment-manifest-v1.json",
+      "status": "historical: the v1.2 enrollment flow",
+      "sha256": "sha256:94b493c0ed5bb4539d19b5ce9bdd438c54cbda881900d3aaae0322f8fb50c8a5"
+    },
+    {
+      "path": "schema/intent-declaration-v1.json",
+      "id": "https://aria.bar/schema/intent-declaration-v1.json",
+      "status": "historical: ATP, deprecated in favour of ARIA AP",
+      "sha256": "sha256:1d448db1aa74b76161fae4dd1562a6e4228306049797822cd1332528c9a4fd5e"
+    }
+  ],
+  "context": {
+    "path": "context/v1.jsonld",
+    "url": "https://aria.bar/ns/v1",
+    "sha256": "sha256:b1402e0390be9178a91f51f7d308caddd006230bce79fd16ffca063c7f56417e"
+  },
+  "federation": {
+    "version": "1.0.0-draft",
+    "state": "implemented by the authority; normative adoption is D7",
+    "files": {
+      "openapi": {
+        "path": "federation/openapi.yaml",
+        "sha256": "sha256:6852fa5debac00c24124142b573258cd2d84f7e40ca4bb8c2c726fe1cac1a739"
+      },
+      "schema": {
+        "path": "federation/exchange.schema.json",
+        "id": "https://aria.bar/schema/federation-exchange-1.json",
+        "sha256": "sha256:0bfcfd929f96845791cdc4e3d4cbced7f10d93c463b7ca8cf4798e5aa2502caa"
+      }
+    }
+  },
+  "conformance": [
+    {
+      "path": "conformance/vectors/abnf-cases.json",
+      "sha256": "sha256:1cdae67ce9c93c82fa65ec3f62f4c6d26193fceede210cba2cd461678b9a51c9"
+    },
+    {
+      "path": "conformance/vectors/aid-v1.2-shape.json",
+      "sha256": "sha256:74621ccbf763729db9c37e07a6c30f4c360a619d43b18f5f7064e72e67015f2b"
+    },
+    {
+      "path": "conformance/vectors/canonical-json.json",
+      "sha256": "sha256:b2efd3bf2861b4cfaec55077c14f2524e526e39c38a68c12ce397569b78f8d4c"
+    },
+    {
+      "path": "conformance/vectors/context-credentials-v2.json",
+      "sha256": "sha256:59955ced6697d61e03f2b2556febe5308ab16842846f5b586d7f1f7adec92734"
+    },
+    {
+      "path": "conformance/vectors/holder-keys.json",
+      "sha256": "sha256:59218c4273c0b4efbedbc1ee441a3d412c621e8a46b375e1ad9351957afb1f1d"
+    },
+    {
+      "path": "conformance/vectors/keyset.json",
+      "sha256": "sha256:2329de0e2f5d02ed71b7de04f7b32aae28708e7e7c2a767bf62da0dd5aa27dbd"
+    },
+    {
+      "path": "conformance/vectors/scopes.json",
+      "sha256": "sha256:9955a5c9d51f66eb67d74369f1d8b9447a8b73cc696c2e4961efa5fbb9272bf6"
+    },
+    {
+      "path": "conformance/federation/identifiers.json",
+      "sha256": "sha256:7dbe3546ee31d78434d29d997dcff7323e024f9aea6f5a99d68966634b2e62c1"
+    },
+    {
+      "path": "conformance/federation/exchanges/vectors/vectors.json",
+      "sha256": "sha256:773b1b04e554acd7c4aedf071b3b9f2589994661f816ecd685f6f45824c98de5"
+    },
+    {
+      "path": "conformance/federation/exchanges/tlf-config.json",
+      "sha256": "sha256:e6860313eb480da04222b13fc790fcd1609bfa20243fecff52870f5c8f3ab2d6"
+    },
+    {
+      "path": "conformance/federation/exchanges/fixtures/ra-register.json",
+      "sha256": "sha256:63fdf440d7ae6bae0c3f998feed8cfaa7c31f18666da45fbce350f81462cf168"
+    },
+    {
+      "path": "conformance/federation/exchanges/fixtures/issuer-key.json",
+      "sha256": "sha256:4cfc017e77ede056cf0febe7bffd287b1eb4fef47a2c8e88e2b1a0f3065d5bba"
+    },
+    {
+      "path": "conformance/ap/profile.json",
+      "sha256": "sha256:021899c3726983af929e56f2333066d4e5d950ed6f9a1f6ef8491fd3d932f49d"
+    },
+    {
+      "path": "conformance/ap/vectors/fingerprints.json",
+      "sha256": "sha256:06cda3eaed525f7e7baf1172eee360f354f4ac59b2a93d2297f8c7e54e5c1052"
+    },
+    {
+      "path": "conformance/ap/vectors/historical.json",
+      "sha256": "sha256:bb5c48077992f926e99c48a1ca24fcc8aaffa232892ec167f887f495420806ea"
+    },
+    {
+      "path": "conformance/ap/vectors/identity.json",
+      "sha256": "sha256:0f1bbb081ec8da899f857d37569c6a9abb93b82beb428d16805f333b77c7ab9b"
+    },
+    {
+      "path": "conformance/ap/vectors/receipts.json",
+      "sha256": "sha256:da041fd6cfb2e759dc4eaac779486a00cfe2c89949f500ba41f0373fcab19f77"
+    },
+    {
+      "path": "conformance/ap/vectors/requests.json",
+      "sha256": "sha256:c8107b4a026fbb90306c72fcfd7eb35d81b64074e61b87eedf4f730fd5a4c43a"
+    },
+    {
+      "path": "conformance/ap/vectors/scopes.json",
+      "sha256": "sha256:a0bb61f023577e3ba27533014866b03a15022ba31d7c10d18206f14ec6bd0e40"
+    },
+    {
+      "path": "conformance/ap/vectors/sequences.json",
+      "sha256": "sha256:eea3fd293f4e8ec7da8532b0336ba7c99c40b4bee43bd6a63153ef5d4150d331"
+    }
+  ],
+  "capabilities": {
+    "levels": {
+      "L0": "issued",
+      "L1": "issued where the authority reads domain-binding records and the registry enables it; the deployed authority issues L0 only",
+      "L2": "specified, not issued",
+      "L3": "specified, not issued"
+    },
+    "credential": "AID 1.0, composite ML-DSA-65 + Ed25519 signature, both halves required; status in a signed Bitstring Status List",
+    "trust": "explicit trust profiles in the SDK; no implicit issuer; key set at /v1/keyset when the issuer configures one (D2)",
+    "ariaAp": {
+      "offered": [
+        "receiver identity",
+        "RFC 9421 signed requests with a per-request challenge",
+        "admission with level, scope, delegation depth and human-approval refusal",
+        "one execution per operation with aria-ap-receipt/1",
+        "retrieval and historical receipt verification"
+      ],
+      "notOffered": [
+        "holding an operation for approval",
+        "delegation",
+        "a credential by value",
+        "the WIMSE binding"
+      ]
+    },
+    "renewal": "off (R-6 closed)"
+  },
+  "decisions": [
+    {
+      "id": "D3",
+      "subject": "ARIA AP transport",
+      "state": "decided",
+      "on": "2026-11-01"
+    },
+    {
+      "id": "D4-format",
+      "subject": "one receipt format with HTTP status and code",
+      "state": "decided",
+      "on": "2026-11-01"
+    },
+    {
+      "id": "D8",
+      "subject": "refuse without a required approval, for now",
+      "state": "decided",
+      "on": "2026-11-01"
+    },
+    {
+      "id": "D10",
+      "subject": "the specification stays on the site, mapped to an edition",
+      "state": "decided",
+      "on": "2026-11-01"
+    },
+    {
+      "id": "D1",
+      "subject": "the trust domain of the current deployment",
+      "state": "pending"
+    },
+    {
+      "id": "D2",
+      "subject": "the published key set values",
+      "state": "pending"
+    },
+    {
+      "id": "D4-rest",
+      "subject": "retrieval and the remaining receipt rules",
+      "state": "pending"
+    },
+    {
+      "id": "D5",
+      "subject": "scope grammar",
+      "state": "pending"
+    },
+    {
+      "id": "D6",
+      "subject": "holder-key encoding",
+      "state": "pending"
+    },
+    {
+      "id": "D7",
+      "subject": "TLF normative package",
+      "state": "pending"
+    },
+    {
+      "id": "D9",
+      "subject": "package names",
+      "state": "pending"
+    },
+    {
+      "id": "D11",
+      "subject": "previousCredentialId in future issuance",
+      "state": "pending"
+    },
+    {
+      "id": "D12",
+      "subject": "proof metadata outside the signature",
+      "state": "pending"
+    }
+  ],
+  "compatibility": [
+    "credentials already issued keep their signed bytes, identifiers, context URL and resolution paths",
+    "schema/aid-v1.2.json stays published while any credential declaring spec_version 1.2 is valid",
+    "@aria-registry/verify 1.x stays on npm, unchanged; deprecating it is a separate step after the 1.0 packages are published",
+    "ATP identifiers stay as deprecated compatibility identifiers: the v=ATP1 record, ATP- codes and the ATP schemas at their URLs",
+    "https://aria.bar/ns/v1 is unchanged"
+  ]
+}

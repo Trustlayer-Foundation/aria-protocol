@@ -84,6 +84,9 @@ jobs:
       # The authority replays the same exchanges in its own tests.
       - run: node federation/check.mjs
         working-directory: conformance
+      # The release manifest against this repository; archives and the site are
+      # compared when a release is prepared.
+      - run: node release/check.mjs
       # ARIA AP (provisional): the committed vectors must be what the generator
       # produces, and the independent checker must pass them with its controls.
       - run: npm install --no-audit --no-fund
