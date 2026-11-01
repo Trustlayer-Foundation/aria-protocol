@@ -10,7 +10,8 @@
 //
 // The manifest must have its whole shape: every decision the release depends on,
 // every published schema and every conformance file, so that evidence cannot
-// disappear instead of being resolved. Every pinned file is compared by SHA-256.
+// disappear instead of being resolved. Every pinned file is compared by SHA-256, and
+// each trust profile's anchor is recomputed from the first key of its key set.
 // Each archive is opened: its integrity, and the name, version, peer range and
 // publication metadata of the package.json it carries. A candidate may leave
 // decisions pending and carry private packages; --final refuses both, and refuses
@@ -56,6 +57,7 @@ need(Array.isArray(manifest.schemas) && manifest.schemas.length > 0, 'schemas');
 need(isText(manifest.context?.path) && isText(manifest.context?.url), 'the context');
 need(isText(manifest.federation?.files?.openapi?.path) && isText(manifest.federation?.files?.schema?.path), 'the federation contract');
 need(Array.isArray(manifest.conformance) && manifest.conformance.length > 0, 'conformance files');
+need(Array.isArray(manifest.trust?.profiles) && manifest.trust.profiles.length > 0, 'trust profiles');
 need(Array.isArray(manifest.compatibility) && manifest.compatibility.length > 0, 'compatibility obligations');
 const levels = manifest.capabilities?.levels ?? {};
 need(['L0', 'L1', 'L2', 'L3'].every((l) => isText(levels[l])) && isText(manifest.capabilities?.trust) && Array.isArray(manifest.capabilities?.ariaAp?.offered), 'capabilities for every level, trust and ARIA AP');
@@ -74,6 +76,7 @@ const pinned = [
   ['context', manifest.context ?? {}],
   ...Object.values(manifest.federation?.files ?? {}).map((f) => ['federation', f]),
   ...(manifest.conformance ?? []).map((c) => ['conformance', c]),
+  ...(manifest.trust?.profiles ?? []).map((t) => [`trust ${t.id}`, t.keyset ?? {}]),
 ];
 for (const [kind, entry] of pinned) {
   const file = join(root, entry.path ?? '');
@@ -111,6 +114,23 @@ const jsonFiles = (path) => {
 const pinnedConformance = new Set((manifest.conformance ?? []).map((c) => c.path));
 for (const path of CONFORMANCE.flatMap(jsonFiles)) {
   if (!pinnedConformance.has(path)) problems.push(`${path}: conformance evidence not in the manifest`);
+}
+
+// Each trust profile: its issuer's key set, whose first key's fingerprint is the anchor.
+const canonical = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canonical(v[k])}`).join(',')}}` : JSON.stringify(v));
+for (const t of manifest.trust?.profiles ?? []) {
+  const at = `trust ${t.id}`;
+  if (!isText(t.id) || !isText(t.guarantee) || !['L0', 'L1', 'L2', 'L3'].includes(t.maxLevel) || !(t.statusLists ?? []).every((u) => /^https:\/\//.test(u)) || !/^https:\/\//.test(t.keyset?.url ?? '')) {
+    problems.push(`${at}: id, guarantee, maxLevel, https status lists and key set URL`);
+  }
+  const file = join(root, t.keyset?.path ?? '');
+  if (!t.keyset?.path || !existsSync(file)) continue;
+  const set = JSON.parse(readFileSync(file, 'utf8'));
+  const [first] = set.keys ?? [];
+  if (set.issuer !== t.issuer) problems.push(`${at}: the key set's issuer is ${set.issuer}, the profile says ${t.issuer}`);
+  const identity = first && canonical({ key_id: first.key_id, suite: first.suite, public_key_mldsa65: first.public_key_mldsa65, public_key_ed25519: first.public_key_ed25519 });
+  const anchor = identity && `sha256:${createHash('sha256').update(identity).digest('hex')}`;
+  if (!anchor || anchor !== t.anchor) problems.push(`${at}: the first key's fingerprint is ${anchor}, the anchor says ${t.anchor}`);
 }
 
 // ── Packages: the checkout, and each archive as it would be published ───────
