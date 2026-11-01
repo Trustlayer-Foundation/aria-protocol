@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/intent-declaration-v1.json",
-  "title": "ATP Intent Declaration v1.0",
+  "title": "ATP Intent Declaration v1.0 (deprecated in favour of ARIA AP)",
   "description": "JSON Schema for the Agent Trust Protocol (ATP) Intent Declaration. The intent declaration is a structured, machine-readable statement of WHY an agent is accessing a system and WHAT it intends to do. It MUST be cryptographically signed within the ML-DSA signature envelope alongside the AID to ensure non-repudiation.",
   "type": "object",
   "required": [
