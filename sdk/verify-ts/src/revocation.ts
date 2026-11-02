@@ -4,8 +4,8 @@
 // https://aria.bar/docs/sdk
 // ─────────────────────────────────────────────────────────
 //
-// This is the ONLY module in the SDK that requires network
-// access. All other operations are fully offline.
+// One of the two modules that use the network, with ./status. Every other
+// operation is fully offline.
 
 import { RevocationCheckError } from './errors';
 import type { RevocationResult } from './types';
@@ -34,15 +34,21 @@ interface RevocationOptions {
 /**
  * Check the revocation status of an AID via the ARIA public API.
  *
- * This is the **only function in the SDK that requires internet access**.
- * It performs a single HTTP GET to the ARIA API's verification endpoint
- * and returns the current revocation status.
+ * It performs a single HTTP GET to the ARIA API's verification endpoint and
+ * returns the revocation status of the DID's **current** credential.
+ *
+ * @deprecated Use {@link checkCredentialStatus}. This call names only the DID,
+ * and a DID can hold a succession of credentials: after a renewal it reports the
+ * newest one, so a superseded credential still reads `active` here. An answer
+ * without a recognized status is an error since 1.2.0; before, it read as
+ * `active`.
  *
  * @param did - The agent's DID to check (e.g. `"did:aria:example.com:my-agent"`)
  * @param options - Optional configuration (custom API URL)
  * @returns The revocation status with a timestamp of when the check was performed
  * @throws {RevocationCheckError} If the API is unreachable, returns a non-200
- *   status, or the request times out after 5 seconds
+ *   status, answers without a status of `"active"` or `"revoked"`, or the
+ *   request times out after 5 seconds
  *
  * @example
  * ```typescript
@@ -94,12 +100,17 @@ export async function checkRevocation(
       );
     }
 
-    const data = await response.json() as { status?: string };
-    const status = data.status === 'revoked' ? 'revoked' as const : 'active' as const;
+    const data = await response.json() as { status?: unknown };
+    // Fail closed: an answer that does not say "active" is not read as active.
+    if (data.status !== 'active' && data.status !== 'revoked') {
+      throw new RevocationCheckError(
+        `ARIA API answered without a recognized revocation status. Endpoint: ${url}`,
+      );
+    }
 
     return {
       did,
-      status,
+      status: data.status,
       checkedAt: new Date().toISOString(),
     };
   } catch (error) {

@@ -1,0 +1,59 @@
+{
+  "name": "@trustlayer-foundation/aria-ap",
+  "version": "1.0.0",
+  "description": "ARIA AP: authenticate an agent's request and its receiver, admit it, and sign and verify its receipt. Built on the credential verifier of @trustlayer-foundation/aria-sdk.",
+  "license": "Apache-2.0",
+  "author": "TrustLayer Foundation",
+  "homepage": "https://aria.bar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trustlayer-foundation/aria-protocol.git",
+    "directory": "sdk/aria-ap-ts"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/*.json": "./schemas/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "API.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@trustlayer-foundation/aria-sdk": "^1.0.0"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
+  },
+  "devDependencies": {
+    "@noble/post-quantum": "^0.5.4",
+    "@types/node": "^22.20.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "tsup": "8.5.1",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.7"
+  }
+}

@@ -7,6 +7,69 @@ All notable changes to the ARIA Protocol specification.
 
 ## Unreleased
 
+### Changed — the edition of 1 November 2026, adopted by TLF
+
+- **Specification, revised edition (decision D7).** §3, §5, §6, §7 and §8 of
+  [aria.bar/spec](https://aria.bar/spec) follow revisions r3 and r4: issuance under the
+  federation contract, one `_aria-bind` record per account and domain, both signature
+  halves required for as long as a credential is valid and judged as one, human
+  approval refused when missing, a status list valid 24 hours and re-signed hourly, and
+  ARIA AP as the admission protocol. ATP/1 becomes a deprecated appendix.
+- **Federation contract 1.0.0.** `federation/openapi.yaml` and `exchange.schema.json`
+  are no longer drafts.
+- **Scopes (D5).** An authority issues exactly three lower-case segments,
+  `namespace:resource:action`, with no version; a 1.0 credential issued earlier may
+  carry two or more and stays readable. Wildcards exist only in a receiver's policy,
+  where a matching deny prevails. `conformance/vectors/scopes.json` follows.
+- **Holder key (D6).** `z` and base58btc of the raw 32-byte Ed25519 key is ARIA's own
+  encoding, not Multikey, whose form adds `0xed01`. Nothing signed changes.
+- **ARIA AP retrieval (D4).** A current credential of the operation's sender DID, with
+  proof of possession, retrieves the original receipts, renewed or not; revoking deletes
+  no receipt and does not prevent historical verification. The lookup schema is no
+  longer provisional.
+- **`previousCredentialId` (D11)** stays: it relates a renewal to the credential before
+  it. The DID never changes, and verification never walks the chain.
+- **Proof metadata (D12).** The current suite is kept; a credential's `proof` metadata
+  is unsigned, and the signed `validFrom` and `validUntil` are the dates that count.
+
+### Added — the ARIA SDK and ARIA AP 1.0.0, and the demonstration issuer's key set
+
+- **Two packages**, `@trustlayer-foundation/aria-sdk` (`sdk/aria-ts`: credentials and
+  their status) and `@trustlayer-foundation/aria-ap` (`sdk/aria-ap-ts`: requests,
+  admission, operations and receipts), version 1.0.0, in the npm organization
+  `trustlayer-foundation` (decision D9), pinned by integrity in the release manifest
+  `release/aria-1.0.json`. ARIA AP declares the SDK as a peer of the same major version.
+- **`@aria-registry/verify` 1.x** is no longer served by npm; its source stays in
+  `sdk/verify-ts/`, and the migration guide leads to the two packages.
+- **Key set (D1, D2).** `schema/aria-keyset-1.json` and the demonstration issuer's set,
+  `release/trust/registry.aria.bar.keyset.json`, whose anchor the manifest pins. The SDK
+  trusts no issuer by default; today's issuer is a demonstration, and production 1.0
+  will use a new TLF issuer and keys.
+
+### Added — `@aria-registry/verify` checks the presented credential's own status
+
+A DID can hold a succession of credentials once the registry renews them: a renewal
+issues a new credential and revokes the previous one as superseded. `checkRevocation(did)`
+asks by DID, so it answers for the newest credential, and it read every answer without a
+`status` field as `active`. No server had ever sent that field, so it reported every
+credential active, revoked ones included.
+
+- **`checkCredentialStatus(credential, options)`** establishes the status of the presented
+  credential. It returns `'active'`, `'revoked'` or `'superseded'`.
+  - **By default, the W3C Bitstring Status List.** It reads the list the credential names,
+    at the credential's own index. The list must verify under the registry keys, both
+    halves; come from the credential's issuer; state a `validFrom` and a `validUntil` at
+    most 24 hours apart and be within them; and hold at least 131,072 entries.
+  - **With `via: 'online'`, `/v1/verify/{did}`.** The answer counts only if its
+    `credentialId` is the presented credential's `id`; otherwise the credential was
+    superseded.
+  - **Failures throw.** Anything that cannot be established throws `RevocationCheckError`,
+    never reads as `active`.
+- **`checkRevocation(did)` is deprecated** and fails closed: an answer without a status of
+  `active` or `revoked` throws.
+- The composite-proof decoding moves to an internal module shared by credentials and
+  status lists; verification is unchanged.
+
 ### Fixed — a natural person's name no longer has to appear in a public AID
 
 The schemas required `principal.legalName` of every principal, while `COM-09` forbids a

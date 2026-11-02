@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/aria-ap-receipt-1.json",
+  "title": "ARIA AP receipt, type aria-ap-receipt/1",
+  "description": "A receiver's signed statement about one attempt or one operation of ARIA AP. Its format, one receipt carrying the decision's HTTP status and code, and its retrieval rules are decided (D4). Conforming to it does not make a receipt genuine, does not mean its signature is valid, and does not authorize anything: a verifier also parses the JSON strictly (no duplicate keys, integers only, at most 4096 bytes), checks the Ed25519 signature over the canonical JSON without proof.value, pins the exact receiver credential, and binds the receipt to an attempt it kept.",
+  "$comment": "Rules JSON Schema cannot express, checked by the ARIA AP SDK and conformance/ap/check.mjs: duplicate keys and numbers with a fraction or exponent are refused before parsing; the whole document is at most 4096 bytes of UTF-8; id differs from urn:uuid:<request.id>; credential URLs are exactly their parsed href.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "id", "request", "receiver", "issuedAt", "outcome", "proof"],
+  "properties": {
+    "type": { "const": "aria-ap-receipt/1" },
+    "id": {
+      "description": "Identity of this immutable statement, chosen by the receiver.",
+      "type": "string",
+      "pattern": "^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sender", "digest"],
+      "properties": {
+        "id": { "description": "The logical operation: the signed ARIA-Operation value.", "$ref": "#/$defs/uuid" },
+        "sender": { "description": "The DID and exact credential the attempt was authenticated with.", "$ref": "#/$defs/party" },
+        "digest": { "description": "SHA-256 of the attempt's RFC 9421 signature base.", "$ref": "#/$defs/digest" }
+      }
+    },
+    "receiver": { "description": "The receiver's DID and the exact credential whose holder key signs.", "$ref": "#/$defs/party" },
+    "issuedAt": { "description": "Asserted by the receiver; not an independent timestamp.", "$ref": "#/$defs/instant" },
+    "outcome": { "$ref": "#/$defs/outcome" },
+    "proof": {
+      "description": "Ed25519 over the canonical JSON of the whole receipt without proof.value, so alg and keyid are signed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "keyid", "value"],
+      "properties": {
+        "alg": { "const": "ed25519" },
+        "keyid": { "type": "string", "minLength": 1 },
+        "value": { "description": "Unpadded base64url of 64 bytes.", "type": "string", "pattern": "^[A-Za-z0-9_-]{86}$" }
+      }
+    }
+  },
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" },
+    "digest": { "type": "string", "pattern": "^sha-256=:[A-Za-z0-9+/]{43}=:$" },
+    "instant": { "description": "RFC 3339 in UTC to the second, a date that exists. The format must be asserted (for example Ajv with ajv-formats): the pattern alone does not refuse 31 February.", "type": "string", "format": "date-time", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$" },
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["did", "credential"],
+      "properties": {
+        "did": { "type": "string", "pattern": "^did:aria:" },
+        "credential": { "description": "The exact credential document's https URL, without query, fragment or user information.", "type": "string", "pattern": "^https://[^\\s?#@]+$" }
+      }
+    },
+    "receiverCode": { "description": "A receiver's own reason, <namespace>.<name>, never in the aria namespace.", "type": "string", "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$", "not": { "pattern": "^aria\\." } },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "applies", "status", "code"],
+      "properties": {
+        "state": { "enum": ["accepted", "completed", "rejected"] },
+        "applies": { "description": "operation: the operation's outcome. attempt: this attempt only; it says nothing of the operation.", "enum": ["operation", "attempt"] },
+        "status": { "description": "The original decision's HTTP status.", "type": "integer" },
+        "code": { "type": "string" },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["digest"],
+          "properties": { "digest": { "$ref": "#/$defs/digest" } }
+        }
+      },
+      "oneOf": [
+        { "properties": { "state": { "const": "completed" }, "applies": { "const": "operation" }, "status": { "enum": [200, 201] }, "code": { "const": "aria.completed" } } },
+        { "properties": { "state": { "const": "accepted" }, "applies": { "const": "operation" }, "status": { "const": 202 }, "code": { "const": "aria.accepted" } } },
+        { "properties": { "state": { "const": "rejected" }, "applies": { "const": "operation" }, "status": { "const": 422 }, "code": { "$ref": "#/$defs/receiverCode" } } },
+        { "properties": { "state": { "const": "rejected" }, "applies": { "const": "attempt" }, "status": { "const": 403 }, "code": { "anyOf": [{ "$ref": "#/$defs/receiverCode" }, { "enum": ["aria.audience_mismatch", "aria.credential_expired", "aria.credential_revoked", "aria.credential_superseded", "aria.level_insufficient", "aria.scope_missing", "aria.scope_denied", "aria.intent_mismatch", "aria.approval_required", "aria.approval_invalid", "aria.delegation_unsupported"] }] } } },
+        { "properties": { "state": { "const": "rejected" }, "applies": { "const": "attempt" }, "status": { "const": 409 }, "code": { "enum": ["aria.idempotency_conflict", "aria.operation_in_progress"] } } },
+        { "properties": { "state": { "const": "rejected" }, "applies": { "const": "attempt" }, "status": { "const": 503 }, "code": { "const": "aria.status_unavailable" } } }
+      ]
+    }
+  }
+}

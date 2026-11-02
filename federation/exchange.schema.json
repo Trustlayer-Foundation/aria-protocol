@@ -1,0 +1,1277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aria.bar/schema/federation-exchange-1.json",
+  "title": "ARIA federation exchange 1.0: what a Registration Authority sends the authority, and what it answers",
+  "$comment": "ARIA 1.0, adopted by TLF on 1 November 2026 and implemented by the ARIA authority. Every object is closed and no object uses patternProperties or propertyNames, so every path a refusal carries is made of names defined here and array indices. Agreement between values (reservation, statement, attestation, accreditation, level rules) is judged by the authority and exercised by conformance/federation; a request that passes this schema can still be refused.",
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[47][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,3})?Z$"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "policyVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "L0",
+        "L1",
+        "L2"
+      ]
+    },
+    "domain": {
+      "$comment": "Lower-case only: DNS is case-insensitive, so a second spelling would be a second identifier for one agent.",
+      "type": "string",
+      "maxLength": 253,
+      "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "agentDid": {
+      "$comment": "Registry form did:aria:<host>:u-<8>:<slug> or domain form did:aria:<domain>:<slug>. The slug is the agent name: lower-case, not 'org', and no run of seven or more digits.",
+      "type": "string",
+      "maxLength": 330,
+      "pattern": "^did:aria:(?:(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?:u-[A-Za-z0-9]{8}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?):(?!org$)(?![a-z0-9-]*[0-9]{7})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "principalDid": {
+      "$comment": "Principal registry form did:aria:u-<8>:org or principal domain form did:aria:<domain>:org. A first component starting with u- is an account, so a domain there is refused (conformance/federation/identifiers.json).",
+      "type": "string",
+      "maxLength": 270,
+      "pattern": "^did:aria:(?:u-[A-Za-z0-9]{8}|(?!u-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?):org$"
+    },
+    "kid": {
+      "type": "string",
+      "maxLength": 300,
+      "pattern": "^did:aria:[a-z0-9.:-]+#[a-z0-9-]{1,32}$"
+    },
+    "compositeValue": {
+      "$comment": "'u' + base64url(u32be(3309) || ML-DSA-65 signature || Ed25519 signature): always 4,504 characters, the AID proofValue encoding.",
+      "type": "string",
+      "pattern": "^u[A-Za-z0-9_-]{4503}$"
+    },
+    "keyedSignature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kid",
+        "value"
+      ],
+      "properties": {
+        "kid": {
+          "$ref": "#/$defs/kid"
+        },
+        "value": {
+          "$ref": "#/$defs/compositeValue"
+        }
+      }
+    },
+    "scope": {
+      "$comment": "What an authority issues: exactly three lower-case segments, namespace:resource:action, with no version. A 1.0 credential issued earlier may carry two or more (aid-1.0.json reads them).",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+    },
+    "assertion": {
+      "$comment": "The RA request assertion. Its canonical JSON (RFC 8785) is the exact signing input of the request signature: aria-ra-request-v1 binds the operation, the audience, a five-minute window and the digest of the payload.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ctx",
+        "ra_id",
+        "aud",
+        "op",
+        "request_id",
+        "created_at",
+        "expires_at",
+        "payload_digest"
+      ],
+      "properties": {
+        "ctx": {
+          "const": "aria-ra-request-v1"
+        },
+        "ra_id": {
+          "$ref": "#/$defs/principalDid"
+        },
+        "aud": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^did:aria:[a-z0-9.:-]+$"
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "reserve",
+            "mint",
+            "revoke",
+            "domain-bind",
+            "domain-check",
+            "domain-unbind"
+          ]
+        },
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "payload_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "envelope": {
+      "$comment": "Shape-checked before the request signature. The payload is read only after the signature, the assertion's window and the payload digest have passed, against the schema its op names.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assertion",
+        "signature",
+        "payload"
+      ],
+      "properties": {
+        "assertion": {
+          "$ref": "#/$defs/assertion"
+        },
+        "signature": {
+          "$ref": "#/$defs/keyedSignature"
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "reservePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "did",
+        "level",
+        "principal_did"
+      ],
+      "properties": {
+        "did": {
+          "$ref": "#/$defs/agentDid"
+        },
+        "level": {
+          "$ref": "#/$defs/level"
+        },
+        "principal_did": {
+          "$ref": "#/$defs/principalDid"
+        },
+        "renews": {
+          "$comment": "Admitted only where the authority enables renewal; otherwise refused as field_not_allowed at the parent. The credential this reservation renews: issued, unrevoked, same DID and principal.",
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "agentStatement": {
+      "$comment": "Signed by the agent's own holder keys over aria-agent-statement-v1: the agent's declaration and its proof of possession of the reservation's challenge.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "did",
+        "principal_did",
+        "agent_name",
+        "agent_version",
+        "holder_keys",
+        "scopes",
+        "hitl_required",
+        "possession_challenge",
+        "created_at",
+        "sdk"
+      ],
+      "properties": {
+        "type": {
+          "const": "ARIAAgentStatement"
+        },
+        "did": {
+          "$ref": "#/$defs/agentDid"
+        },
+        "principal_did": {
+          "$ref": "#/$defs/principalDid"
+        },
+        "agent_name": {
+          "type": "string",
+          "maxLength": 63,
+          "pattern": "^(?!org$)(?![a-z0-9-]*[0-9]{7})[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+        },
+        "agent_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "holder_keys": {
+          "$comment": "'z' + base58btc of the raw public key, as the enroll SDKs encode it. Decoded lengths 32 and 1,952 bytes are checked by the authority.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ed25519",
+            "mldsa65"
+          ],
+          "properties": {
+            "ed25519": {
+              "type": "string",
+              "pattern": "^z[1-9A-HJ-NP-Za-km-z]{40,50}$"
+            },
+            "mldsa65": {
+              "type": "string",
+              "pattern": "^z[1-9A-HJ-NP-Za-km-z]{2600,2700}$"
+            }
+          }
+        },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/scope"
+          }
+        },
+        "hitl_required": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/scope"
+          }
+        },
+        "possession_challenge": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "sdk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "@aria-registry/enroll-sdk-node",
+                "@aria-registry/enroll-sdk-web",
+                "aria-enroll-sdk"
+              ]
+            },
+            "version": {
+              "$ref": "#/$defs/semver"
+            }
+          }
+        }
+      }
+    },
+    "check": {
+      "$comment": "Which outcomes and metadata each code permits, and which codes each level requires, is judged by the authority, not here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "outcome",
+        "at"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "EMAIL_CONTROL",
+            "ADMIN_CONFIRMATION",
+            "ENROLLMENT_AUTHORIZATION",
+            "PERSON_IDV",
+            "DOCUMENT_AUTHENTIC",
+            "LIVENESS_PAD",
+            "FACE_MATCH",
+            "ADULT",
+            "CONSENT",
+            "DOMAIN_CONTROL_PRECHECK",
+            "RDAP_CROSSCHECK",
+            "ENTITY_CONFIRMED",
+            "ENTITY_ACTIVE",
+            "LEGAL_PERSON",
+            "NAME_MATCH",
+            "LINK",
+            "AUTHORITY_DECLARATION",
+            "SANCTIONS_CLEAR",
+            "PERSON_CONTINUITY"
+          ]
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "pass_after_review",
+            "match",
+            "mismatch_reviewed",
+            "unavailable",
+            "recorded",
+            "signed",
+            "clear",
+            "cleared_after_review"
+          ]
+        },
+        "at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "route": {
+          "type": "string",
+          "enum": [
+            "LEI",
+            "REGISTRY_DIRECT",
+            "DOCUMENTARY",
+            "REGISTRY_LISTED",
+            "DOMAIN_MAILBOX",
+            "WRITTEN_AUTHORIZATION"
+          ]
+        },
+        "lists": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "OFAC_SDN",
+                  "EU_CONSOLIDATED",
+                  "UN_CONSOLIDATED"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{2}_NATIONAL$"
+              }
+            ]
+          }
+        },
+        "lists_as_of": {
+          "$ref": "#/$defs/date"
+        },
+        "assurance": {
+          "type": "string",
+          "enum": [
+            "PAD_ISO30107_3_L2"
+          ]
+        }
+      }
+    },
+    "attestation": {
+      "$comment": "Signed by the RA over aria-ra-attestation-v1 and stored by the authority with its signature. Canonical size at most 4,096 bytes.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "attestation_id",
+        "ra_id",
+        "requirements_version",
+        "level",
+        "subject",
+        "principal",
+        "checks",
+        "terms_version",
+        "privacy_version",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "type": {
+          "const": "ARIARegistrationAttestation"
+        },
+        "attestation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "ra_id": {
+          "$ref": "#/$defs/principalDid"
+        },
+        "requirements_version": {
+          "type": "string",
+          "enum": [
+            "1.2",
+            "1.3"
+          ]
+        },
+        "level": {
+          "$ref": "#/$defs/level"
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "did",
+            "reservation_id",
+            "statement_digest"
+          ],
+          "properties": {
+            "did": {
+              "$ref": "#/$defs/agentDid"
+            },
+            "reservation_id": {
+              "type": "string",
+              "pattern": "^res_[0-9A-HJKMNP-TV-Z]{26}$"
+            },
+            "statement_digest": {
+              "$ref": "#/$defs/digest"
+            },
+            "renews": {
+              "$comment": "Admitted only where the authority enables renewal; otherwise refused as field_not_allowed at the parent. Equal to the reservation's renews, so the RA signs the renewal it vouches for.",
+              "$ref": "#/$defs/uuid"
+            }
+          }
+        },
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "did",
+            "jurisdiction"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "Person",
+                "Organization"
+              ]
+            },
+            "did": {
+              "$ref": "#/$defs/principalDid"
+            },
+            "jurisdiction": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$"
+            },
+            "legal_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^[^@\\u0000-\\u001f\\u007f]+$"
+            },
+            "registry_ref": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scheme",
+                "id"
+              ],
+              "properties": {
+                "scheme": {
+                  "type": "string",
+                  "enum": [
+                    "LEI",
+                    "GB-CH",
+                    "MX-RFC-PM",
+                    "ES-NIF-PJ"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Z0-9&Ñ]{6,20}$"
+                }
+              }
+            }
+          }
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/check"
+          }
+        },
+        "terms_version": {
+          "$ref": "#/$defs/policyVersion"
+        },
+        "privacy_version": {
+          "$ref": "#/$defs/policyVersion"
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "mintPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reservation_id",
+        "agent_statement",
+        "agent_signature",
+        "attestation",
+        "attestation_signature"
+      ],
+      "properties": {
+        "reservation_id": {
+          "type": "string",
+          "pattern": "^res_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "agent_statement": {
+          "$ref": "#/$defs/agentStatement"
+        },
+        "agent_signature": {
+          "$ref": "#/$defs/compositeValue"
+        },
+        "attestation": {
+          "$ref": "#/$defs/attestation"
+        },
+        "attestation_signature": {
+          "$ref": "#/$defs/keyedSignature"
+        }
+      }
+    },
+    "reserveResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "reservation_id",
+        "did",
+        "level",
+        "expires_at",
+        "possession_challenge"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "reservation_id": {
+          "type": "string",
+          "pattern": "^res_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "did": {
+          "$ref": "#/$defs/agentDid"
+        },
+        "level": {
+          "$ref": "#/$defs/level"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "possession_challenge": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "renews": {
+          "$comment": "Echoes the reservation's renews.",
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "mintResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "credential_id",
+        "status_list_index",
+        "credential"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "credential_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "status_list_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "credential": {
+          "$comment": "The signed ARIA Identity Document.",
+          "$ref": "https://aria.bar/schema/aid-1.0.json"
+        }
+      }
+    },
+    "error": {
+      "$comment": "The only body a refusal carries. path is a JSON pointer made of names this schema defines and array indices; an unknown member is reported at its parent. request_id is present only once the request signature has verified. correlation_id identifies the answer in the authority's log.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "path",
+        "correlation_id"
+      ],
+      "properties": {
+        "code": {
+          "$comment": "The HTTP status each code travels with is listed in openapi.yaml.",
+          "type": "string",
+          "enum": [
+            "body_too_large",
+            "malformed_json",
+            "field_not_allowed",
+            "field_missing",
+            "invalid_value",
+            "unknown_key",
+            "signature_invalid",
+            "operation_mismatch",
+            "audience_mismatch",
+            "assertion_window_too_long",
+            "assertion_not_yet_valid",
+            "assertion_expired",
+            "payload_digest_mismatch",
+            "ra_not_in_good_standing",
+            "level_above_accreditation",
+            "request_id_conflict",
+            "did_unavailable",
+            "reservation_consumed",
+            "attestation_reused",
+            "account_not_managed",
+            "already_revoked",
+            "revocation_not_permitted",
+            "renewal_not_permitted",
+            "credential_unknown",
+            "did_form_mismatch",
+            "domain_not_allowed",
+            "level_not_supported",
+            "binding_mismatch",
+            "object_too_large",
+            "reservation_unknown",
+            "reservation_expired",
+            "field_not_allowed_for_level",
+            "field_missing_for_level",
+            "possession_not_proven",
+            "holder_key_reused",
+            "attestation_signature_invalid",
+            "attestation_window_too_long",
+            "attestation_not_yet_valid",
+            "attestation_expired",
+            "requirements_baseline_mismatch",
+            "hitl_not_subset",
+            "principal_type_not_allowed",
+            "principal_field_not_allowed",
+            "check_duplicate",
+            "check_set_mismatch",
+            "check_outcome_not_allowed",
+            "check_metadata_not_allowed",
+            "check_metadata_missing",
+            "check_metadata_invalid",
+            "check_in_future",
+            "check_stale",
+            "admin_confirmation_out_of_window",
+            "enrollment_authorization_out_of_window",
+            "consent_after_capture",
+            "credential_too_large",
+            "domain_binding_unknown",
+            "domain_binding_missing",
+            "domain_binding_ended",
+            "domain_binding_absent",
+            "domain_binding_insecure",
+            "domain_binding_unavailable",
+            "unavailable",
+            "signer_unavailable",
+            "internal_error"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "revokePayload": {
+      "$comment": "Revocation by the RA that issued the credential or now manages its account.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credential_id",
+        "reason_code"
+      ],
+      "properties": {
+        "credential_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/revocationReason"
+        }
+      }
+    },
+    "revokeResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "credential_id",
+        "status_list_index",
+        "revoked_at",
+        "reason_code"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "credential_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "status_list_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revoked_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/revocationReason"
+        }
+      }
+    },
+    "revocationReason": {
+      "type": "string",
+      "enum": [
+        "key_compromise",
+        "superseded",
+        "cessation_of_operation",
+        "privilege_withdrawn",
+        "ra_request"
+      ]
+    },
+    "registryPrincipalDid": {
+      "$comment": "Principal registry form did:aria:u-<8>:org: the account the RA manages.",
+      "type": "string",
+      "pattern": "^did:aria:u-[A-Za-z0-9]{8}:org$"
+    },
+    "domainBindPayload": {
+      "$comment": "A domain-form principal already names its domain, so only the registry form is bound. The domain must not be under the registry host (domain_not_allowed).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_did",
+        "domain"
+      ],
+      "properties": {
+        "principal_did": {
+          "$ref": "#/$defs/registryPrincipalDid"
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        }
+      }
+    },
+    "domainCheckPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_id"
+      ],
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "unbindReason": {
+      "type": "string",
+      "enum": [
+        "principal_request",
+        "domain_lost",
+        "account_closed",
+        "superseded"
+      ]
+    },
+    "domainUnbindPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_id",
+        "reason_code"
+      ],
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/unbindReason"
+        }
+      }
+    },
+    "binding": {
+      "$comment": "A binding as its RA sees it. state: pending (never seen), active (seen at least once), revoked, expired. observed is the latest read, null before the first.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_id",
+        "domain",
+        "principal_did",
+        "record",
+        "created_at",
+        "expires_at",
+        "state",
+        "observed"
+      ],
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "domain": {
+          "$ref": "#/$defs/domain"
+        },
+        "principal_did": {
+          "$ref": "#/$defs/registryPrincipalDid"
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^_aria-bind\\."
+            },
+            "type": {
+              "const": "TXT"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^v=ARIABIND1; b=[A-Za-z0-9_-]{43}$"
+            }
+          }
+        },
+        "created_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "active",
+            "revoked",
+            "expired"
+          ]
+        },
+        "observed": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "at",
+                "result",
+                "dnssec"
+              ],
+              "properties": {
+                "at": {
+                  "$ref": "#/$defs/timestamp"
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "absent",
+                    "unavailable"
+                  ]
+                },
+                "dnssec": {
+                  "type": "string",
+                  "enum": [
+                    "secure",
+                    "insecure",
+                    "unknown"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "bindingResponse": {
+      "$comment": "The answer to domain-bind and domain-check. A check carries the read it just made in binding.observed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "binding"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "binding": {
+          "$ref": "#/$defs/binding"
+        }
+      }
+    },
+    "unbindResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "binding_id",
+        "revoked_at",
+        "reason_code"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "binding_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "revoked_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/unbindReason"
+        }
+      }
+    },
+    "reserveRequest": {
+      "$comment": "A reserve request: the envelope, its assertion naming reserve, and the reserve payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "reserve"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/reservePayload"
+        }
+      }
+    },
+    "mintRequest": {
+      "$comment": "A mint request: the envelope, its assertion naming mint, and the mint payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "mint"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/mintPayload"
+        }
+      }
+    },
+    "revokeRequest": {
+      "$comment": "A revoke request: the envelope, its assertion naming revoke, and the revoke payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "revoke"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/revokePayload"
+        }
+      }
+    },
+    "domainBindRequest": {
+      "$comment": "A domain-bind request: the envelope, its assertion naming domain-bind, and the domain-bind payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "domain-bind"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/domainBindPayload"
+        }
+      }
+    },
+    "domainCheckRequest": {
+      "$comment": "A domain-check request: the envelope, its assertion naming domain-check, and the domain-check payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "domain-check"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/domainCheckPayload"
+        }
+      }
+    },
+    "domainUnbindRequest": {
+      "$comment": "A domain-unbind request: the envelope, its assertion naming domain-unbind, and the domain-unbind payload.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/envelope"
+        }
+      ],
+      "properties": {
+        "assertion": {
+          "properties": {
+            "op": {
+              "const": "domain-unbind"
+            }
+          }
+        },
+        "payload": {
+          "$ref": "#/$defs/domainUnbindPayload"
+        }
+      }
+    },
+    "refusal400": {
+      "$comment": "A refusal carried by HTTP 400.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "malformed_json"
+          ]
+        }
+      }
+    },
+    "refusal401": {
+      "$comment": "A refusal carried by HTTP 401.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "unknown_key",
+            "signature_invalid",
+            "operation_mismatch",
+            "audience_mismatch",
+            "assertion_window_too_long",
+            "assertion_not_yet_valid",
+            "assertion_expired",
+            "payload_digest_mismatch"
+          ]
+        }
+      }
+    },
+    "refusal403": {
+      "$comment": "A refusal carried by HTTP 403.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "ra_not_in_good_standing",
+            "level_above_accreditation",
+            "account_not_managed",
+            "revocation_not_permitted",
+            "renewal_not_permitted"
+          ]
+        }
+      }
+    },
+    "refusal404": {
+      "$comment": "A refusal carried by HTTP 404.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "domain_binding_unknown"
+          ]
+        }
+      }
+    },
+    "refusal409": {
+      "$comment": "A refusal carried by HTTP 409.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "request_id_conflict",
+            "did_unavailable",
+            "reservation_consumed",
+            "attestation_reused",
+            "already_revoked",
+            "domain_binding_ended"
+          ]
+        }
+      }
+    },
+    "refusal413": {
+      "$comment": "A refusal carried by HTTP 413.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "body_too_large"
+          ]
+        }
+      }
+    },
+    "refusal422": {
+      "$comment": "A refusal carried by HTTP 422.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "field_not_allowed",
+            "field_missing",
+            "invalid_value",
+            "credential_unknown",
+            "did_form_mismatch",
+            "domain_not_allowed",
+            "level_not_supported",
+            "binding_mismatch",
+            "object_too_large",
+            "reservation_unknown",
+            "reservation_expired",
+            "field_not_allowed_for_level",
+            "field_missing_for_level",
+            "possession_not_proven",
+            "holder_key_reused",
+            "attestation_signature_invalid",
+            "attestation_window_too_long",
+            "attestation_not_yet_valid",
+            "attestation_expired",
+            "requirements_baseline_mismatch",
+            "hitl_not_subset",
+            "principal_type_not_allowed",
+            "principal_field_not_allowed",
+            "check_duplicate",
+            "check_set_mismatch",
+            "check_outcome_not_allowed",
+            "check_metadata_not_allowed",
+            "check_metadata_missing",
+            "check_metadata_invalid",
+            "check_in_future",
+            "check_stale",
+            "admin_confirmation_out_of_window",
+            "enrollment_authorization_out_of_window",
+            "consent_after_capture",
+            "credential_too_large",
+            "domain_binding_missing",
+            "domain_binding_absent",
+            "domain_binding_insecure"
+          ]
+        }
+      }
+    },
+    "refusal500": {
+      "$comment": "A refusal carried by HTTP 500.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "internal_error"
+          ]
+        }
+      }
+    },
+    "refusal503": {
+      "$comment": "A refusal carried by HTTP 503.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/error"
+        }
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "domain_binding_unavailable",
+            "unavailable",
+            "signer_unavailable"
+          ]
+        }
+      }
+    }
+  }
+}

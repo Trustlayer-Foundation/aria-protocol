@@ -366,3 +366,61 @@ export interface RevocationResult {
   /** ISO 8601 timestamp of when this check was performed. */
   checkedAt: string;
 }
+
+// ── Credential Status ─────────────────────────────────────
+
+/**
+ * Options for {@link checkCredentialStatus}.
+ *
+ * @since 1.2.0
+ */
+export interface CredentialStatusOptions {
+  /**
+   * How to establish the status.
+   *
+   * - `"statusList"` (default): the W3C Bitstring Status List the credential
+   *   names, verified under the registry keys, at the credential's own index.
+   *   One fetch serves every credential and tells the issuer nothing about
+   *   which one is being checked.
+   * - `"online"`: the ARIA API's `/v1/verify/{did}`, accepted only when it
+   *   answers about this very credential.
+   */
+  via?: 'statusList' | 'online';
+
+  /**
+   * Base URL of the ARIA API, for testing or a custom registry. For
+   * `"statusList"` it replaces the origin of the list's URL; the list must
+   * still identify itself by the URL the credential names.
+   * @default "https://api.aria.bar"
+   */
+  apiUrl?: string;
+}
+
+/**
+ * Whether one credential — the one presented — is in force.
+ * Returned by {@link checkCredentialStatus}.
+ *
+ * @since 1.2.0
+ */
+export interface CredentialStatusResult {
+  /** The DID the credential is about. */
+  did: string;
+
+  /** The presented credential's own identifier (its top-level `id`). */
+  credentialId: string;
+
+  /**
+   * - `"active"`: in force.
+   * - `"revoked"`: revoked, including superseded by a renewal when read from
+   *   the status list.
+   * - `"superseded"`: the online answer concerns a newer credential of the
+   *   same DID, so the presented one was replaced and is no longer in force.
+   */
+  status: 'active' | 'revoked' | 'superseded';
+
+  /** How the status was established. */
+  via: 'statusList' | 'online';
+
+  /** ISO 8601 timestamp of when this check was performed. */
+  checkedAt: string;
+}

@@ -160,11 +160,11 @@
             "publicKeyMultibase": {
               "type": "string",
               "pattern": "^z[1-9A-HJ-NP-Za-km-z]+$",
-              "description": "Multibase-encoded Ed25519 public key ('z' prefix + base58btc). The corresponding private key was delivered to the registrant once at issuance and is not retrievable from the registry."
+              "description": "'z' + base58btc of the raw 32-byte Ed25519 public key. This is ARIA's own encoding, not Multikey (whose form of the same key adds the 0xed01 prefix). The agent generates the key pair and submits only the public key; no registry or authority ever holds the private key."
             }
           },
           "additionalProperties": false,
-          "description": "Holder verification key (Ed25519) bound to this AID. Presenters MUST sign a holder proof with the corresponding private key for verification to succeed. Verifiers MUST extract this key from the SIGNED credentialSubject \u2014 never from external sources such as the registry database \u2014 to preserve the PQC integrity guarantee. Re-issuance generates a new keypair; old holder proofs remain verifiable against superseded AIDs but not against the current one."
+          "description": "Holder verification key (Ed25519) bound to this AID. Possession is proved by signing with the corresponding private key: under ARIA AP, every request is signed with it. Verifiers MUST extract this key from the SIGNED credentialSubject \u2014 never from external sources such as the registry database \u2014 to preserve the PQC integrity guarantee. Re-issuance uses the key pair the agent submits for it; old holder proofs remain verifiable against superseded AIDs but not against the current one."
         },
         "agentName": {
           "type": "string",
@@ -197,7 +197,7 @@
           },
           "minItems": 1,
           "uniqueItems": true,
-          "description": "Authorized scopes from the ARIA Scope Registry."
+          "description": "The scopes the agent declared at enrollment: what it intends to do. Each receiver decides whether to admit them; a scope here grants nothing by itself."
         },
         "hitlRequired": {
           "type": "array",
@@ -205,7 +205,7 @@
             "type": "string"
           },
           "uniqueItems": true,
-          "description": "Scope identifiers that require human-in-the-loop approval before execution."
+          "description": "Scopes, among those declared, whose operations need a person's approval. Under ARIA AP a receiver refuses such an operation when no valid approval accompanies it; it does not hold the operation waiting."
         },
         "delegationDepth": {
           "type": "integer",

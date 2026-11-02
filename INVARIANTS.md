@@ -199,8 +199,11 @@ constant, is `[PLANNED]` — see invariant 4.
 The revocation endpoint, compiled into every published version of the verify SDK as
 `DEFAULT_API_URL` plus path.
 
-**This is the revocation mechanism the SDK actually uses.** It does not read
-`credentialStatus` from the credential; it asks this endpoint by DID.
+**This is the revocation mechanism every published SDK version uses.** Those versions do
+not read `credentialStatus` from the credential; they ask this endpoint by DID. From the
+unreleased 1.2.0, the SDK reads the credential's own status-list entry by default
+(`checkCredentialStatus`). It can still ask this endpoint, but it then accepts only an
+answer naming the presented credential.
 
 **Breaks if:** the route changes or the host stops answering — revocation checking
 fails for every pinned SDK version.
@@ -210,14 +213,15 @@ fails for every pinned SDK version.
 | Mechanism | Consumer |
 |---|---|
 | `credentialStatus` → Bitstring Status List at `/v1/status/1` | Third-party verifiers following W3C VC 2.0 |
-| `checkRevocation()` → `/v1/verify/{did}` | The reference verify SDK |
+| `checkRevocation()` → `/v1/verify/{did}` | The reference verify SDK up to 1.1.0, and pinned integrations |
 
 **This is a debt, and naming it is part of the invariant.** The per-DID call is a
 phone-home: it tells the registry which agent a verifier is asking about, which is
-exactly what the aggregate list avoids and what spec §8 warns against. The specification
-describes the aggregate Status List as the mechanism; the reference SDK does not use it.
-Moving the SDK to the aggregate list is `[PLANNED]`. Until then, both endpoints must
-keep answering, because pinned versions depend on the per-DID one.
+exactly what the aggregate list avoids and what spec §8 warns against. It also answers
+for the DID's newest credential only, so once a DID holds several, it cannot say whether
+a presented credential was superseded. The specification describes the aggregate Status
+List as the mechanism. The reference SDK reads it by default from the unreleased 1.2.0.
+Both endpoints must keep answering, because pinned versions depend on the per-DID one.
 
 ---
 

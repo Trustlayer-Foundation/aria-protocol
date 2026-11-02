@@ -1,0 +1,61 @@
+{
+  "_comment": "Identifiers the federation schema must accept or reject exactly as the authority's parser does. Keys name exchange.schema.json definitions. check.mjs runs them against the schema; the authority runs them against its parser. A first component starting with u- is an account in a principal DID, so a domain there is refused; an agent's domain may start with u-.",
+  "cases": {
+    "principalDid": {
+      "accept": [
+        "did:aria:example.com:org",
+        "did:aria:u-AbCd1234:org",
+        "did:aria:ua.example.com:org",
+        "did:aria:u.example.com:org",
+        "did:aria:sub.u-x.example:org",
+        "did:aria:example.c0m:org"
+      ],
+      "reject": [
+        "did:aria:u-example.com:org",
+        "did:aria:u-examples.org:org",
+        "did:aria:u-abcdefgh.com:org",
+        "did:aria:u-AbCd123:org",
+        "did:aria:u-AbCd12345:org",
+        "did:aria:Example.com:org",
+        "did:aria:example:org",
+        "did:aria:example.1com:org",
+        "did:aria:example.com:bot",
+        "did:aria:u-AbCd1234:Org"
+      ]
+    },
+    "registryPrincipalDid": {
+      "accept": [
+        "did:aria:u-AbCd1234:org",
+        "did:aria:u-7qk2mx9a:org"
+      ],
+      "reject": [
+        "did:aria:example.com:org",
+        "did:aria:u-example.com:org",
+        "did:aria:u-AbCd123:org"
+      ]
+    },
+    "agentDid": {
+      "accept": [
+        "did:aria:aria.bar:u-7qk2mx9a:invoice-bot",
+        "did:aria:aria.bar:u-7QK2MX9A:bot",
+        "did:aria:example.com:ordering-agent",
+        "did:aria:example.com:bot-555123",
+        "did:aria:u-example.com:bot",
+        "did:aria:ua.example.com:bot",
+        "did:aria:sub.u-x.example:bot",
+        "did:aria:u-example.com:u-7qk2mx9a:bot"
+      ],
+      "reject": [
+        "did:aria:u-AbCd1234:bot",
+        "did:aria:example.com:org",
+        "did:aria:aria.bar:u-7qk2mx9a:org",
+        "did:aria:example.com:bot-5551234",
+        "did:aria:example.com:Bot",
+        "did:aria:example.com:-bot",
+        "did:aria:aria.bar:u-7qk2mx9:bot",
+        "did:aria:aria.bar:example.com:bot",
+        "did:aria:Aria.bar:u-7qk2mx9a:bot"
+      ]
+    }
+  }
+}

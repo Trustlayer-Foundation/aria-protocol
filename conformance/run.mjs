@@ -9,7 +9,8 @@
  * Offline by design: the W3C context is pinned in `vectors/context-credentials-v2.json`
  * rather than fetched, so a run is deterministic and a network outage is not a failure.
  *
- * Usage: node conformance/run.mjs [--sdk <path to the verify SDK entry>]
+ * Usage: node conformance/run.mjs [--sdk <path to the SDK entry>] [--strict]
+ * Without --sdk it tests the ARIA SDK's build (`sdk/aria-ts/dist`) when present.
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
@@ -26,13 +27,16 @@ const report = (name, ok, detail) => {
   if (!ok) failures += 1;
 };
 const skip = (name, why) => console.log(`SKIP  ${name} — ${why}`);
+// Under --strict a check that cannot run fails: a release gate cannot rest on a skip.
+const strict = process.argv.includes('--strict');
+const unavailable = (name, why) => (strict ? report(name, false, why) : skip(name, why));
 
 // ── 1 · canonical serialisation, byte for byte ────────────────────────────────
 async function canonicalJsonCheck(sdkEntry) {
   const name = 'canonical serialisation matches the vectors byte for byte';
-  if (!sdkEntry) return skip(name, 'no SDK entry point given (--sdk)');
+  if (!sdkEntry) return unavailable(name, 'no SDK entry point given (--sdk)');
   const { canonicalJson } = await import(pathToFileURL(sdkEntry).href);
-  if (typeof canonicalJson !== 'function') return skip(name, 'the SDK does not export canonicalJson');
+  if (typeof canonicalJson !== 'function') return unavailable(name, 'the SDK does not export canonicalJson');
   const { vectors: cases } = load('canonical-json.json');
   const bad = cases.filter((c) => canonicalJson(c.input) !== c.expected_canonical_json);
   report(name, bad.length === 0, `${cases.length - bad.length}/${cases.length}`);
@@ -65,7 +69,7 @@ async function abnfCheck(sdkEntry) {
     parse = sdk.parseDid ?? sdk.isValidDid ?? null;
   }
   if (!parse) {
-    return skip(name, `${total} cases ready; no implementation exports a did:aria parser yet`);
+    return unavailable(name, `${total} cases ready; no implementation exports a did:aria parser yet`);
   }
   const wrong = [
     ...cases.accept.filter((c) => !parse(c.did)),
@@ -200,11 +204,107 @@ async function principalKindCheck(strict) {
   report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
 }
 
+// ── 6 · scopes and holder keys, as issued and as read ──────────────────────────
+// The shared cases of vectors/scopes.json and vectors/holder-keys.json, against the
+// schemas that state them. The authority and the SDK run the same cases against
+// their own code: what a schema cannot say (a key's length, order and torsion) is
+// judged there.
+async function scopeAndHolderKeyCheck(strict) {
+  const name = 'scopes and holder keys are accepted and refused as the shared cases say';
+  let Ajv2020, addFormats;
+  try {
+    Ajv2020 = (await import('ajv/dist/2020.js')).default;
+    addFormats = (await import('ajv-formats')).default;
+  } catch {
+    const why = 'ajv not installed — run `npm install` in conformance/';
+    return strict ? report(name, false, why) : skip(name, why);
+  }
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  addFormats(ajv);
+  const aid = JSON.parse(readFileSync(join(root, 'schema', 'aid-1.0.json'), 'utf8'));
+  const exchange = JSON.parse(readFileSync(join(root, 'federation', 'exchange.schema.json'), 'utf8'));
+  ajv.addSchema(aid);
+  ajv.addSchema(exchange);
+  const subject = aid.properties.credentialSubject.properties;
+  const judges = {
+    issued: ajv.getSchema(`${exchange.$id}#/$defs/scope`),
+    credential: ajv.compile(subject.scope.items),
+  };
+  const wrong = [];
+  let total = 0;
+  const scopes = load('scopes.json');
+  for (const [context, judge] of Object.entries(judges)) {
+    for (const [list, expected] of [['accept', true], ['reject', false]]) {
+      for (const s of scopes[context][list]) {
+        total += 1;
+        if (Boolean(judge(s)) !== expected) wrong.push(`${context}: ${s} should be ${expected ? 'accepted' : 'refused'}`);
+      }
+    }
+  }
+  const keys = load('holder-keys.json');
+  const encoding = ajv.compile(subject.holderKey.properties.publicKeyMultibase);
+  const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const base58 = (bytes) => {
+    let n = 0n;
+    for (const b of bytes) n = n * 256n + BigInt(b);
+    let out = '';
+    while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+    for (const b of bytes) { if (b !== 0) break; out = '1' + out; }
+    return out;
+  };
+  for (const k of keys.accept) {
+    total += 1;
+    const raw = Buffer.from(k.raw, 'hex');
+    if (raw.length !== 32 || k.publicKeyMultibase !== 'z' + base58(raw) || k.multikey !== 'z' + base58(Buffer.concat([Buffer.from([0xed, 0x01]), raw])) || !encoding(k.publicKeyMultibase)) {
+      wrong.push(`holder key: ${k.label} is not the z-base58btc of its 32 raw bytes`);
+    }
+  }
+  total += keys.reject.length; // judged by the authority and the SDK, which decode keys
+  report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
+}
+
+// ── 7 · the published key set ───────────────────────────────────────────────
+// vectors/keyset.json: the published form passes its schema and every fingerprint
+// is the SHA-256 of its key's canonical identity. Introductions and the refused
+// sets are judged by the publishing authority, which verifies composite signatures.
+async function keysetCheck(strict) {
+  const name = 'the published key set has its schema and its fingerprints';
+  let Ajv2020;
+  try {
+    Ajv2020 = (await import('ajv/dist/2020.js')).default;
+  } catch {
+    const why = 'ajv not installed — run `npm install` in conformance/';
+    return strict ? report(name, false, why) : skip(name, why);
+  }
+  const { createHash } = await import('node:crypto');
+  const doc = load('keyset.json');
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(JSON.parse(readFileSync(join(root, 'schema', 'aria-keyset-1.json'), 'utf8')));
+  const wrong = [];
+  if (!validate(doc.valid.published)) wrong.push(`schema: ${JSON.stringify(validate.errors)}`);
+  // The identity holds four plain strings: sorted keys are its canonical JSON.
+  const canonical = (o) => `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${JSON.stringify(o[k])}`).join(',')}}`;
+  for (const k of doc.valid.published.keys) {
+    const identity = { key_id: k.key_id, suite: k.suite, public_key_mldsa65: k.public_key_mldsa65, public_key_ed25519: k.public_key_ed25519 };
+    const expected = `sha256:${createHash('sha256').update(canonical(identity)).digest('hex')}`;
+    if (k.fingerprint !== expected) wrong.push(`${k.key_id}: fingerprint`);
+  }
+  // A set the publisher refuses for its spelling would also fail the schema once
+  // published: the two agree on the key-ID alphabet and the timestamp form.
+  const spelling = doc.refused.filter((c) => /fragment|fractional/.test(c.label));
+  for (const c of spelling) {
+    const asPublished = { ...c.configured, keys: c.configured.keys.map((k) => ({ ...k, fingerprint: `sha256:${'0'.repeat(64)}` })) };
+    if (validate(asPublished)) wrong.push(`${c.label}: passes the schema`);
+  }
+  if (spelling.length !== 2) wrong.push(`expected 2 spelling cases, found ${spelling.length}`);
+  const total = 1 + doc.valid.published.keys.length + spelling.length;
+  report(name, wrong.length === 0, wrong.length ? wrong.join(' · ') : `${total}/${total}`);
+}
+
 // ── run ───────────────────────────────────────────────────────────────────────
 const argSdk = process.argv.indexOf('--sdk');
 let sdkEntry = argSdk > -1 ? process.argv[argSdk + 1] : null;
 if (!sdkEntry) {
-  for (const guess of ['sdk/verify-ts/dist/index.mjs', 'sdk/verify-ts/dist/index.js']) {
+  for (const guess of ['sdk/aria-ts/dist/index.js']) {
     if (existsSync(join(root, guess))) { sdkEntry = join(root, guess); break; }
   }
 }
@@ -216,5 +316,7 @@ await abnfCheck(sdkEntry);
 redefinitionCheck();
 await expansionCheck(process.argv.includes('--strict'));
 await principalKindCheck(process.argv.includes('--strict'));
+await scopeAndHolderKeyCheck(process.argv.includes('--strict'));
+await keysetCheck(process.argv.includes('--strict'));
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) failed.`}`);
 process.exit(failures === 0 ? 0 : 1);

@@ -1,0 +1,57 @@
+{
+  "name": "@trustlayer-foundation/aria-sdk",
+  "version": "1.0.0",
+  "description": "The ARIA SDK: inspect and verify an agent's credential and establish the status of that exact document. ARIA AP is the separate package built on it.",
+  "license": "Apache-2.0",
+  "author": "TrustLayer Foundation",
+  "homepage": "https://aria.bar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trustlayer-foundation/aria-protocol.git",
+    "directory": "sdk/aria-ts"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/aid-1.0.json": "./schemas/aid-1.0.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "API.md",
+    "MIGRATION.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsup": "8.5.1",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@noble/post-quantum": "^0.5.4",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}
