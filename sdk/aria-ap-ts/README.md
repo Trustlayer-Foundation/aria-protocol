@@ -46,7 +46,10 @@ The rest is yours as well:
 - this receiver's `did` and `origin`;
 - its own credential document (`ownDocument`) and the `signer` of its holder key;
 - `resolveCredential`, which returns the document of a credential a request names by URL;
-- `authorize`, your own resource rule.
+- `authorize`, your own resource rule;
+- `moveMoney`, the transfer itself;
+- `inTransaction`, which commits the transfer and its recorded outcome together, or neither;
+- `rolledBack(error)`, true only when you know the transfer did not take effect.
 
 ```javascript
 import { createVerifier } from '@trustlayer-foundation/aria-sdk';
@@ -56,7 +59,8 @@ const verifier = createVerifier({ trust, fetch });
 const ap = createAp({ credentials: verifier });
 const self = { did, origin, document: ownDocument, credential: verifier.verifyCredential(ownDocument).credential, signer };
 
-// In memory, to try it: a production receiver keeps challenges and operations in durable storage.
+// In memory, to try it. A production receiver keeps challenges and operations in its database,
+// so that `settle` writes in the same transaction as the transfer.
 const challenges = new MemoryChallengeStore();
 const ledger = new OperationLedger(ap, new MemoryOperationStorage(), self);
 const transfer = { name: 'transfer', class: 'unsafe-body', method: 'POST', path: '/v1/transfers', mediaType: 'application/json', scope: 'payments:transfer:create', minLevel: 'L1' };
@@ -76,11 +80,31 @@ export async function handle(request) {
   const begun = await ledger.begin(admission);
   if (begun.kind === 'existing') return { status: begun.status, receipt: begun.governing }; // a retry: the original receipt
   if (begun.kind === 'refused') return { status: begun.refusal.status, receipt: await ap.buildAttemptRefusal(begun.refusal, self) };
-  // Run the effect here, in the same transaction as `settle` when storage is durable.
-  const outcome = await ledger.settle(begun.claim, { state: 'completed', status: 201 });
-  return { status: outcome.status, receipt: outcome.receipt };
+  try {
+    const outcome = await inTransaction(async () => {
+      await moveMoney(request.body);
+      return ledger.settle(begun.claim, { state: 'completed', status: 201 });
+    });
+    return { status: outcome.status, receipt: outcome.receipt };
+  } catch (error) {
+    // No receipt either way. Release the operation only when nothing took effect. Otherwise it
+    // stays locked: retries get 409 aria.operation_in_progress until you reconcile it.
+    await ledger.fail(begun.claim, rolledBack(error) ? 'rolled-back' : 'uncertain');
+    return { status: 500 };
+  }
 }
 ```
+
+**When a transfer fails after it was claimed**, the operation is released only if you know
+nothing happened: the transaction rolled back. Then a retry runs it. Any other failure, such
+as a timeout from the bank, leaves it locked: whether the transfer took effect is unknown.
+Never run it again to find out. Once you know:
+- if it took effect, the worker that holds the claim can still `settle` it;
+- if it did not, `ledger.reconcile` releases it, given the claim's exact revision and an
+  assurance that it can no longer commit.
+
+The [API contract](https://github.com/trustlayer-foundation/aria-protocol/blob/main/sdk/aria-ap-ts/API.md)
+gives the rules.
 
 An agent calling it uses the same packages:
 1. `verifyReceiverIdentity` on the identity statement, against the DID it pinned;
