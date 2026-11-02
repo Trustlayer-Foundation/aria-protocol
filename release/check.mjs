@@ -152,7 +152,7 @@ if (decided('D5')) {
 }
 // The entry documents a contributor reads first agree with what has shipped: AID 1.0 is
 // issued, the 1.2.0 verifier was never released, and with D2 the key set is served.
-const ENTRY = ['README.md', 'INVARIANTS.md', 'spec/README.md'];
+const ENTRY = ['README.md', 'INVARIANTS.md', 'spec/README.md', 'sdk/aria-ts/MIGRATION.md'];
 for (const file of ENTRY) {
   for (const raw of clauses(readFileSync(join(root, file), 'utf8'))) {
     const c = raw.replace(/\s+/g, ' ');
