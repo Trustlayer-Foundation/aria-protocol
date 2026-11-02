@@ -114,7 +114,7 @@ from the document.
 **Today's issuer is a demonstration.** agent.bar is a complete working demonstration, and
 the issuer behind it, `did:aria:registry.aria.bar`, serves its key set at
 `https://api.aria.bar/v1/keyset` from the release that publishes the SDK packages. Its
-anchor is `sha256:9dfe4d89b7af711e5daf79864d26e92ec16873e2913409bd3eb6943937fc340f`,
+anchor is `sha256:4117aaac21272740756d02305a9fa7e2d84398fdd859d390b476539d57ec67b3`,
 pinned in the release manifest (`release/aria-1.0.json`, `trust`). Trust it, if you do,
 under a profile you name `demo`: its credentials are not a production guarantee, and
 the identity checks behind them are the demonstration's. Production ARIA 1.0 will use a
