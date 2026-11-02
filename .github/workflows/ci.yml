@@ -136,7 +136,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          # Release pull requests come from dev or from release/<topic>; the naming
+          # Release pull requests come from dev or from release/<topic>, and the pull
+          # request that brings a release back into dev comes from main; the naming
           # convention is for the branches where work happens, not for publishing.
-          echo "${{ github.head_ref }}" | grep -qE '^(dev|(spec|sdk|docs|fix|chore|release)/[a-z0-9._-]+)$' \
-            || { echo "::error::branch '${{ github.head_ref }}' must be dev or match (spec|sdk|docs|fix|chore|release)/<topic>"; exit 1; }
+          echo "${{ github.head_ref }}" | grep -qE '^(dev|main|(spec|sdk|docs|fix|chore|release)/[a-z0-9._-]+)$' \
+            || { echo "::error::branch '${{ github.head_ref }}' must be dev, main or match (spec|sdk|docs|fix|chore|release)/<topic>"; exit 1; }
