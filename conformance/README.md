@@ -22,11 +22,18 @@ it, and presents the result. Nobody has to take anybody's word for it.
 
 ```
 run.mjs                          the runner each implementation embeds
-package.json                     one dependency, a JSON-LD processor
+package.json                     a JSON-LD processor, a JSON Schema validator, a YAML parser
 vectors/
   canonical-json.json            canonical serialisation and identity commitment, byte for byte
   abnf-cases.json                did:aria identifiers that must be accepted / rejected, with reasons
   context-credentials-v2.json     the W3C VC v2 context, pinned so a run is offline and deterministic
+  scopes.json                     scope strings as an authority issues them and as a 1.0 credential carries them (D5)
+  holder-keys.json                holder-key encodings accepted and refused, with their Multikey form
+  keyset.json                     a published, chained key set, and key sets an authority must refuse
+federation/                      RA-to-authority exchanges and the check of the federation
+                                 contract against them (see federation/README.md)
+ap/                              ARIA AP vectors and their independent checker, a package
+                                 of its own (see ap/README.md)
 ```
 
 Run it against an implementation:
@@ -36,8 +43,13 @@ cd conformance && npm install      # a JSON-LD processor, for the expansion chec
 node run.mjs --sdk path/to/entry.mjs
 ```
 
+Without `--sdk` it tests the ARIA SDK's build, `sdk/aria-ts/dist` (`pnpm build` there
+first): its `canonicalJson` against the serialisation vectors and its `parseDid`
+against the 22 `did:aria` cases.
+
 Without the processor the expansion check skips and says so. CI passes `--strict`,
-which turns that skip into a failure: a check that quietly skips proves nothing.
+which turns every skip into a failure (no SDK, an SDK without `canonicalJson` or
+`parseDid`, no processor): a check that quietly skips proves nothing.
 
 `expand-live.mjs` is the same check with nothing pinned — it fetches a credential
 and the context over the network, exactly as published, and expands in safe mode.
@@ -86,6 +98,9 @@ the second one possible, which is the whole reason it exists before it is needed
 | 3 | Existing production AIDs still verify | the authority | signing key continuity |
 | 4 | ABNF cases accepted and rejected exactly | every implementation | consistency with the W3C registry entry |
 | 5 | Manifest validation cases accepted and rejected with the stated reason | authority and RA | drift between the two validators |
+| 1e | Scopes and holder keys are accepted and refused as `scopes.json` and `holder-keys.json` say | the harness against the schemas; the SDK and the authority against their own code | one rule for what an authority issues and a verifier reads |
+| 1f | The published key set passes its schema and every fingerprint is recomputed | the harness; the authority's gateway judges the chain and the refused sets | that a pinned fingerprint names one key |
+| 6 | Federation exchanges: every request and answer matches the contract, and the authority answers each exactly | `federation/check.mjs`; the authority replays them | drift between the contract, the RA and the authority |
 
 **Check 2 is the one that matters most and the easiest to skip.** If the verify SDK
 needs *any* modification to accept newly issued credentials, the protocol changed
@@ -97,8 +112,9 @@ Check 3 needs real credentials, and real credentials carry `principal.legalName`
 `registryRef`. **No production credential goes in this repository** — it is public,
 and git is forever.
 
-The vectors here are synthetic. `vectors/aid-v1.2-shape.json` is derived from the shape
-of a live 1.2 credential so that the schema checks run against what production actually
+The vectors here are synthetic. `vectors/aid-v1.2-shape.json` is historical
+compatibility, outside the ARIA 1.0 path: it is derived from the shape of a live 1.2
+credential so that the schema checks run against what production actually
 issues, with the principal, every identifier, the holder key and the signature replaced;
 nothing in it identifies the credential it came from. The runner points at real credentials through an
 environment variable, from outside the repository.
@@ -107,5 +123,5 @@ environment variable, from outside the repository.
 
 Each implementation embeds the harness for its language and points it at `vectors/`,
 exiting non-zero on any failure. `run.mjs` is the JavaScript one; it prints `PASS`,
-`FAIL` or `SKIP` per check, and skips rather than passes what it cannot test — today
-the `did:aria` cases, because no implementation exports a parser to run them against.
+`FAIL` or `SKIP` per check, and skips rather than passes what it cannot test; under
+`--strict` a check that cannot run fails.

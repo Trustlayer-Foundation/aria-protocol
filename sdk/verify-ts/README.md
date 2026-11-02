@@ -4,7 +4,7 @@
 
 [ARIA](https://aria.bar) (Agent Registry for Identity & Authorization) gives every AI agent a verifiable, cryptographically signed identity document (AID). This SDK verifies an AID locally, with no network call.
 
-**What it verifies, and what it does not.** It checks the composite signature — ML-DSA-65 and Ed25519, **both** halves must pass — the validity window, the trust level and the provenance of the principal's name. It does **not** check revocation: `revocationStatus` comes back `'unknown'` and the credential passes. Revocation is a separate, networked call (`checkRevocation`), enforced only under a policy that requires it. And it is a credential verifier, not a DID resolver: parsing the identifier, following the DNS pointer, pinning the document against its hash and deriving the DID Document are [specified](https://aria.bar/spec#3-5-2) and not implemented here.
+**What it verifies, and what it does not.** It checks the composite signature — ML-DSA-65 and Ed25519, **both** halves must pass — the validity window, the trust level and the provenance of the principal's name. It does **not** check revocation: `revocationStatus` comes back `'unknown'` and the credential passes. Revocation is a separate, networked call (`checkCredentialStatus`), enforced only under a policy that requires it. And it is a credential verifier, not a DID resolver: parsing the identifier, following the DNS pointer, pinning the document against its hash and deriving the DID Document are [specified](https://aria.bar/spec#3-5-2) and not implemented here.
 
 Part of the [ARIA Protocol](https://aria.bar) by [TrustLayer Foundation](https://trustlayer.foundation).
 
@@ -108,35 +108,75 @@ if (parsed) {
 }
 ```
 
-## Check Revocation Online
+## Check the Credential's Status
 
-The **only function** that requires internet access:
+Whether **the credential you were presented** is still in force. It is a networked
+call; verify the credential with `verifyAgent` first, since this establishes status, not
+authenticity.
 
-This is a **per-DID** call to `/v1/verify/{did}`, not a read of the aggregate Bitstring
-Status List the credential points at. It therefore tells the registry which agent you
-are asking about. Moving the reference SDK to the aggregate list is
-[planned](https://aria.bar/planned); until then both mechanisms are supported and
-`INVARIANTS.md` §12 records why.
+A DID can hold a succession of credentials: a renewal issues a new one and revokes the
+previous one. So the check is bound to the presented credential itself, never to its
+DID alone.
 
 ```typescript
-import { checkRevocation } from '@aria-registry/verify';
+import { verifyAgent, checkCredentialStatus } from '@aria-registry/verify';
 
-try {
-  const status = await checkRevocation('did:aria:example.com:agent');
-  console.log(status.status);    // 'active' | 'revoked'
-  console.log(status.checkedAt); // ISO 8601 timestamp
-} catch (err) {
-  // Network error — handle gracefully
+const result = verifyAgent(credential);
+if (result.valid) {
+  try {
+    const { status } = await checkCredentialStatus(credential);
+    // 'active' | 'revoked' | 'superseded'
+    if (status !== 'active') {
+      // reject
+    }
+  } catch (err) {
+    // The status could not be established: treat as not in force
+  }
 }
 ```
+
+The status is established in one of two ways.
+
+- **`via: 'statusList'`, the default.** Reads the W3C Bitstring Status List the credential
+  names, at the credential's own index.
+  - The list must be the one the credential names and come from the credential's issuer.
+  - Its composite proof must verify, both halves.
+  - It must state a `validFrom` and a `validUntil` no more than 24 hours apart, and be
+    within them. A list without that window would have an unbounded age. The 24 hours are
+    the ARIA list's policy, not a W3C rule.
+  - It must hold at least 131,072 entries, the W3C minimum, which keeps a verifier's
+    fetch hidden among that many credentials.
+
+  One fetch serves every credential, and it tells the registry nothing about which one
+  you are checking.
+- **`via: 'online'`.** Asks `/v1/verify/{did}`, which answers for the DID's current
+  credential and names it.
+  - The answer counts only if its `credentialId` is the presented credential's `id`.
+  - If it names another credential, the presented one was superseded, and the result is
+    `'superseded'`.
+
+Anything that cannot be established throws `RevocationCheckError`, and is never read as
+`'active'`:
+- a network failure or timeout;
+- a non-200 answer;
+- a list that does not verify or has expired;
+- an answer without a recognized status.
+
+A credential without an instance identifier (a top-level `id` URL), issued before
+ARIA 1.0, cannot be checked this way.
 
 Custom API endpoint (for local development or private registries):
 
 ```typescript
-const status = await checkRevocation(did, {
-  apiUrl: 'http://localhost:3003',
-});
+await checkCredentialStatus(credential, { via: 'online', apiUrl: 'http://localhost:3003' });
 ```
+
+### `checkRevocation` (deprecated)
+
+`checkRevocation(did)` asks `/v1/verify/{did}` by DID alone, so after a renewal it reports
+the newest credential, and a superseded one still reads `'active'`. Since 1.2.0, an answer
+without a status of `'active'` or `'revoked'` throws instead of reading as `'active'`. Use
+`checkCredentialStatus`. `INVARIANTS.md` §12 records why the per-DID route keeps answering.
 
 ## Policy Presets
 

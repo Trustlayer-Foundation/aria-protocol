@@ -1,0 +1,44 @@
+{
+  "_comment": "Scope strings in ARIA 1.0, by where they are judged (decision D5). issued: what an authority accepts in an agent statement, exactly three lower-case segments namespace:resource:action, each starting with a letter, of letters, digits and underscores, no version, at most 64 characters. credential: what a signed 1.0 document may carry, two or more such segments with no length bound, since credentials issued before D5 may carry them. Receivers’ policy patterns (namespace:resource:*, a matching deny prevails) are ARIA AP’s, in conformance/ap.",
+  "issued": {
+    "accept": [
+      "commerce:orders:create",
+      "data:documents:read",
+      "finance:invoices:read",
+      "x1:y_2:z3",
+      "x:y:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+    ],
+    "reject": [
+      "catalog:read",
+      "a:b:c:d",
+      "commerce",
+      "Commerce:orders:create",
+      "commerce.orders.create",
+      "commerce:orders:*",
+      "commerce:orders:create@v0.2",
+      ":orders:create",
+      "commerce::create",
+      "commerce:orders:",
+      "1commerce:orders:create",
+      "commerce:orders:create-now",
+      "commerce:orders: create",
+      "x:y:zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+    ]
+  },
+  "credential": {
+    "accept": [
+      "commerce:orders:create",
+      "catalog:read",
+      "a:b:c:d",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "x:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    ],
+    "reject": [
+      "commerce",
+      "Commerce:orders:create",
+      "commerce:orders:*",
+      "commerce:orders:create@v0.2",
+      "commerce:orders:create-now"
+    ]
+  }
+}
