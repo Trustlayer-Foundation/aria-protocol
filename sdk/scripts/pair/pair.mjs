@@ -19,7 +19,7 @@ await c.check('one copy of the credential package: none nested under ARIA AP', (
   return nested.length === 0 || nested.join(',');
 });
 
-await c.check('ARIA AP exports its provisional schemas by path', () => {
+await c.check('ARIA AP exports its schemas by path', () => {
   const require = createRequire(import.meta.url);
   const ids = ['receipt', 'identity', 'lookup'].map((n) => JSON.parse(readFileSync(require.resolve(`@trustlayer-foundation/aria-ap/schemas/aria-ap-${n}-1.json`), 'utf8')).$id);
   return ids.join() === ['receipt', 'identity', 'lookup'].map((n) => `https://aria.bar/schema/aria-ap-${n}-1.json`).join() || ids.join();

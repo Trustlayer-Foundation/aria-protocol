@@ -97,7 +97,7 @@ export interface LookupInput {
 
 /**
  * Whether a retrieval may read an operation's receipts: a credential of the
- * operation's sender DID that stands now (provisional, D4). A revoked, superseded
+ * operation's sender DID that stands now (D4). A revoked, superseded
  * or expired credential reads nothing; the refusal is an unsigned problem, since a
  * retrieval gets no receipt of its own.
  */

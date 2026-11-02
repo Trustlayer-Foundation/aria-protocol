@@ -22,7 +22,7 @@ set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA 
 Both SDKs are packed as the release archives the [release manifest](release/README.md)
 pins, **not yet published on npm**: publication waits for the owner's approval and the
 confirmed package names (D9). ARIA AP's transport, receipt format and scope grammar are
-decided; the rest of its receipt rules, retrieval included, is still open. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
+decided, and so are its receipt rules, retrieval included. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
 [Historical compatibility](#historical-compatibility) below, outside this path.
 
@@ -59,9 +59,9 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 
 | Path | What it is | Status |
 |---|---|---|
-| `schema/`, `context/` | JSON Schemas and the JSON-LD context; [`schema/README.md`](schema/README.md) says which are active and which historical | Normative; ARIA AP schemas provisional |
+| `schema/`, `context/` | JSON Schemas and the JSON-LD context; [`schema/README.md`](schema/README.md) says which are active and which historical | Normative |
 | `spec/` | Where the specification stands; its text is authored with [aria.bar/spec](https://aria.bar/spec) today (`spec/README.md`) | |
-| `conformance/` | Vectors and harnesses any implementation runs, in any language | `conformance/ap/` (ARIA AP) is provisional |
+| `conformance/` | Vectors and harnesses any implementation runs, in any language | |
 | `federation/` | The contract between registration authorities and the issuing authority | |
 | `examples/` | Reference credentials and usage examples; [`examples/README.md`](examples/README.md) is the index | |
 | `sdk/aria-ts/` | **ARIA SDK** (`@trustlayer-foundation/aria-sdk`): credential verification and the status of the exact document | 1.0.0, not yet on npm |
@@ -69,9 +69,8 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 
 The two SDKs are separate packages. A service that only checks credentials installs the
 ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
-which uses the ARIA SDK's verifier and has no credential verification of its own. Their
-package names are provisional; `sdk/scripts/check-pair.mjs` tests them as packed
-artifacts, alone and together.
+which uses the ARIA SDK's verifier and has no credential verification of its own.
+`sdk/scripts/check-pair.mjs` tests them as packed artifacts, alone and together.
 
 ## Verify a credential
 
@@ -171,7 +170,7 @@ ARIA is a six-layer protocol:
 |-------|----------|---------|
 | **P1 — Anchor** | W3C DID Core | Every agent gets a DID anchored to DNS |
 | **P2 — Certify** | W3C VC Data Model 2.0 | Signed, portable, offline-verifiable credentials |
-| **P3 — Present** | ARIA AP over RFC 9421 HTTP Message Signatures (provisional) | How credentials are presented and bound to a request |
+| **P3 — Present** | ARIA AP over RFC 9421 HTTP Message Signatures | How credentials are presented and bound to a request |
 | **P4 — Protect** | FIPS 204 + RFC 8032 | ML-DSA-65 + Ed25519 composite signatures |
 | **P5 — Revoke** | W3C Bitstring Status List v1.0 | Revocation in a signed status list, as fresh as each verifier requires; append-only Trust Ledger |
 | **P6 — Govern** | TrustLayer Foundation | Nonprofit stewardship, open source |
@@ -217,7 +216,7 @@ Notable fields:
 | `credentialSubject.id` | The agent DID (`did:aria:…`). Stable across reissuances. |
 | `credentialSubject.spec_version` | `"1.0"` under ARIA 1.0 (earlier credentials: [Historical compatibility](#historical-compatibility)). Verifiers distinguish the issuance regime by issuer DID, never by this value. |
 | `credentialSubject.holderKey` | **Required.** Ed25519 public key (multibase) bound to this AID. Possession is proved by a request ARIA AP signs with the corresponding private key. Read the key from this SIGNED field — never from external sources such as a database — to preserve the PQC integrity guarantee. |
-| `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability. |
+| `credentialSubject.previousCredentialId` | URL of the prior credential instance this one supersedes. Optional — omitted on first issuance. Enables explicit, signed chain-of-issuance traceability: it relates a renewal to the credential before it; the DID never changes, and verifying a credential never walks the chain. |
 | `credentialSubject.principal.type` | `Person` (a natural person) or `Organization` (any legal entity), as schema.org types. Decides the next field: an `Organization` carries `legalName`, a `Person` never does. Absent on credentials issued before the field existed; those carry `legalName` whatever the principal was. |
 | `credentialSubject.principal.verificationStatus` | Machine-readable provenance of `principal.legalName`. Enum: `self-declared` (L0, L1), `registry-confirmed` (L2 — confirmed against the Authoritative Source), `legal-verified` (L3 — primary register + Binding Officer). Verifiers MUST consult this before treating `legalName` as authoritative. `legalName` is an **organization** name: natural-person principals MUST NOT populate it (COM-09, L0-03). |
 | `credentialSubject.trustLevel` | `L0`–`L3`. |
@@ -227,8 +226,7 @@ Notable fields:
 ## ARIA AP
 
 ARIA AP is the exchange between an agent and a receiving service. Its transport,
-receipt format and scopes are decided; the rest of the receipt rules, retrieval
-included, is open. When an
+receipt format, scopes and retrieval are decided. When an
 operation's scope requires human approval, a missing or invalid approval refuses the
 attempt, for now; holding the operation for approval is not supported, and operations
 that need no approval are unaffected:

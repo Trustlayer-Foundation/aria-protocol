@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aria.bar/schema/aria-ap-receipt-1.json",
   "title": "ARIA AP receipt, type aria-ap-receipt/1",
-  "description": "A receiver's signed statement about one attempt or one operation of ARIA AP. Its format, one receipt carrying the decision's HTTP status and code, is decided (D4); the retrieval rules, the rest of D4, are still open. Conforming to it does not make a receipt genuine, does not mean its signature is valid, and does not authorize anything: a verifier also parses the JSON strictly (no duplicate keys, integers only, at most 4096 bytes), checks the Ed25519 signature over the canonical JSON without proof.value, pins the exact receiver credential, and binds the receipt to an attempt it kept.",
+  "description": "A receiver's signed statement about one attempt or one operation of ARIA AP. Its format, one receipt carrying the decision's HTTP status and code, and its retrieval rules are decided (D4). Conforming to it does not make a receipt genuine, does not mean its signature is valid, and does not authorize anything: a verifier also parses the JSON strictly (no duplicate keys, integers only, at most 4096 bytes), checks the Ed25519 signature over the canonical JSON without proof.value, pins the exact receiver credential, and binds the receipt to an attempt it kept.",
   "$comment": "Rules JSON Schema cannot express, checked by the ARIA AP SDK and conformance/ap/check.mjs: duplicate keys and numbers with a fraction or exponent are refused before parsing; the whole document is at most 4096 bytes of UTF-8; id differs from urn:uuid:<request.id>; credential URLs are exactly their parsed href.",
   "type": "object",
   "additionalProperties": false,

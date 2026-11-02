@@ -32,8 +32,8 @@ vectors/
   keyset.json                     a published, chained key set, and key sets an authority must refuse
 federation/                      RA-to-authority exchanges and the check of the federation
                                  contract against them (see federation/README.md)
-ap/                              ARIA AP vectors and their independent checker: provisional,
-                                 a package of its own (see ap/README.md)
+ap/                              ARIA AP vectors and their independent checker, a package
+                                 of its own (see ap/README.md)
 ```
 
 Run it against an implementation:

@@ -23,6 +23,14 @@ All notable changes to the ARIA Protocol specification.
   where a matching deny prevails. `conformance/vectors/scopes.json` follows.
 - **Holder key (D6).** `z` and base58btc of the raw 32-byte Ed25519 key is ARIA's own
   encoding, not Multikey, whose form adds `0xed01`. Nothing signed changes.
+- **ARIA AP retrieval (D4).** A current credential of the operation's sender DID, with
+  proof of possession, retrieves the original receipts, renewed or not; revoking deletes
+  no receipt and does not prevent historical verification. The lookup schema is no
+  longer provisional.
+- **`previousCredentialId` (D11)** stays: it relates a renewal to the credential before
+  it. The DID never changes, and verification never walks the chain.
+- **Proof metadata (D12).** The current suite is kept; a credential's `proof` metadata
+  is unsigned, and the signed `validFrom` and `validUntil` are the dates that count.
 
 ### Added — the ARIA SDK and ARIA AP 1.0.0, and the demonstration issuer's key set
 

@@ -1,6 +1,6 @@
 // The ARIA SDK: inspect and verify an agent's credential, and establish the
 // status of that exact document. ARIA AP (requests, admission, receipts) is the
-// separate package built on it. Provisional package name, pending its owner (D9).
+// separate package built on it.
 
 export { createVerifier, inspectCredential } from './verifier';
 export type { Verifier, VerifierConfig, TrustProfile, FetchPolicy } from './verifier';

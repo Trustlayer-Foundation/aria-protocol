@@ -36,11 +36,11 @@ describe('the packaged copies', () => {
   }
 
   it('each states its decision status and that conforming to it proves no signature or authorization', () => {
-    // D3 and the receipt format of D4 are decided; retrieval, the rest of D4, is not.
+    // D3 and D4, the receipt format and its retrieval rules, are decided.
     const status: Record<string, RegExp> = {
       'aria-ap-identity-1.json': /decided for 1\.0 \(D3\)/,
-      'aria-ap-receipt-1.json': /is decided \(D4\).*still open/,
-      'aria-ap-lookup-1.json': /^(?=.*Provisional).*rest of D4/,
+      'aria-ap-receipt-1.json': /retrieval rules are decided \(D4\)/,
+      'aria-ap-lookup-1.json': /Decided \(D4\)/,
     };
     for (const name of NAMES) {
       const s = JSON.parse(readFileSync(packaged(name), 'utf8'));

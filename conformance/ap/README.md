@@ -1,10 +1,9 @@
 # ARIA AP conformance
 
-> **Status:** D3 (transport) and D5 (scopes) are decided as encoded here, D4 has fixed
-> the receipt's single format, and D8 is `refuse` for now: where an operation's scope
+> **Status:** D3 (transport), D4 (the receipt format and retrieval) and D5 (scopes) are
+> decided as encoded here, and D8 is `refuse` for now: where an operation's scope
 > requires human approval, a missing or invalid approval refuses the attempt; holding
-> the operation is not supported. The vectors for retrieval and the other receipt rules
-> (the rest of D4) may still change.
+> the operation is not supported.
 
 ARIA AP is the profile an agent uses to call a receiver with its ARIA credential: the
 receiver's identity, a signed request, an admission decision, a signed receipt, and that
@@ -12,7 +11,7 @@ receipt checked later against retained evidence. This package holds its vectors 
 checker that judges them without the generator's code.
 
 ```
-profile.json            the provisional profile: identity, classes, components, order, reasons, ATP mapping
+profile.json            the profile: identity, classes, components, order, reasons, ATP mapping
 generate.mjs            builds the request, fingerprint, receipt, identity and historical vectors (deterministic)
 check.mjs               the independent checker; exits 1 on any failure
 model.mjs               reference state machine for the sequences, with deliberate mutants

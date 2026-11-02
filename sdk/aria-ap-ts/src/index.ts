@@ -1,6 +1,6 @@
 // ARIA AP: the agent's and the receiver's side of the profile, built on the
 // credential verifier of @trustlayer-foundation/aria-sdk. Wire profile: D3, D4's receipt format,
-// D5 and D8; retrieval follows the rest of D4.
+// D5 and D8; retrieval follows D4.
 
 export { createAp } from './ap';
 export type { Ap, ApConfig } from './ap';

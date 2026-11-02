@@ -1,5 +1,5 @@
 {
-  "status": "partly decided — D3 (transport) and D5 (scopes) as encoded here; D4 fixes the single receipt format, its retrieval rules are open; D8 is refuse, for now; the open parts may still change",
+  "status": "decided — D3 (transport), D4 (the receipt format and retrieval) and D5 (scopes) as encoded here; D8 is refuse, for now",
   "generatedBy": "conformance/ap/generate.mjs",
   "keys": "synthetic: seeds are SHA-256 of public labels in generate.mjs; never trusted anywhere",
   "context": {
@@ -1901,7 +1901,7 @@
       "id": "REQ-037",
       "title": "retrieval with the renewed credential of the same DID",
       "covers": [
-        "D4 provisional",
+        "D4",
         "R2a"
       ],
       "note": "Authenticates as the same DID with its current credential; admission then decides with current status.",

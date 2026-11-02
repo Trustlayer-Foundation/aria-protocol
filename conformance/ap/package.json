@@ -2,7 +2,7 @@
   "name": "aria-ap-conformance",
   "private": true,
   "type": "module",
-  "description": "ARIA AP profile vectors (provisional) and an independent checker. The RFC 9421 signature base is rebuilt by an independent implementation (http-message-signatures), not by the generator's code.",
+  "description": "ARIA AP profile vectors and an independent checker. The RFC 9421 signature base is rebuilt by an independent implementation (http-message-signatures), not by the generator's code.",
   "scripts": {
     "generate": "node generate.mjs",
     "test": "node check.mjs"

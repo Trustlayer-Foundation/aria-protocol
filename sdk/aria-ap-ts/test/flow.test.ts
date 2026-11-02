@@ -145,7 +145,7 @@ describe('the operation minimum level through public admission', () => {
   });
 });
 
-describe('the revocation path (R2a, provisional D4)', () => {
+describe('the revocation path (R2a, D4)', () => {
   it('a revoked credential is refused per attempt and reads nothing; the renewed one of the same DID retrieves the original', async () => {
     const w = world();
     const tracker = new OperationTracker({ operationId: OP, sender: AGENT, receiver: BANK });

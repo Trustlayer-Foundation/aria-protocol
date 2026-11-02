@@ -8,9 +8,10 @@ format, `aria-ap-receipt/1`, carrying the decision's HTTP status and code; D8 is
 invalid approval refuses the attempt; holding the operation is not supported, and a
 receipt carries no approval fields; D5 fixes the scopes: three-segment grants, read
 under their own pattern in signed 1.0 documents, compared exactly, with policy patterns
-ending in `:*` and a matching deny prevailing. The rest of D4, including retrieval, is
-open: what it covers may still change. The vectors in
-[`conformance/ap`](../../conformance/ap/README.md) encode all of it.
+ending in `:*` and a matching deny prevailing; and D4 fixes retrieval too: a current
+credential of the operation's sender DID, proving possession of its holder key, retrieves
+the original receipts. The vectors in [`conformance/ap`](../../conformance/ap/README.md)
+encode all of it.
 
 ## What it builds on
 
@@ -165,9 +166,11 @@ await ap.admit({
 });
 ```
 
-A retrieval is admitted by `admitLookup` (provisional, D4): a credential of the
-operation's sender DID whose standing is `good` reads that operation's receipts; a
-revoked, superseded or expired credential reads nothing. Its refusals are unsigned
+A retrieval is admitted by `admitLookup` (D4): a credential of the operation's sender
+DID whose standing is `good`, renewed or not, reads that operation's receipts; a revoked,
+superseded or expired credential reads nothing. Revoking deletes no receipt, and a kept
+receipt can still be verified historically. ARIA AP adds no resource rule of the receiver
+here; a receiver may guard its retrieval route with its own. Its refusals are unsigned
 problems, since a retrieval gets no receipt of its own. A lookup admission is judged again
 before the receipts are released, after the storage read: `ledger.lookup` throws
 `AdmissionExpired` once its request is past its deadline, or with the status and code to
@@ -303,8 +306,7 @@ a URL whose serialization is the value itself, which includes valid IDNA:
 `https://xn--a.example` matches the schema's pattern but is refused by the SDK, both when
 emitting and when receiving.
 
-The identity and receipt schemas follow D3 and the receipt format of D4; the lookup
-schema stays provisional with the rest of D4. Conforming to a schema is neither a valid signature
+The identity, receipt and lookup schemas follow D3 and D4. Conforming to a schema is neither a valid signature
 nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers
 only, at most 4096 bytes, which JSON Schema cannot express), verifies signatures, pins the
 receiver's exact credential and binds each receipt to a kept attempt. Against the AP1

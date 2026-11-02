@@ -341,7 +341,7 @@ const CASES = [
   { id: 'REQ-034', title: 'retrieval carrying ARIA-Operation', covers: ['§5.9 #20'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, headers: [['aria-operation', sfString(OP.X)]] }, expect: unsigned400 },
   { id: 'REQ-035', title: 'retrieval without the operation parameter', covers: ['§5.9 #20'], spec: { descriptor: 'operations.lookup' }, expect: unsigned400 },
   { id: 'REQ-036', title: 'retrieval naming something other than a UUID', covers: ['§5.9 #20'], spec: { descriptor: 'operations.lookup', query: 'operation=latest' }, expect: unsigned400 },
-  { id: 'REQ-037', title: 'retrieval with the renewed credential of the same DID', covers: ['D4 provisional', 'R2a'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, credential: 's2' }, expect: authenticated, note: 'Authenticates as the same DID with its current credential; admission then decides with current status.' },
+  { id: 'REQ-037', title: 'retrieval with the renewed credential of the same DID', covers: ['D4', 'R2a'], spec: { descriptor: 'operations.lookup', query: `operation=${OP.X}`, credential: 's2' }, expect: authenticated, note: 'Authenticates as the same DID with its current credential; admission then decides with current status.' },
   { id: 'REQ-038', title: 'a challenge this receiver never issued', covers: ['challenge'], spec: { descriptor: 'transfers.create', challenge: 'never issued' }, expect: unsigned401('challenge') },
   { id: 'REQ-039', title: 'an expired challenge', covers: ['challenge'], spec: { descriptor: 'transfers.create', challenge: 'expired' }, expect: unsigned401('challenge') },
 

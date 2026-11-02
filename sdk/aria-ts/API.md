@@ -115,7 +115,8 @@ private copy, and returns the first failure in this order:
 10. a status list the profile does not publish (`status_list_untrusted`).
 
 The result has no issuance time: `validFrom` and `validUntil` are the signed bounds and
-`proof.created` is unsigned. `previousCredentialId` is returned as data and never fetched.
+`proof.created` is unsigned. `previousCredentialId` is returned as data and never fetched:
+it relates a renewal to the credential before it (D11), and the DID does not change.
 
 ## Status (S1)
 
@@ -187,7 +188,8 @@ test) is the supported profile. Its holder key is 32 raw Ed25519 bytes under
 `Ed25519VerificationKey2020` — ARIA's own encoding (D6), `z` and base58btc of the raw
 key, not the Multikey one; the SDK decodes exactly 32 bytes and projects `0xed01` only
 when producing a Multikey. The proof metadata is outside the signed bytes: the SDK requires the supported
-values, which does not make them signed (decision D12 covers a successor suite).
+values, which does not make them signed (D12: the suite is kept for 1.0; the dates that
+count are the signed `validFrom` and `validUntil`, not `proof.created`).
 
 ## Package and runtimes
 
