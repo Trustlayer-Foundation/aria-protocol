@@ -20,8 +20,8 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA AP
 1.0.0**, and the schemas, documentation, examples and conformance that go with them.
 Both SDKs are packed as the release archives the [release manifest](release/README.md)
-pins, **not yet published on npm**: publication waits for the owner's approval and the
-confirmed package names (D9). ARIA AP's transport, receipt format and scope grammar are
+pins, **not yet published on npm**: publication waits for the owner's approval. ARIA
+AP's transport, receipt format and scope grammar are
 decided, and so are its receipt rules, retrieval included. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
 [Historical compatibility](#historical-compatibility) below, outside this path.
