@@ -10,11 +10,11 @@
     "files": [
       {
         "path": "src/components/spec/SpecDocument.tsx",
-        "sha256": "sha256:3b350f7ef785e7d3aa71b93d1624c80d8d0f4bc202a2187e8cd712ff780e9091"
+        "sha256": "sha256:423b629b27ad9310f947f19a65f2dcef24e7db4248edd8eb0fadb8c8f832a055"
       },
       {
         "path": "src/lib/spec-data.ts",
-        "sha256": "sha256:8a12f75b83931d1c84aee0fa4b8d19257976662e97e3dfb1ed306fa0108978ac"
+        "sha256": "sha256:a551398ad9d6196bfe2e1db00e72304405b6f4f2344f2396b6596d1a33da6e7f"
       }
     ]
   },
@@ -127,11 +127,11 @@
           "sha256": "sha256:22cbbc6c930914b2efc69200cd222f6201243774b66d65c98d17a8eb32b8a130"
         },
         "anchor": "sha256:4117aaac21272740756d02305a9fa7e2d84398fdd859d390b476539d57ec67b3",
-        "maxLevel": "L0",
+        "maxLevel": "L1",
         "statusLists": [
           "https://api.aria.bar/v1/status/1"
         ],
-        "note": "the public keys are those the authority deployed on 2026-10-30 signs with (its issuer-keys.json); active_from (2026-10-30, the deployment day) is operator-supplied metadata, outside the pinned fingerprint, for TLF to confirm before the key set is served (B1b)"
+        "note": "the public keys are those the authority deployed on 2026-10-30 signs with (its issuer-keys.json); active_from (2026-10-30, the deployment day) is operator-supplied metadata, outside the pinned fingerprint, confirmed by TLF; the set is served since 2 November 2026"
       }
     ]
   },
@@ -220,7 +220,7 @@
   "capabilities": {
     "levels": {
       "L0": "issued",
-      "L1": "issued where the authority reads domain-binding records and the registry enables it; the deployed authority issues L0 only",
+      "L1": "issued where the authority reads domain-binding records and the registry enables it; agent.bar's demonstration issues it, with its identity checks on a provider's sandbox, as no production guarantee",
       "L2": "specified, not issued",
       "L3": "specified, not issued"
     },

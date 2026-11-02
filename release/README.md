@@ -38,4 +38,5 @@ npm view @trustlayer-foundation/aria-ap@1.0.0 dist.integrity
 ```
 
 A published version is immutable and never reused; a mistake is corrected with a new
-version.
+version. 1.0.0 was published this way on 2 November 2026. npm refuses to publish from an
+account without two-factor authentication.
