@@ -247,9 +247,9 @@ redirect packages**. If the package is republished under a different scope:
 
 **What happened.** `@aria-registry/verify` is no longer served by npm (404 since
 1 November 2026), contrary to step 3. The ARIA 1.0 packages are
-`@trustlayer-foundation/aria-sdk` and `@trustlayer-foundation/aria-ap`. The W3C
-registration's reference to the old package moves to them; the registry entry itself
-cites `https://aria.bar/spec#did-method` and is unchanged.
+`@trustlayer-foundation/aria-sdk` and `@trustlayer-foundation/aria-ap`, on npm since
+2 November 2026. The W3C registration's reference to the old package moves to them; the
+registry entry itself cites `https://aria.bar/spec#did-method` and is unchanged.
 
 ---
 

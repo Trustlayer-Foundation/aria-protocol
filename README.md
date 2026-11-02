@@ -20,7 +20,7 @@ ARIA here means Agent Registry for Identity & Authorization. It is unrelated to 
 set: the protocol and the AID 1.0 credential, the **ARIA SDK 1.0.0** and **ARIA AP
 1.0.0**, and the schemas, documentation, examples and conformance that go with them.
 Both SDKs are packed as the release archives the [release manifest](release/README.md)
-pins, **not yet published on npm**: publication waits for the owner's approval. ARIA
+pins, and npm has served exactly those archives since 2 November 2026. ARIA
 AP's transport, receipt format and scope grammar are
 decided, and so are its receipt rules, retrieval included. The canonical text is [aria.bar/spec](https://aria.bar/spec). What 1.0 retires and why:
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
@@ -52,7 +52,7 @@ after a lost answer. It replaces an earlier admission protocol, now deprecated (
 | **Live spec** | [aria.bar/spec](https://aria.bar/spec) |
 | **API (public, no auth)** | [api.aria.bar](https://api.aria.bar) |
 | **Registry (sign up)** | [agent.bar](https://agent.bar) |
-| **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0, not yet on npm |
+| **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0 on npm: [`@trustlayer-foundation/aria-sdk`](https://www.npmjs.com/package/@trustlayer-foundation/aria-sdk), [`@trustlayer-foundation/aria-ap`](https://www.npmjs.com/package/@trustlayer-foundation/aria-ap) |
 | **NIST filing** | NIST-2025-0035, March 9, 2026 |
 | **NCCoE response** | AI-Identity@nist.gov, April 2, 2026 |
 
@@ -67,8 +67,8 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 | `conformance/` | Vectors and harnesses any implementation runs, in any language | |
 | `federation/` | The contract between registration authorities and the issuing authority | |
 | `examples/` | Reference credentials and usage examples; [`examples/README.md`](examples/README.md) is the index | |
-| `sdk/aria-ts/` | **ARIA SDK** (`@trustlayer-foundation/aria-sdk`): credential verification and the status of the exact document | 1.0.0, not yet on npm |
-| `sdk/aria-ap-ts/` | **ARIA AP** (`@trustlayer-foundation/aria-ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0, not yet on npm |
+| `sdk/aria-ts/` | **ARIA SDK** (`@trustlayer-foundation/aria-sdk`): credential verification and the status of the exact document | 1.0.0 on npm |
+| `sdk/aria-ap-ts/` | **ARIA AP** (`@trustlayer-foundation/aria-ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0 on npm |
 
 The two SDKs are separate packages. A service that only checks credentials installs the
 ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
@@ -77,7 +77,7 @@ which uses the ARIA SDK's verifier and has no credential verification of its own
 
 ## Verify a credential
 
-With the ARIA SDK (not yet on npm; build it from `sdk/aria-ts`):
+With the ARIA SDK (`npm install @trustlayer-foundation/aria-sdk`):
 
 ```typescript
 import { createVerifier } from '@trustlayer-foundation/aria-sdk';

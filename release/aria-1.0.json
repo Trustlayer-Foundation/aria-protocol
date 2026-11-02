@@ -131,7 +131,7 @@
         "statusLists": [
           "https://api.aria.bar/v1/status/1"
         ],
-        "note": "the public keys are those the authority deployed on 2026-10-30 signs with (its issuer-keys.json); active_from (2026-10-30, the deployment day) is operator-supplied metadata, outside the pinned fingerprint, for TLF to confirm before the key set is served (B1b)"
+        "note": "the public keys are those the authority deployed on 2026-10-30 signs with (its issuer-keys.json); active_from (2026-10-30, the deployment day) is operator-supplied metadata, outside the pinned fingerprint, confirmed by TLF; the set is served since 2 November 2026"
       }
     ]
   },
