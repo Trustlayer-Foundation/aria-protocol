@@ -12,10 +12,11 @@ If you discover a security vulnerability in the ARIA Protocol specification, SDK
 - Fix timeline communicated within 14 business days
 
 **Scope:**
-- ARIA Protocol specification (this repo)
-- @aria-registry/verify SDK
-- api.aria.bar public API
-- registry.aria.bar platform
+- The ARIA Protocol specification, schemas and conformance vectors (this repository)
+- The ARIA SDK (`@trustlayer-foundation/aria-sdk`) and ARIA AP (`@trustlayer-foundation/aria-ap`)
+- The public read API at api.aria.bar, its key set included
+- agent.bar, the registration platform of today's demonstration issuer (`did:aria:registry.aria.bar`)
+- `@aria-registry/verify` 1.x, historical: no longer served by npm, still in scope for applications that installed it
 
 **Out of scope:**
 - Third-party implementations of ARIA

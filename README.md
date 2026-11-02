@@ -70,10 +70,33 @@ One repository holds the protocol and its SDKs. This is its long-term structure.
 | `sdk/aria-ts/` | **ARIA SDK** (`@trustlayer-foundation/aria-sdk`): credential verification and the status of the exact document | 1.0.0 on npm |
 | `sdk/aria-ap-ts/` | **ARIA AP** (`@trustlayer-foundation/aria-ap`): receiver identity, signed requests, admission, operations and receipts, built on the ARIA SDK | 1.0.0 on npm |
 
-The two SDKs are separate packages. A service that only checks credentials installs the
-ARIA SDK; one that admits agent requests or exchanges receipts installs ARIA AP as well,
-which uses the ARIA SDK's verifier and has no credential verification of its own.
-`sdk/scripts/check-pair.mjs` tests them as packed artifacts, alone and together.
+## SDKs
+
+Two TypeScript packages for Node.js 20 or later, both 1.0.0 on npm. They are the ARIA 1.0
+products; [agent.bar](https://agent.bar) is a separate, complete working demonstration of
+the protocol.
+
+| Package | What it solves | Install it when |
+|---|---|---|
+| [ARIA SDK](sdk/aria-ts/README.md), `@trustlayer-foundation/aria-sdk` | Verifies an agent's credential and the status of that exact document, under the issuers you trust | You show or record whether a credential is genuine, current and not revoked |
+| [ARIA AP](sdk/aria-ap-ts/README.md), `@trustlayer-foundation/aria-ap` | Authenticates an agent's signed request, admits it, runs each operation once and signs its receipt; on the agent's side, checks the receiver and its receipts | You decide whether an agent's request may run, or call such a service as an agent. It builds on the ARIA SDK, so you install both |
+
+```bash
+npm install @trustlayer-foundation/aria-sdk                                 # credentials and their status
+npm install @trustlayer-foundation/aria-sdk @trustlayer-foundation/aria-ap  # requests, admission and receipts
+```
+
+Each package's README has the following, checked against the published packages:
+- a minimal example: [ARIA SDK](sdk/aria-ts/README.md#quick-start), [ARIA AP](sdk/aria-ap-ts/README.md#quick-start-a-receiver);
+- its explicit trust configuration;
+- what each result establishes.
+
+- **API contracts:** [ARIA SDK](sdk/aria-ts/API.md), [ARIA AP](sdk/aria-ap-ts/API.md).
+- **Examples:** [`sdk/aria-ts/examples`](sdk/aria-ts/examples), [`sdk/aria-ap-ts/examples`](sdk/aria-ap-ts/examples).
+- **Support:** [issues](https://github.com/trustlayer-foundation/aria-protocol/issues) for questions and bugs; vulnerabilities by email, per [SECURITY.md](SECURITY.md).
+
+`sdk/scripts/check-pair.mjs` tests both as packed artifacts, alone and together, and runs
+the documented examples.
 
 ## Verify a credential
 
@@ -252,8 +275,9 @@ that need no approval are unaffected:
    otherwise keeps the operation locked rather than allowing a second execution.
 5. **Recovery.** After a lost answer, a signed lookup returns the operation's receipts.
 
-Reference: [ARIA AP API contract](sdk/aria-ap-ts/API.md), schemas
-[`schema/aria-ap-*.json`](schema/README.md), vectors [`conformance/ap`](conformance/ap/README.md).
+Reference: [ARIA AP README](sdk/aria-ap-ts/README.md), with a receiver's quick start; the
+[API contract](sdk/aria-ap-ts/API.md); schemas
+[`schema/aria-ap-*.json`](schema/README.md); vectors [`conformance/ap`](conformance/ap/README.md).
 
 ## Cryptography
 
