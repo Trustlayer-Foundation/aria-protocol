@@ -2,7 +2,7 @@
 
 **Agent Registry for Identity & Authorization**
 
-The open protocol for AI agent identity. DNS-anchored. Post-quantum native. Governed by a nonprofit.
+The open protocol for AI agent identity. DNS-anchored from L1. Post-quantum native. Governed by a nonprofit.
 
 ARIA here means Agent Registry for Identity & Authorization. It is unrelated to WAI-ARIA (accessibility).
 
@@ -26,15 +26,18 @@ decided, and so are its receipt rules, retrieval included. The canonical text is
 [DEPRECATIONS.md](DEPRECATIONS.md). Earlier artifacts stay only for compatibility, in
 [Historical compatibility](#historical-compatibility) below, outside this path.
 
-**[PLANNED] Issuance cutover.** Credentials under ARIA 1.0 carry `spec_version: "1.0"`
-and are issued by TrustLayer Foundation (issuer DID TBD). Credentials issued before the
-cutover remain resolvable and are distinguished by their issuer DID, never by version.
+**Issuance.** Today's issuer, `did:aria:registry.aria.bar` behind agent.bar, is a
+demonstration: it has issued AID 1.0 credentials (`spec_version: "1.0"`) since 30
+October 2026, and they are not a production guarantee. **[PLANNED]** Production ARIA
+1.0 will be issued by TrustLayer Foundation under a new issuer DID and keys. Credentials
+issued earlier remain resolvable and are distinguished by their issuer and
+`spec_version`.
 
 ## What is ARIA?
 
 ARIA gives AI agents a verifiable, cryptographically signed identity — a passport for the agentic web.
 
-Every agent gets a DID (`did:aria:*`), a trust level (L0 live; L1 to L3 planned), the scopes it declares — what it intends to do, which each receiver decides whether to admit — and a signed credential (AID) that any system can verify offline using post-quantum cryptography.
+Every agent gets a DID (`did:aria:*`), a trust level (L0 live; L1 live in agent.bar's demonstration; L2 and L3 specified, not issued), the scopes it declares — what it intends to do, which each receiver decides whether to admit — and a signed credential (AID) that any system can verify offline using post-quantum cryptography.
 
 **ARIA AP** is how an agent uses that credential with a service: the agent authenticates
 the receiver, signs each request with its holder key, the receiver admits or refuses it,
@@ -48,7 +51,7 @@ after a lost answer. It replaces an earlier admission protocol, now deprecated (
 |----------|-----|
 | **Live spec** | [aria.bar/spec](https://aria.bar/spec) |
 | **API (public, no auth)** | [api.aria.bar](https://api.aria.bar) |
-| **Registry (sign up)** | [registry.aria.bar](https://registry.aria.bar) |
+| **Registry (sign up)** | [agent.bar](https://agent.bar) |
 | **SDKs** | [ARIA SDK](sdk/aria-ts/README.md) and [ARIA AP](sdk/aria-ap-ts/README.md), 1.0.0, not yet on npm |
 | **NIST filing** | NIST-2025-0035, March 9, 2026 |
 | **NCCoE response** | AI-Identity@nist.gov, April 2, 2026 |
@@ -113,8 +116,7 @@ from the document.
 
 **Today's issuer is a demonstration.** agent.bar is a complete working demonstration, and
 the issuer behind it, `did:aria:registry.aria.bar`, serves its key set at
-`https://api.aria.bar/v1/keyset` from the release that publishes the SDK packages. Its
-anchor is `sha256:4117aaac21272740756d02305a9fa7e2d84398fdd859d390b476539d57ec67b3`,
+`https://api.aria.bar/v1/keyset`. Its anchor is `sha256:4117aaac21272740756d02305a9fa7e2d84398fdd859d390b476539d57ec67b3`,
 pinned in the release manifest (`release/aria-1.0.json`, `trust`). Trust it, if you do,
 under a profile you name `demo`: its credentials are not a production guarantee, and
 the identity checks behind them are the demonstration's. Production ARIA 1.0 will use a
@@ -159,7 +161,7 @@ configured apart and each later key is introduced by the one before.
 Or via API:
 
 ```bash
-curl https://api.aria.bar/v1/verify/did:aria:aria.bar:u-cmDoHhM3:ordering-agent
+curl https://api.aria.bar/v1/verify/did:aria:aria.bar:u-0dhNSrC9:commerce-search
 ```
 
 ## Protocol overview
@@ -168,7 +170,7 @@ ARIA is a six-layer protocol:
 
 | Layer | Standard | Purpose |
 |-------|----------|---------|
-| **P1 — Anchor** | W3C DID Core | Every agent gets a DID anchored to DNS |
+| **P1 — Anchor** | W3C DID Core | Every agent gets a DID; from L1, its principal's domain is bound through DNS |
 | **P2 — Certify** | W3C VC Data Model 2.0 | Signed, portable, offline-verifiable credentials |
 | **P3 — Present** | ARIA AP over RFC 9421 HTTP Message Signatures | How credentials are presented and bound to a request |
 | **P4 — Protect** | FIPS 204 + RFC 8032 | ML-DSA-65 + Ed25519 composite signatures |
@@ -184,20 +186,24 @@ Full definitions and requirement IDs: [aria.bar/spec#trust](https://aria.bar/spe
 
 | Level | Name | Asserts | TLS analogy | Validity | Status |
 |-------|------|---------|-------------|----------|--------|
-| **L0** | Anchored | Cryptographic existence of the agent. Nothing more; every declared name is self-declared. E-mail challenge + key possession. Automatic. | Self-signed | 366 days | **Live** |
-| **L1** | Identified | A verified natural person answers for the agent (ICAO 9303 document, ISO/IEC 30107-3 liveness, biometric match, human review) and the agent controls its domain (DoH + RDAP). **Not automatic.** | DV | 366 days | [PLANNED] |
+| **L0** | Self-declared | Cryptographic existence of the agent. Nothing more; every declared name is self-declared. E-mail challenge + key possession. Automatic. | Self-signed | 366 days | **Live** |
+| **L1** | Identified | A verified natural person answers for the agent (ICAO 9303 document, ISO/IEC 30107-3 liveness, biometric match, human review) and the agent controls its domain (DoH + RDAP). **Not automatic.** | DV | 366 days | Live in agent.bar's demonstration |
 | **L2** | Certified | L1, plus the entity exists per its Authoritative Source, the person is linked to it, and neither appears on OFAC, EU or UN lists screened no older than 7 days. | OV | 200 days | [PLANNED] |
 | **L3** | Sovereign | L2, plus a Binding Officer with power to bind the entity, keys in FIPS 140-3 L2+ / CC EAL4+ hardware (MUST), signed accountability. | EV+ | 180 days | [PLANNED] |
+
+In agent.bar's demonstration, L1's identity checks run on an identity provider's
+sandbox: a demonstration L1 credential is not a production guarantee.
 
 ## AID schema highlights
 
 Each AID is a W3C Verifiable Credential signed with the composite cryptosuite
 (`mldsa65-ed25519-2026`).
 
-**Schema:** [`schema/aid-1.0.json`](schema/aid-1.0.json) — **a draft until the issuance
-cutover**, and the file says so: nothing declares `spec_version: "1.0"` yet, the
-Verification Requirements it serves are still a draft, and planned fields have no
-place in it. Build against it; it freezes the day the first credential declares 1.0.
+**Schema:** [`schema/aid-1.0.json`](schema/aid-1.0.json). Its title still reads "draft
+until the issuance cutover", the production cutover to TrustLayer Foundation. The
+demonstration issuer has issued credentials declaring `spec_version: "1.0"` under it
+since 30 October 2026, so its rules no longer change: a new field means a new schema
+file.
 Example: [`examples/aid-example.json`](examples/aid-example.json) (illustrative; its proof
 value is not verifiable).
 `credentialSubject.holderKey` is required: a per-agent Ed25519 keypair for
@@ -309,7 +315,7 @@ were published. Why each is retired, and what replaces it: [DEPRECATIONS.md](DEP
 | [`sdk/verify-ts/`](sdk/verify-ts/README.md) (`@aria-registry/verify` 1.x, no longer served by npm), [`examples/verify-example.ts`](examples/verify-example.ts) | Applications that pinned it, and the W3C registry entry that cites it | The citation moves to the 1.0 packages ([INVARIANTS](INVARIANTS.md), npm package names) |
 | [`schema/atp-policy-v1.json`](schema/atp-policy-v1.json), [`schema/intent-declaration-v1.json`](schema/intent-declaration-v1.json), [`examples/atp-policy-example.txt`](examples/atp-policy-example.txt), the `_aria-policy` record `v=ATP1`, the `ATP-…` codes | Their identifiers were published; ATP is deprecated in favour of ARIA AP | A compatibility decision for each identifier |
 
-**The edition of September 7, 2026** (tagged `v1.0.0`) used Verification Requirements
+**The edition of September 7, 2026** (commit `0b410d1`, tagged `v1.0.0` until ARIA 1.0.0 replaced it on 2 November 2026) used Verification Requirements
 (80 citable requirements) as the normative basis, four levels derived from evidence,
 ATP/1 and TrustLayer Foundation as issuer. Development history before it is archived
 off-repository and summarized in [CHANGELOG.md](CHANGELOG.md).
