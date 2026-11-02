@@ -2,13 +2,30 @@
   "name": "@trustlayer-foundation/aria-sdk",
   "version": "1.0.0",
   "description": "The ARIA SDK: inspect and verify an agent's credential and establish the status of that exact document. ARIA AP is the separate package built on it.",
+  "keywords": [
+    "aria",
+    "aria-protocol",
+    "ai-agents",
+    "agent-identity",
+    "verifiable-credentials",
+    "did",
+    "did-aria",
+    "credential-verification",
+    "status-list",
+    "post-quantum",
+    "ml-dsa",
+    "ed25519"
+  ],
   "license": "Apache-2.0",
   "author": "TrustLayer Foundation",
-  "homepage": "https://aria.bar",
+  "homepage": "https://github.com/trustlayer-foundation/aria-protocol/tree/main/sdk/aria-ts#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trustlayer-foundation/aria-protocol.git",
     "directory": "sdk/aria-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/trustlayer-foundation/aria-protocol/issues"
   },
   "type": "module",
   "main": "./dist/index.js",

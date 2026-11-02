@@ -9,7 +9,7 @@ what is here.
 
 | Edition | Status | What it covers |
 |---|---|---|
-| **1 November 2026** | Published at aria.bar/spec; the edition of ARIA 1.0 | The 7 September text with §3, §5, §6, §7 and §8 revised as TLF adopted them (decision D7): issuance under the federation contract 1.0.0 with one `_aria-bind` record per account and domain; both signature halves required for as long as a credential is valid, judged as one; scopes of three segments in new issuance (D5); the holder key in ARIA's own encoding (D6); human approval refused when missing; a signed status list valid 24 hours and re-signed hourly; ARIA AP as the admission protocol, with ATP/1 kept as a deprecated appendix |
+| **1 November 2026** | Published at aria.bar/spec; the edition of ARIA 1.0 | The 7 September text with §3, §5, §6, §7 and §8 revised as TLF adopted them: issuance under the federation contract 1.0.0 with one `_aria-bind` record per account and domain; both signature halves required for as long as a credential is valid, judged as one; scopes of three segments in new issuance (D5); the holder key in ARIA's own encoding (D6); human approval refused when missing; a signed status list valid 24 hours and re-signed hourly; ARIA AP as the admission protocol, with ATP/1 kept as a deprecated appendix |
 | **7 September 2026** | Superseded by the edition of 1 November 2026 | The text as first released |
 
 The release manifest of ARIA 1.0 names the edition it ships with and pins the text by

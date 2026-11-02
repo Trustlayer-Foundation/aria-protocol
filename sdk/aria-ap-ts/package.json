@@ -2,13 +2,30 @@
   "name": "@trustlayer-foundation/aria-ap",
   "version": "1.0.0",
   "description": "ARIA AP: authenticate an agent's request and its receiver, admit it, and sign and verify its receipt. Built on the credential verifier of @trustlayer-foundation/aria-sdk.",
+  "keywords": [
+    "aria",
+    "aria-protocol",
+    "ai-agents",
+    "agent-authentication",
+    "agent-authorization",
+    "http-message-signatures",
+    "rfc9421",
+    "signed-receipts",
+    "idempotency",
+    "verifiable-credentials",
+    "post-quantum",
+    "ed25519"
+  ],
   "license": "Apache-2.0",
   "author": "TrustLayer Foundation",
-  "homepage": "https://aria.bar",
+  "homepage": "https://github.com/trustlayer-foundation/aria-protocol/tree/main/sdk/aria-ap-ts#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/trustlayer-foundation/aria-protocol.git",
     "directory": "sdk/aria-ap-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/trustlayer-foundation/aria-protocol/issues"
   },
   "type": "module",
   "main": "./dist/index.js",

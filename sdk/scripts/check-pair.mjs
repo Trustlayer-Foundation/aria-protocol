@@ -136,6 +136,8 @@ function consumer(name, tarballs, extra = []) {
   run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...extra, ...tarballs, ...FIXTURE_DEPS], dir);
   for (const f of readdirSync(join(SDK, 'scripts', 'pair'))) copyFileSync(join(SDK, 'scripts', 'pair', f), join(dir, f));
   copyFileSync(join(SDK, '..', 'README.md'), join(dir, 'README.protocol.md'));
+  copyFileSync(join(SDK, 'aria-ts', 'README.md'), join(dir, 'README.sdk.md'));
+  copyFileSync(join(SDK, 'aria-ap-ts', 'README.md'), join(dir, 'README.ap.md'));
   return dir;
 }
 
@@ -202,6 +204,7 @@ try {
   const pairDir = consumer('pair', [sdkTar, apTar]);
   scenarios.push(scenario(pairDir, 'pair.mjs'));
   scenarios.push(scenario(pairDir, 'ap-exchange.mjs'));
+  scenarios.push(scenario(pairDir, 'documented-ap.mjs'));
   scenarios.push(scenario(pairDir, 'historical.mjs'));
   const second = join(pairDir, 'second');
   mkdirSync(second);
