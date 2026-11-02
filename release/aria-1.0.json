@@ -1,6 +1,6 @@
 {
   "release": "ARIA 1.0",
-  "state": "candidate",
+  "state": "final",
   "_comment": "What ARIA 1.0 ships, pinned by hash, and what it leaves open. release/check.mjs compares it with this repository, the package archives and the site. A candidate may leave decisions pending; the final release may not. Nothing here is published until the owner authorizes each step of the release plan.",
   "edition": {
     "label": "1 November 2026",
@@ -24,7 +24,7 @@
       "path": "sdk/aria-ts",
       "version": "1.0.0",
       "nameStatus": "confirmed",
-      "integrity": "sha512-DlD3F0vfrrgmFhuM1DPIy8LBjYz9d9pojJ9bIVzGQnH//HArvygDdfrO+nZkYYIhtUqE2LAkL01awzjeMN1VJw=="
+      "integrity": "sha512-jmB7WZuMUfvOcqzRLRF6uOlTwTWKeyL2GU4+aXdC3SylKxF5Uek/qmWz9XGyB6jObSDNUGUsGLSN8Lb23W0P0w=="
     },
     {
       "name": "@trustlayer-foundation/aria-ap",
@@ -34,7 +34,7 @@
       "peerDependencies": {
         "@trustlayer-foundation/aria-sdk": "^1.0.0"
       },
-      "integrity": "sha512-ugzukWhhlMDxwCgntMlhoBNOvLgq33lmcgd2GJuITR+o0duHRBiNjGPGHz0z39mehGLyxSwWKbPXEvFt0DrAqg=="
+      "integrity": "sha512-UANsUXKlt6wFib8JgLnpVaIXd6+2MUdeUu9c9AHHMRmcLALwT7dYJ6+2ykf697SNTIRG6zhk7ZncpdhbsMW5mw=="
     }
   ],
   "schemas": [
@@ -59,14 +59,14 @@
     {
       "path": "schema/aria-ap-lookup-1.json",
       "id": "https://aria.bar/schema/aria-ap-lookup-1.json",
-      "status": "ARIA AP retrieval (provisional: the rest of D4)",
-      "sha256": "sha256:aa075fc876bf895912585e9b4f5787bb175d04919ec298f3a8bf5c9260e32dbb"
+      "status": "ARIA AP retrieval (D4)",
+      "sha256": "sha256:deec84621a4118bb91e46260e14dcfa8aad1cf5f8a7a9ffab8fcfb23f2746199"
     },
     {
       "path": "schema/aria-ap-receipt-1.json",
       "id": "https://aria.bar/schema/aria-ap-receipt-1.json",
-      "status": "ARIA AP receipt (format decided under D4)",
-      "sha256": "sha256:c3a41a4cc01dd486ca33c0fe7fd0d15bc664e588bb7c18854ace7846af637d5e"
+      "status": "ARIA AP receipt (format and retrieval decided under D4)",
+      "sha256": "sha256:7007644c95f3f46b8473ed2db1b8deac9ff55560ad7b0e78edcda92492c2ac71"
     },
     {
       "path": "schema/aria-keyset-1.json",
@@ -186,27 +186,27 @@
     },
     {
       "path": "conformance/ap/profile.json",
-      "sha256": "sha256:b555ff22275fe86c9479b5aef169456aee857e2aa474b6fdc5b49c1bb5a3361c"
+      "sha256": "sha256:2658839445f0b393cd5dd6da83f4e41ebfd3bfa4e4b2fb740ee2b5c63b64d7dc"
     },
     {
       "path": "conformance/ap/vectors/fingerprints.json",
-      "sha256": "sha256:874042c9b71449bb5bb542e68452567e9b7bafe2283d35b15f99ecdebfae3145"
+      "sha256": "sha256:2a30ff3fe91c0bf4fcfaec1e0871149cbbae2ae975f6ccac40f82602403d5fb8"
     },
     {
       "path": "conformance/ap/vectors/historical.json",
-      "sha256": "sha256:d6dec8d5c8a1018c7ee727bc2f8a5e929047bfe454bad4a707dc1a0e04075302"
+      "sha256": "sha256:4e317699833fe3516d96639f11e7b6d457476baa79c974650aa31ee59b795538"
     },
     {
       "path": "conformance/ap/vectors/identity.json",
-      "sha256": "sha256:35a1b3dbe6f9962b86af32122a59d95d8bcc442b04f8c01b11fd9654caf0a566"
+      "sha256": "sha256:b6e9540c257fe90c180977bee700f3ede78e96d0123f65982f7881d65f364f79"
     },
     {
       "path": "conformance/ap/vectors/receipts.json",
-      "sha256": "sha256:611c07d056e8198ee7293eb5f34305eb01f5fcdf641a4ed274944c4254c6479b"
+      "sha256": "sha256:77eef2001f8bc1bc7c5c91814927de98ce03a2f94121fe9b4c4f5f7dc3bcd559"
     },
     {
       "path": "conformance/ap/vectors/requests.json",
-      "sha256": "sha256:4d6d7bebc49192e29729bba30a658f8c051d2ea6924265ebbbe81d86cb8054d5"
+      "sha256": "sha256:1c689676c5d9bfaa96306a21ea58710284a8f75e81d5f480937d8787b638b217"
     },
     {
       "path": "conformance/ap/vectors/scopes.json",
@@ -214,7 +214,7 @@
     },
     {
       "path": "conformance/ap/vectors/sequences.json",
-      "sha256": "sha256:826ff83a745e728c145e787ddc8dbee5cfb17474ce39cf6c4165e263f0d80a21"
+      "sha256": "sha256:264087104febe4c6ca938000b938b1198ec9b4e77607cb3b3c3985978e5e8723"
     }
   ],
   "capabilities": {
@@ -306,18 +306,21 @@
     },
     {
       "id": "D4-rest",
-      "subject": "retrieval and the remaining receipt rules",
-      "state": "pending"
+      "subject": "retrieval as implemented: a current credential of the same DID with proof of possession, renewed or not, retrieves the original receipts; revocation deletes none and does not prevent historical verification",
+      "state": "decided",
+      "on": "2026-11-01"
     },
     {
       "id": "D11",
-      "subject": "previousCredentialId in future issuance",
-      "state": "pending"
+      "subject": "previousCredentialId kept: it relates a renewal to the credential before it; the DID never changes and verification never walks the chain",
+      "state": "decided",
+      "on": "2026-11-01"
     },
     {
       "id": "D12",
-      "subject": "proof metadata outside the signature",
-      "state": "pending"
+      "subject": "the current suite is kept for 1.0; the credential proof metadata is unsigned, and the signed validFrom and validUntil are the dates that count",
+      "state": "decided",
+      "on": "2026-11-01"
     }
   ],
   "compatibility": [
