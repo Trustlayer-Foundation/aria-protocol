@@ -30,8 +30,8 @@ decided, and so are its receipt rules, retrieval included. The canonical text is
 demonstration: it has issued AID 1.0 credentials (`spec_version: "1.0"`) since 30
 October 2026, and they are not a production guarantee. **[PLANNED]** Production ARIA
 1.0 will be issued by TrustLayer Foundation under a new issuer DID and keys. Credentials
-issued earlier remain resolvable and are distinguished by their issuer and
-`spec_version`.
+issued earlier remain resolvable. The issuer DID says which regime issued a credential,
+and `spec_version` which schema validates it.
 
 ## What is ARIA?
 

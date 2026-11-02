@@ -53,13 +53,13 @@ it stays at its path for as long as anything declares it.
 Published, registered with INDAUTOR, and referenced from the `did:aria` entry filed
 with the W3C DID Method Registry.
 
-**`aid-1.0.json` is a draft until the issuance cutover, and says so in the file.** Nothing
-declares `spec_version: "1.0"` yet; the Verification Requirements it serves are still
-v1.3-draft with ten decisions open at TrustLayer Foundation; and fields already planned,
-a designated successor principal among them, have no place in it. Since
-`credentialSubject` declares `additionalProperties: false`, admitting one of them later
-means a new file and a new `spec_version`. It is published so implementers can build
-against it, and it freezes the day the first credential declares 1.0 — not before.
+**`aid-1.0.json` is frozen.** The demonstration issuer has issued credentials declaring
+`spec_version: "1.0"` since 30 October 2026, so its rules no longer change. Its title
+still reads "draft until the issuance cutover", meaning the production cutover to
+TrustLayer Foundation; the title is description, the rules are the schema. Fields
+already planned, a designated successor principal among them, have no place in it.
+Since `credentialSubject` declares `additionalProperties: false`, admitting one means a
+new file and a new `spec_version`.
 
 **Breaks if:** a required field is changed, renamed, or removed.
 
@@ -89,31 +89,36 @@ credentials already signed cannot be re-signed against a different rule. JCS is 
 candidate for a successor suite, not a description of this one.
 
 Byte-identical output across implementations is the cross-implementation contract, and
-the vectors are how a second implementation proves it has it. Today there is one
-published SDK; the contract exists so that the second one can be checked against it
-rather than negotiated with.
+the vectors are how a second implementation proves it has it. Today the ARIA SDK and
+the authority both implement it and are checked against the vectors; the contract
+exists so that each further implementation is checked against it rather than
+negotiated with.
 
 **Breaks if:** any serialisation detail varies — key ordering, number formatting,
 string escaping, whitespace.
 
-## 4 · The issuer signing key
+## 4 · The issuer signing key and its key set
 
-**The signing key cannot rotate.** Not "cannot rotate without publishing the old key
-set" — cannot rotate, for any already-published version of the verify SDK.
+**Current: the ARIA SDK 1.0 compiles in no issuer key.** A verifier states each issuer
+it trusts, with that issuer's two public keys, in a trust profile. An issuer publishes
+its keys in an append-only key set at `/v1/keyset` (schema `schema/aria-keyset-1.json`):
+- the first key is the anchor, whose fingerprint an adopter pins out of band;
+- each later key is introduced by a composite signature of the key before it, which
+  also covers that earlier entry, so rotation chains from the anchor;
+- only the last key is active.
 
-The published SDK carries the registry's public keys as hex literals compiled into
-the package. There is no key discovery in the verification path: no endpoint is
-consulted, no DID is resolved. Anyone who pins a given version verifies against that
-compiled key for as long as they keep the pin.
+Being listed grants no trust. The demonstration issuer's set and its anchor are pinned
+in `release/aria-1.0.json` (`trust`) and served at `https://api.aria.bar/v1/keyset`
+since 2 November 2026, in the same release as the new package names.
 
-**Escape hatch:** `setRegistryKeys()` is exported public API, not a test helper. A
-pinned consumer can inject new keys at runtime. This turns *impossible* into
-*manual*, which is the difference between an incident and a migration note.
+**Breaks if:** an accepted entry is rewritten, dropped or reordered, or the anchor
+changes. The publishing authority refuses to serve such a set.
 
-**Design requirement for any future release:** the key set must be append-only with
-validity windows; rotation must be a signed assertion chained from the compiled key,
-making that key an *anchor* rather than *the* key; and key discovery must ship in the
-same release as any new package name, not after it.
+**Historical: `@aria-registry/verify` 1.x** compiled the earlier stack's public keys as
+hex literals, with `setRegistryKeys()` as the runtime escape hatch, and no key
+discovery. Those keys sign no current credential. The authority deployed on 30 October
+2026 signs with another key under the same `#key-1` identifier, and the earlier stack's
+credentials were abandoned by the owner's decision of 29 October 2026.
 
 ## 5 · `https://aria.bar/ns/v1`
 
@@ -168,8 +173,9 @@ existing AID, which is a silent security failure rather than a visible error.
 Every issued credential names its issuer DID together with `#key-1` as the
 `verificationMethod`. Today that issuer is `did:aria:registry.aria.bar`.
 
-**Note on what this actually requires.** The reference verify SDK never dereferences
-this identifier — it is a label, not a pointer. A third-party verifier implementing DID
+**Note on what this actually requires.** Neither the ARIA SDK nor the historical verify
+SDK dereferences this identifier — it is a label, not a pointer: the ARIA SDK matches it
+against the trust profile the verifier states. A third-party verifier implementing DID
 resolution per the specification *would* resolve it, so it must resolve; but reference
 verification does not depend on it.
 
@@ -182,28 +188,31 @@ accreditation is forward-only: it does not invalidate credentials issued while t
 accreditation stood).
 
 **The regime is determined by the issuer DID, never by `spec_version`.** Credentials
-issued before the cutover carry an earlier `spec_version` than `"1.0"`, so any rule of
-the form "version ≥ N" misclassifies them. The only valid rule:
+issued before the cutover carry `spec_version` `"1.2"` (the earlier stack) or `"1.0"`
+(the demonstration authority, since 30 October 2026). `spec_version` says which schema
+validates a credential, never which regime issued it, so any rule of the form
+"version ≥ N" misclassifies them. The only valid rule:
 
 ```
-issuer did:aria:registry.aria.bar   →  issued before the cutover
-issuer the TLF DID                  →  ARIA 1.0 issuance
+issuer did:aria:registry.aria.bar   →  before the cutover: a demonstration, not a production guarantee
+issuer the TLF DID                  →  production ARIA 1.0 issuance
 ```
 
-Every issuer that has ever been listed must remain resolvable indefinitely. Key
-discovery, which is what would let a verifier check this rather than trust a compiled
-constant, is `[PLANNED]` — see invariant 4.
+Every issuer that has ever been listed must remain resolvable indefinitely. An issuer's
+key set (invariant 4) lets a verifier check its keys against an anchor it pinned,
+rather than trust a compiled constant.
 
 ## 12 · `https://api.aria.bar/v1/verify/{did}`
 
 The revocation endpoint, compiled into every published version of the verify SDK as
 `DEFAULT_API_URL` plus path.
 
-**This is the revocation mechanism every published SDK version uses.** Those versions do
-not read `credentialStatus` from the credential; they ask this endpoint by DID. From the
-unreleased 1.2.0, the SDK reads the credential's own status-list entry by default
-(`checkCredentialStatus`). It can still ask this endpoint, but it then accepts only an
-answer naming the presented credential.
+**Historical.** Every published version of `@aria-registry/verify` (1.x) asks this
+endpoint by DID instead of reading `credentialStatus`.
+
+**Current.** The ARIA SDK 1.0 reads the presented credential's own status-list entry by
+default (`checkStatus`). It asks an online endpoint only when the trust profile names one
+(`onlineStatus`), and then accepts only an answer naming the presented credential.
 
 **Breaks if:** the route changes or the host stops answering — revocation checking
 fails for every pinned SDK version.
@@ -213,15 +222,15 @@ fails for every pinned SDK version.
 | Mechanism | Consumer |
 |---|---|
 | `credentialStatus` → Bitstring Status List at `/v1/status/1` | Third-party verifiers following W3C VC 2.0 |
-| `checkRevocation()` → `/v1/verify/{did}` | The reference verify SDK up to 1.1.0, and pinned integrations |
+| `checkRevocation()` → `/v1/verify/{did}` | `@aria-registry/verify` up to 1.1.0, and integrations that pinned it |
 
 **This is a debt, and naming it is part of the invariant.** The per-DID call is a
 phone-home: it tells the registry which agent a verifier is asking about, which is
 exactly what the aggregate list avoids and what spec §8 warns against. It also answers
 for the DID's newest credential only, so once a DID holds several, it cannot say whether
 a presented credential was superseded. The specification describes the aggregate Status
-List as the mechanism. The reference SDK reads it by default from the unreleased 1.2.0.
-Both endpoints must keep answering, because pinned versions depend on the per-DID one.
+List as the mechanism, and the ARIA SDK 1.0 reads it by default. Both endpoints must
+keep answering, because pinned versions depend on the per-DID one.
 
 ---
 
@@ -236,11 +245,23 @@ redirect packages**. If the package is republished under a different scope:
 3. never npm unpublish — that breaks the cited URL
 ```
 
+**What happened.** `@aria-registry/verify` is no longer served by npm (404 since
+1 November 2026), contrary to step 3. The ARIA 1.0 packages are
+`@trustlayer-foundation/aria-sdk` and `@trustlayer-foundation/aria-ap`. The W3C
+registration's reference to the old package moves to them; the registry entry itself
+cites `https://aria.bar/spec#did-method` and is unchanged.
+
 ---
 
 ## Not an invariant, but a documented default
 
-`verifyAgent()` does not check revocation. It returns `revocationStatus: 'unknown'`
+**ARIA SDK 1.0.** `verifyCredential` checks the document and returns no status;
+`checkStatus` establishes the status of that exact document; `standing` judges current
+validity and status freshness when asked. None of them authorizes anything: whether an
+agent may do something is ARIA AP's admission, after the agent proves possession of its
+holder key.
+
+**Historical: `@aria-registry/verify` 1.x.** `verifyAgent()` does not check revocation. It returns `revocationStatus: 'unknown'`
 and passes. Revocation checking is opt-in through policy
 (`requireRevocationCheck`, `lastRevocationCheck`, `maxOfflineAge`); with a policy
 that requires it, verification fails closed.
