@@ -54,6 +54,8 @@ if (block) {
 // the fixture issuer and served by a stub, must trust exactly the pinned key.
 const recipe = /### Trust from a published key set[\s\S]*?```javascript\n([\s\S]*?)```/.exec(readme)?.[1];
 await c.check('the README shows how to trust a published key set', () => Boolean(recipe));
+await c.check('the ARIA SDK README\'s quick start uses that recipe as written', () =>
+  Boolean(recipe) && (/## Quick start[\s\S]*?```javascript\n([\s\S]*?)```/.exec(readFileSync(new URL('README.sdk.md', here), 'utf8'))?.[1] ?? '').includes(recipe));
 if (recipe) {
   writeFileSync(new URL('documented-keyset.mjs', here), recipe);
   const { verifierFromKeyset } = await import(new URL('documented-keyset.mjs', here).href);

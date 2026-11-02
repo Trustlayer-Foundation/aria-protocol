@@ -2,10 +2,11 @@
 
 All notable changes to the ARIA Protocol specification.
 
-> **ARIA 1.0 (September 7, 2026) is the first stable release.** Everything before it
-> was pre-release; see "Before 1.0" at the end of this file.
+> **ARIA 1.0.0 (November 1, 2026) is the release.** It relaunches ARIA 1.0, first
+> published as the edition of September 7, 2026, below. Everything before that was
+> pre-release; see "Before 1.0" at the end of this file.
 
-## Unreleased
+## [1.0.0] — November 1, 2026 — ARIA 1.0, relaunched
 
 ### Changed — the edition of 1 November 2026, adopted by TLF
 
@@ -96,7 +97,7 @@ Credentials already issued to natural persons are corrected by reissuance under 
 `spec_version` — an Update, spec §3.5.3 — which the registry performs; see INVARIANTS §1
 on why that is not the schema-migration reissuance the invariant rules out.
 
-## [1.0.0] — September 7, 2026 — first stable release
+## The edition of September 7, 2026 — first stable publication (tagged `v1.0.0` until November 2, 2026)
 
 ### Repository
 - **History consolidated.** The development history before 1.0 was replaced by a

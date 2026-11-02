@@ -1,17 +1,19 @@
 # ARIA AP 1.0 — API contract
 
-Status: implemented, version 1.0.0. Of the decisions its wire profile depends on, four are taken:
-D3, the transport, is this RFC 9421 profile (the receiver's identity statement, a
-challenge per request, the credential by reference); D4 fixes the receipt's single
-format, `aria-ap-receipt/1`, carrying the decision's HTTP status and code; D8 is
-`refuse` for now: when an operation's scope requires human approval, a missing or
-invalid approval refuses the attempt; holding the operation is not supported, and a
-receipt carries no approval fields; D5 fixes the scopes: three-segment grants, read
-under their own pattern in signed 1.0 documents, compared exactly, with policy patterns
-ending in `:*` and a matching deny prevailing; and D4 fixes retrieval too: a current
-credential of the operation's sender DID, proving possession of its holder key, retrieves
-the original receipts. The vectors in [`conformance/ap`](../../conformance/ap/README.md)
-encode all of it.
+Status: implemented, version 1.0.0. Its wire profile is fixed:
+- **Transport:** this RFC 9421 profile: the receiver's identity statement, a challenge per
+  request, the credential by reference.
+- **Receipts:** a single format, `aria-ap-receipt/1`, carrying the decision's HTTP status
+  and code.
+- **Human approval:** when an operation's scope requires it, a missing or invalid approval
+  refuses the attempt. Holding the operation is not supported, and a receipt carries no
+  approval fields.
+- **Scopes:** three-segment grants, read under their own pattern in signed 1.0 documents
+  and compared exactly. Policy patterns may end in `:*`, and a matching deny prevails.
+- **Retrieval:** a current credential of the operation's sender DID, proving possession of
+  its holder key, retrieves the original receipts.
+
+The vectors in [`conformance/ap`](../../conformance/ap/README.md) encode all of it.
 
 ## What it builds on
 
@@ -70,7 +72,7 @@ Only `allow` lets an operation be claimed. There is no mode in which a failed ch
 becomes `allow`; a receiver observing a policy logs the `deny`, and what it then runs is
 not admitted.
 
-## Request profile (D3)
+## Request profile
 
 RFC 9421 with one signature labelled `aria`, tag `aria-ap/1`, Ed25519, `keyid` the
 credential's holder key. Each class fixes its covered components exactly:
@@ -103,7 +105,7 @@ An expired or not-yet-valid credential does not authenticate (401 `credential`):
 credential verifier produces no result for it. `aria.credential_expired` is the admission
 answer when validity ends between authentication and admission.
 
-## Receiver identity (D3)
+## Receiver identity
 
 `identify` answers `{ credential, statement }`: the receiver's AID document and a
 statement `aria-ap-identity/1` with `subject`, `credential`, `origin`, `audience`,
@@ -147,7 +149,7 @@ own resource decision is valid for that same lifetime; revalidating it longer is
 adopter's. Operation descriptors are checked: a minimum level outside `TRUST_LEVELS` or an
 approval policy other than `refuse` is a usage error.
 
-The scope policy (D5) is a list of `{ effect: 'allow' | 'deny', pattern }`
+The scope policy is a list of `{ effect: 'allow' | 'deny', pattern }`
 rules over the operation's scope. A pattern is a three-segment scope or two segments
 followed by `:*`, which matches any third segment and nothing longer or shorter. A matching
 deny wins whatever the order; otherwise a matching allow is needed, so an empty policy
@@ -166,7 +168,7 @@ await ap.admit({
 });
 ```
 
-A retrieval is admitted by `admitLookup` (D4): a credential of the operation's sender
+A retrieval is admitted by `admitLookup`: a credential of the operation's sender
 DID whose standing is `good`, renewed or not, reads that operation's receipts; a revoked,
 superseded or expired credential reads nothing. Revoking deletes no receipt, and a kept
 receipt can still be verified historically. ARIA AP adds no resource rule of the receiver
@@ -208,7 +210,7 @@ Otherwise the operation stays locked:
 - A committed effect already has its stored outcome: `reconcile` returns that receipt,
   never a new one; an open claim reported committed throws `InvariantViolation`.
 
-Receipts (`aria-ap-receipt/1`, the format D4 fixes) have two sources only: a settled outcome
+Receipts (`aria-ap-receipt/1`) have two sources only: a settled outcome
 and an attempt refusal. The governing receipt is the final one if any, else the latest
 `accepted`; history is never rewritten.
 
@@ -306,7 +308,7 @@ a URL whose serialization is the value itself, which includes valid IDNA:
 `https://xn--a.example` matches the schema's pattern but is refused by the SDK, both when
 emitting and when receiving.
 
-The identity, receipt and lookup schemas follow D3 and D4. Conforming to a schema is neither a valid signature
+The identity, receipt and lookup schemas follow the transport and the receipt format above. Conforming to a schema is neither a valid signature
 nor an authorization: the SDK also parses receipts strictly (no duplicate keys, integers
 only, at most 4096 bytes, which JSON Schema cannot express), verifies signatures, pins the
 receiver's exact credential and binds each receipt to a kept attempt. Against the AP1
@@ -315,7 +317,7 @@ the strict parsing refuses.
 
 ## Not offered yet
 
-- **Holding an operation for approval** (`hold`, D8), **delegation**, a credential **by
+- **Holding an operation for approval** (`hold`), **delegation**, a credential **by
   value**, and the WIMSE binding.
 
 ## Package and runtimes
