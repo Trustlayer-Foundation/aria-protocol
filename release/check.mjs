@@ -150,6 +150,17 @@ if (decided('D5')) {
   const profile = JSON.parse(readFileSync(join(root, 'conformance/ap/profile.json'), 'utf8'));
   if (/provisional/i.test(profile.scopes ?? '')) problems.push('conformance/ap/profile.json: D5 is decided, yet its scopes are provisional');
 }
+// The entry documents a contributor reads first agree with what has shipped: AID 1.0 is
+// issued, the 1.2.0 verifier was never released, and with D2 the key set is served.
+const ENTRY = ['README.md', 'INVARIANTS.md', 'spec/README.md'];
+for (const file of ENTRY) {
+  for (const raw of clauses(readFileSync(join(root, file), 'utf8'))) {
+    const c = raw.replace(/\s+/g, ' ');
+    if (/nothing\s+declares\s+`?spec_version/i.test(c)) problems.push(`${file}: AID 1.0 is issued, yet "${c.trim().slice(0, 90)}"`);
+    if (/unreleased 1\.2\.0/i.test(c)) problems.push(`${file}: "${c.trim().slice(0, 90)}" describes a verifier that was never released`);
+    if (decided('D2') && /discovery/i.test(c) && /\[PLANNED\]/.test(c)) problems.push(`${file}: D2 is decided and the key set is served, yet "${c.trim().slice(0, 90)}"`);
+  }
+}
 if (decided('D7')) {
   if (manifest.federation?.version !== openapiVersion || /draft/i.test(manifest.federation?.version ?? '')) problems.push(`federation: D7 is decided; the manifest says ${manifest.federation?.version}, openapi.yaml ${openapiVersion}`);
   if (/draft/i.test(openapiVersion ?? '') || /draft/i.test(exchangeTitle)) problems.push('federation: D7 is decided, yet the contract is labelled a draft');
