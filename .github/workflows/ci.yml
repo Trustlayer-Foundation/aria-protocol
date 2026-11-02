@@ -27,6 +27,33 @@ jobs:
       - run: pnpm test
         working-directory: sdk/verify-ts
 
+  sdk-packages:
+    # The ARIA SDK and ARIA AP (not released): each package's own checks, then
+    # both as packed artifacts installed with npm outside the repository, alone
+    # and together. ARIA AP builds against the ARIA SDK's built types.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/aria-ts
+      - run: pnpm typecheck && pnpm test
+        working-directory: sdk/aria-ts
+      - run: pnpm install --frozen-lockfile
+        working-directory: sdk/aria-ap-ts
+      - run: pnpm typecheck && pnpm test
+        working-directory: sdk/aria-ap-ts
+      - run: node sdk/scripts/check-pair.mjs
+
   conformance:
     # The vectors are the contract between implementations, so they run on every
     # change. The harness needs the SDK built, since it tests the published entry
@@ -40,20 +67,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+        with: { version: 10 }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
-          cache-dependency-path: sdk/verify-ts/pnpm-lock.yaml
+      # The ARIA SDK's build: the harness tests its canonical JSON and did:aria parser.
       - run: pnpm install --frozen-lockfile
-        working-directory: sdk/verify-ts
+        working-directory: sdk/aria-ts
       - run: pnpm build
-        working-directory: sdk/verify-ts
+        working-directory: sdk/aria-ts
       - run: npm install --no-audit --no-fund
         working-directory: conformance
       - run: node run.mjs --strict
         working-directory: conformance
+      # The federation contract against itself and the shared RA-to-authority exchanges.
+      # The authority replays the same exchanges in its own tests.
+      - run: node federation/check.mjs
+        working-directory: conformance
+      # The release manifest against this repository; archives and the site are
+      # compared when a release is prepared.
+      - run: node release/check.mjs
+      # ARIA AP: the committed vectors must be what the generator
+      # produces, and the independent checker must pass them with its controls.
+      - run: npm install --no-audit --no-fund
+        working-directory: conformance/ap
+      - run: npm run generate && git diff --exit-code -- vectors
+        working-directory: conformance/ap
+      - run: npm test
+        working-directory: conformance/ap
 
   identity-guard:
     runs-on: ubuntu-latest
@@ -80,10 +121,12 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           # .github holds this guard's own pattern; CHANGELOG and DEPRECATIONS
-          # record what was retired. None of the three is normative text.
+          # record what was retired. None of the three is normative text. Vector
+          # directories hold encoded keys and signatures, in which any short string
+          # can occur by chance (a base64 signature once spelled "VLEI").
           ! grep -rniE "vLEI|GLEIF|iBeta|IAL2 equivalent|Beyond EV|StatusList ?2021|ecdsa|P-256" \
               --include='*.md' --include='*.json' --include='*.ts' \
-              --exclude-dir=node_modules --exclude-dir=.github \
+              --exclude-dir=node_modules --exclude-dir=.github --exclude-dir=vectors \
               --exclude=CHANGELOG.md --exclude=DEPRECATIONS.md .
 
   branch-name:

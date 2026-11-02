@@ -1,402 +1,391 @@
 openapi: 3.1.0
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STATUS: draft, staged for trustlayer-foundation/aria-protocol.
+# STATUS: ARIA 1.0. TLF adopted this exchange as the normative federation contract
+# on 1 November 2026 (revisions r3 and r4). A change to its names or shapes is a new
+# contract version; the shared exchanges are its executable reference.
 #
 # This is the contract between a Registration Authority and the ARIA authority.
 # It is published because federation is impossible without it: a prospective RA
 # cannot evaluate a contract it is not allowed to read. Publishing it reveals what
 # the authority asks for, not how it signs.
 #
-# The contract outlives the code on both sides. Both implementations are
-# replaceable; this file is not.
+# The shapes live in exchange.schema.json. The shared exchanges under
+# conformance/federation are checked against both files and replayed against the
+# authority.
 # ─────────────────────────────────────────────────────────────────────────────
 
 info:
   title: ARIA Authority Contract
-  version: 1.0.0-draft
-  summary: What a Registration Authority may ask of the ARIA authority, and what it must assert.
+  version: 1.0.0
+  summary: What a Registration Authority may ask of the ARIA authority, and what it answers.
   description: |
     ARIA follows the Certificate Authority / Registration Authority model.
 
-    The **authority** validates the contract and signs. It never sees personally
+    The **authority** checks the request and signs. It never sees personally
     identifiable information: no KYC documents, no customer records, no identity
-    evidence beyond public registry references.
+    evidence. The **Registration Authority** vets the principal to the level it
+    requests and **attests** to the checks it performed, under its signature. The
+    authority signs on the strength of that attestation, and keeps it with its
+    signature: responsibility for the vetting stays with the RA.
 
-    The **Registration Authority** performs identity vetting appropriate to the
-    trust level it requests, and **attests** to having done so under signature.
-    The authority signs on the strength of that attestation, exactly as an X.509
-    CA signs on the strength of its RA's vetting. Responsibility for the vetting
-    stays with the RA, contractually and provably.
+    ## Authentication
 
-    Two consequences shape this API:
+    Every request is a signed envelope: `assertion`, `signature`, `payload`.
 
-    1. Every mint carries a **signed RA attestation**. It is recorded, and it is
-       what makes the RA accountable for what it claimed.
-    2. An RA may only assert up to the trust level it is **accredited** for.
-       Accreditation is queryable, so a verifier can apply its own policy per RA.
+    - The assertion (`ctx: aria-ra-request-v1`) names the RA, the audience (the
+      authority's DID), the operation, a `request_id`, a short validity window (five
+      minutes by default) and the SHA-256 digest of the payload's canonical JSON
+      (RFC 8785).
+    - `signature.value` is a composite signature over the assertion's canonical JSON,
+      by the RA key named in `signature.kid`: ML-DSA-65 and Ed25519, both required.
+      One valid half is a refusal.
+    - The key must be registered for that RA, and the RA accredited, active, and
+      accredited for the level it asks. Accreditation is set by the authority's
+      operator; this contract has no operation for it.
+
+    The payload is read only after the signature, the window and the digest have
+    passed, so a request that fails authentication is never judged on its content.
+    Mutual TLS and network placement are deployment layers outside this contract:
+    the authority is reached on a private network, never from the internet.
+
+    ## Retries
+
+    The authority records a **successful** answer with the request, in the same
+    transaction, under the RA and its `request_id`. A refusal is recorded nowhere.
+
+    - **Recovering an answer:** resend the same operation with the same
+      `request_id` and the same payload. If it was recorded, the recorded answer
+      comes back and nothing is done again, even after the reservation or the
+      original assertion has expired. The resent request must authenticate now: when
+      the original window has passed, sign a fresh assertion for the same
+      `request_id` and payload, with a key that is still registered and active, from
+      an RA still in good standing.
+    - **If it was not recorded,** the resent request is judged afresh, against the
+      state at that moment: it may succeed, or be refused for a reason the first
+      attempt did not meet (an expired reservation, for instance).
+    - The same `request_id` with another payload is `request_id_conflict`.
+
+    An answer that never arrived (a 504, a lost connection) or a 500 or 503
+    `unavailable` leaves the outcome **unknown**: the database may have committed
+    the request even though its acknowledgement was lost. The RA keeps the request
+    unresolved and resends the same request until it gets the recorded answer or a
+    refusal of the request itself. A resend refused before its payload is judged
+    (401, or 403 `ra_not_in_good_standing`) says nothing about the original. The RA
+    never treats an unresolved request as not done, and never sends a new one with
+    another `request_id` to find out.
+
+    ## Refusals
+
+    A refusal carries `code`, `path` (a JSON pointer built from names this contract
+    defines; an unknown member is reported at its parent), `correlation_id` and, once
+    the request signature has verified, `request_id`. Nothing from the request is
+    echoed, and no refusal reveals another RA's reservations, credentials or
+    bindings. Each code travels with one HTTP status, listed below and in
+    `exchange.schema.json` (`refusal400` … `refusal503`).
+
+    ## Not in this contract
+
+    Public reads (credentials, status lists) and the issuer's key set
+    (`/v1/keyset`, schema `aria-keyset-1.json`) are served by the authority's public
+    API, not by this contract. The scope catalogue is kept by each registry: the
+    authority checks a scope's form only, three lower-case segments
+    `namespace:resource:action`. A queryable RA standing endpoint is not
+    implemented.
   license:
     name: CC-BY-4.0
     url: https://creativecommons.org/licenses/by/4.0/
 
 servers:
-  - url: https://core.aria.bar/v1/authority
-    description: Production authority
-
-security:
-  - mutualTLS: []
-  - signedRequest: []
+  - url: '{origin}'
+    description: The authority, on its private network. There is no public host.
+    variables:
+      origin:
+        default: https://authority.internal
 
 tags:
-  - name: namespace
-    description: Reserving and checking DID availability
   - name: issuance
-    description: Minting and revoking credentials
-  - name: resolution
-    description: Public reads — resolution, status, key set
-  - name: accreditation
-    description: Registration Authority standing
+    description: Reserving a DID, signing a credential, revoking it
+  - name: domain binding
+    description: Binding a domain to a principal for L1 issuance
 
 paths:
 
-  /reserve:
+  /v1/authority/reserve:
     post:
-      tags: [namespace]
-      operationId: reserveDid
-      summary: Reserve a DID in the namespace
+      tags: [issuance]
+      operationId: reserve
+      summary: Reserve a DID for one agent
       description: |
-        First half of the two-phase mint. Reservation exists to make uniqueness
-        safe under concurrency: without it, two Registration Authorities can mint
-        the same DID simultaneously, which is exactly the guarantee this authority
-        exists to provide.
+        First half of a two-phase issuance. A reservation holds the DID for the RA
+        that asked, for a limited time (15 minutes by default), and returns the
+        possession challenge the agent signs in its statement. Two RAs cannot
+        reserve one DID.
 
-        A reservation is held for the RA that requested it and expires if unused.
+        - **L0**: a registry-form DID (`did:aria:<host>:u-<account>:<agent>`) whose
+          account is the principal's, under an account no other RA manages.
+        - **L1**: a domain-form DID (`did:aria:<domain>:<agent>`), whose domain the
+          principal has bound (`domain-bind`) and the authority has seen.
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [did]
-              properties:
-                did:
-                  type: string
-                  description: Must satisfy the ABNF in spec §03.1.
-                  example: did:aria:example.com:ordering-agent
+            schema: { $ref: 'exchange.schema.json#/$defs/reserveRequest' }
       responses:
-        '201':
+        '200':
           description: Reserved
           content:
             application/json:
-              schema:
-                type: object
-                required: [did, reservation_token, expires_at]
-                properties:
-                  did: { type: string }
-                  reservation_token: { type: string }
-                  expires_at: { type: string, format: date-time }
+              schema: { $ref: 'exchange.schema.json#/$defs/reserveResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
         '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/Unprocessable' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
-  /availability/{did}:
-    get:
-      tags: [namespace]
-      operationId: checkAvailability
-      summary: Is this DID available
-      parameters:
-        - { name: did, in: path, required: true, schema: { type: string } }
-      responses:
-        '200':
-          description: Availability
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [available]
-                properties:
-                  available: { type: boolean }
-                  reason:
-                    type: string
-                    enum: [issued, reserved, malformed, reserved_suffix]
-
-  /mint:
+  /v1/authority/mint:
     post:
       tags: [issuance]
       operationId: mint
-      summary: Sign an AID
+      summary: Sign the credential for a reservation
       description: |
-        Second half of the two-phase mint.
+        Second half of the issuance. The payload carries the agent's statement,
+        signed by the agent's own keys over the reservation's challenge, and the RA's
+        attestation, signed by the RA.
 
-        The authority revalidates everything it can validate without PII, in order:
-        the manifest against the schema, the DID against the ABNF, that the
-        reservation belongs to this RA, the agent's self-signature under both
-        halves of its composite key, the identity commitment recomputed over
-        canonical JSON, the RA attestation signature against the RA's registered
-        key, and that `trust_level_requested` does not exceed the RA's accredited
-        ceiling.
+        The authority checks, without any personal data: the statement against the
+        reservation; both halves of the agent's signature (possession of the keys it
+        declares); the attestation's signature by the RA's registered key; its window
+        and that it is used once; the checks the level requires, their outcomes and
+        their ages; that HITL scopes are among the scopes; and, at L1, that the
+        domain binding's record is still published. The RA's own validation does not
+        exempt any of these.
 
-        The RA's own pre-validation does not exempt any of these. A client-side
-        validator is never authority.
+        The answer is the signed ARIA Identity Document, with its status list index.
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [reservation_token, manifest, ra_attestation]
-              properties:
-                reservation_token: { type: string }
-                manifest:
-                  type: object
-                  description: Self-signed enrollment manifest, per schema/enrollment-manifest-v1.json
-                ra_attestation: { $ref: '#/components/schemas/RaAttestation' }
+            schema: { $ref: 'exchange.schema.json#/$defs/mintRequest' }
       responses:
-        '201':
+        '200':
           description: Signed
           content:
             application/json:
-              schema:
-                type: object
-                required: [credential_id, vc_jsonld, status_list_index]
-                properties:
-                  credential_id: { type: string, format: uuid }
-                  vc_jsonld: { type: object }
-                  status_list_index: { type: integer }
-        '403':
-          description: |
-            The RA is not accredited for the requested trust level, is suspended,
-            or the reservation belongs to another RA.
-        '422': { $ref: '#/components/responses/Unprocessable' }
+              schema: { $ref: 'exchange.schema.json#/$defs/mintResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
-  /revoke:
+  /v1/authority/revoke:
     post:
       tags: [issuance]
       operationId: revoke
       summary: Revoke a credential
+      description: |
+        By the RA that issued the credential or the RA that now manages its account.
+        The revocation is committed with the answer and appears in the next signed
+        status list. A credential is revoked once; a credential this RA may not see
+        is `credential_unknown` or `revocation_not_permitted`, never a description
+        of another RA's records.
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [credential_id, reason_code]
-              properties:
-                credential_id: { type: string, format: uuid }
-                reason_code:
-                  type: string
-                  enum: [key_compromise, superseded, cessation_of_operation, privilege_withdrawn, ra_request]
-      responses:
-        '202': { description: Accepted; propagates to the status list within 60s }
-        '403': { description: The credential was not issued through this RA }
-
-  /resolve/{did}:
-    get:
-      tags: [resolution]
-      operationId: resolve
-      summary: Resolve a DID to its current credential
-      parameters:
-        - { name: did, in: path, required: true, schema: { type: string } }
+            schema: { $ref: 'exchange.schema.json#/$defs/revokeRequest' }
       responses:
         '200':
-          description: The current AID
-          content:
-            application/ld+json:
-              schema: { type: object }
-        '404': { description: Not issued }
-
-  /status/{did}:
-    get:
-      tags: [resolution]
-      operationId: status
-      summary: Current validity
-      parameters:
-        - { name: did, in: path, required: true, schema: { type: string } }
-      responses:
-        '200':
-          description: Status
+          description: Revoked
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: string, enum: [active, suspended, revoked] }
-                  checked_at: { type: string, format: date-time }
+              schema: { $ref: 'exchange.schema.json#/$defs/revokeResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
-  /keyset:
-    get:
-      tags: [resolution]
-      operationId: keyset
-      summary: The authority's public keys, including retired ones
+  /v1/authority/domain-bind:
+    post:
+      tags: [domain binding]
+      operationId: domainBind
+      summary: Bind a domain to a principal
       description: |
-        **Append-only, with validity windows.** Every key that has ever signed must
-        continue to be served, because credentials are never re-signed — retiring a
-        key from this response invalidates every credential it signed.
-
-        Each entry carries a signature from the previous key, forming a chain a
-        verifier can walk from an anchor it already trusts. This is what makes
-        rotation an assertion rather than a change of content at a URL: without it,
-        the security of the root reduces to whoever controls the hosting.
+        Returns the record the principal publishes once for every agent:
+        `_aria-bind.<domain> TXT "v=ARIABIND1; b=<token>"`. The token stands for
+        this RA, principal and domain only; the record names none of them. Binding
+        again returns the live binding with the same token; an expired one is
+        replaced by a new binding with a new token. Requires an RA accredited for L1
+        and a principal account no other RA manages.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: 'exchange.schema.json#/$defs/domainBindRequest' }
       responses:
         '200':
-          description: Key set
+          description: The binding
           content:
             application/json:
-              schema:
-                type: object
-                required: [keys]
-                properties:
-                  keys:
-                    type: array
-                    items:
-                      type: object
-                      required: [key_id, suite, public_key_mldsa65, public_key_ed25519, active_from]
-                      properties:
-                        key_id: { type: string }
-                        suite: { type: string, example: mldsa65-ed25519-2026 }
-                        public_key_mldsa65: { type: string }
-                        public_key_ed25519: { type: string }
-                        active_from: { type: string, format: date-time }
-                        active_until:
-                          type: [string, 'null']
-                          format: date-time
-                          description: Null while active. Set on retirement — the key is still served.
-                        introduced_by:
-                          type: object
-                          description: Signature from the preceding key introducing this one.
-                          properties:
-                            key_id: { type: string }
-                            signature: { type: string }
+              schema: { $ref: 'exchange.schema.json#/$defs/bindingResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
-  /scopes:
-    get:
-      tags: [resolution]
-      operationId: scopes
-      summary: The normative scope catalogue
-      responses:
-        '200':
-          description: Scopes
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  scopes:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        scope: { type: string, example: 'commerce:catalog:read@v0.2' }
-                        deprecated_at: { type: [string, 'null'], format: date-time }
-
-  /ra/{ra_id}:
-    get:
-      tags: [accreditation]
-      operationId: raStanding
-      summary: A Registration Authority's standing
+  /v1/authority/domain-check:
+    post:
+      tags: [domain binding]
+      operationId: domainCheck
+      summary: Read a binding's record now
       description: |
-        Public, because per-RA verifier policy is impossible without it — a verifier
-        that wants to accept L2 from one RA and not another needs to see standing.
-        This is the analogue of a certificate transparency distrust list.
-      parameters:
-        - { name: ra_id, in: path, required: true, schema: { type: string } }
+        The authority reads the record over authenticated DNS-over-HTTPS and keeps
+        the read. The answer's `binding.observed` is that read: `present`, `absent`
+        or `unavailable`, with whether the resolver authenticated it (DNSSEC). A
+        binding seen once is `active`. Another RA's binding is
+        `domain_binding_unknown`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: 'exchange.schema.json#/$defs/domainCheckRequest' }
       responses:
         '200':
-          description: Standing
+          description: The binding, with the read just made
           content:
             application/json:
-              schema:
-                type: object
-                required: [ra_id, status, max_trust_level]
-                properties:
-                  ra_id: { type: string }
-                  legal_name: { type: string }
-                  status: { type: string, enum: [active, suspended, withdrawn] }
-                  max_trust_level:
-                    type: string
-                    enum: [L0, L1, L2, L3]
-                    description: The ceiling this RA may assert.
-                  accredited_from: { type: string, format: date-time }
-                  distrust_after:
-                    type: [string, 'null']
-                    format: date-time
-                    description: |
-                      Assertions made after this instant are not honoured at their
-                      stated level. Distrust is **forward-only by default** —
-                      credentials issued before it keep their level, following the
-                      graduated model the browser root programs used for Symantec
-                      and WoSign rather than mass revocation.
+              schema: { $ref: 'exchange.schema.json#/$defs/bindingResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/UnknownBinding' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
-                      Cascade revocation of already-issued credentials happens only
-                      on proven compromise, requires explicit human authorisation at
-                      the authority, and is recorded in the audit chain.
-        '404': { description: Not an accredited RA }
+  /v1/authority/domain-unbind:
+    post:
+      tags: [domain binding]
+      operationId: domainUnbind
+      summary: End a binding
+      description: |
+        No reservation or issuance under the binding from then on. Credentials it
+        helped issue are untouched: revoking them is its own request. An ended
+        binding never changes again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: 'exchange.schema.json#/$defs/domainUnbindRequest' }
+      responses:
+        '200':
+          description: Ended
+          content:
+            application/json:
+              schema: { $ref: 'exchange.schema.json#/$defs/unbindResponse' }
+        '400': { $ref: '#/components/responses/MalformedJson' }
+        '401': { $ref: '#/components/responses/NotAuthenticated' }
+        '403': { $ref: '#/components/responses/NotPermitted' }
+        '404': { $ref: '#/components/responses/UnknownBinding' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Refused' }
+        '500': { $ref: '#/components/responses/InternalError' }
+        '503': { $ref: '#/components/responses/Unavailable' }
+        '504': { $ref: '#/components/responses/NoAnswer' }
 
 components:
 
-  securitySchemes:
-    mutualTLS:
-      type: mutualTLS
-      description: Client certificate issued to the RA.
-    signedRequest:
-      type: apiKey
-      in: header
-      name: X-ARIA-RA-Signature
-      description: |
-        Request signed with the RA's registered key. Non-repudiation is a hard
-        requirement, not a convenience: the authority must be able to prove which
-        RA asked for what. Without it, the authority carries liability for
-        decisions it did not make, and federation is not viable.
-
-  schemas:
-
-    RaAttestation:
-      type: object
-      description: |
-        The RA's signed claim about the vetting it performed. This is the load-bearing
-        object of the whole model: the authority signs on the strength of it and never
-        sees the evidence behind it.
-      required: [ra_id, trust_level_requested, vetting, terms_version, privacy_version, signature]
-      properties:
-        ra_id: { type: string }
-        trust_level_requested:
-          type: string
-          enum: [L0, L1, L2, L3]
-        vetting:
-          type: object
-          description: |
-            References, never documents. `registry_ref` is public commercial-registry
-            data and already appears in the credential; nothing here is a KYC file.
-          properties:
-            kyc_performed: { type: boolean }
-            kyc_method:
-              type: string
-              enum: [none, registry_lookup, document_review, government_credential]
-            domain_proof_verified: { type: boolean }
-            dnssec_verified: { type: boolean }
-            registry_ref: { type: string, example: 'EIN:12-3456789' }
-            vetted_at: { type: string, format: date-time }
-        terms_version: { type: string }
-        privacy_version: { type: string }
-        signature:
-          type: string
-          description: Over the canonical JSON of this object minus `signature`.
-
-    Error:
-      type: object
-      required: [code, message]
-      properties:
-        code: { type: string }
-        message: { type: string }
-        request_id: { type: string }
-
   responses:
+    MalformedJson:
+      description: >-
+        The body is not a single JSON object the authority can read (syntax, a
+        duplicate member, excessive depth).
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal400' }
+    NotAuthenticated:
+      description: >-
+        The request's assertion or signature did not verify. The payload was not
+        read.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal401' }
+    NotPermitted:
+      description: >-
+        The RA is not in good standing, not accredited for the level, or may not act
+        on that account or credential.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal403' }
+    UnknownBinding:
+      description: >-
+        No binding of this RA has that identifier. Another RA's binding is answered
+        the same way.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal404' }
     Conflict:
-      description: Already issued or reserved
+      description: >-
+        The request contradicts a recorded state: another payload under the same
+        request_id, a DID already reserved or issued, a reservation or attestation
+        already used, a credential already revoked, a binding already ended.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/Error' }
-    Unprocessable:
-      description: Failed validation
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal409' }
+    TooLarge:
+      description: >-
+        The body exceeds the authority's limit (32 KiB by default) and was not read.
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/Error' }
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal413' }
+    Refused:
+      description: >-
+        The request's content was refused, at the path given.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal422' }
+    InternalError:
+      description: >-
+        The authority failed while answering. Nothing of the request is in the
+        answer or the log. The outcome is unknown: resend the same request.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal500' }
+    Unavailable:
+      description: >-
+        A dependency did not answer. `signer_unavailable` (the signer) and
+        `domain_binding_unavailable` (the DNS resolver) are given before the request
+        is recorded: resending it judges it afresh. `unavailable` (the database)
+        leaves the outcome unknown, since the failure may come after a commit whose
+        acknowledgement was lost: resend the same request to learn its recorded
+        answer.
+      content:
+        application/json:
+          schema: { $ref: 'exchange.schema.json#/$defs/refusal503' }
+    NoAnswer:
+      description: >-
+        No answer within 30 seconds, and no body. The outcome is unknown: resend
+        the same request to learn its recorded answer.

@@ -1,0 +1,40 @@
+{
+  "_comment": "The authority parameters the exchanges assume. Synthetic: the issuer key is a test key, and taken_dids are DIDs the authority must treat as already issued to another RA.",
+  "tlf_did": "did:aria:registry.aria.bar",
+  "issuer": {
+    "did": "did:aria:registry.aria.bar",
+    "verification_method": "did:aria:registry.aria.bar#test-key-r2"
+  },
+  "registry_host": "aria.bar",
+  "requirements_baseline": {
+    "version": "1.2"
+  },
+  "limits": {
+    "body_bytes": 32768,
+    "json_depth": 16,
+    "clock_skew_seconds": 60,
+    "assertion_window_seconds": 300,
+    "reservation_ttl_seconds": 900,
+    "attestation_window_seconds": 900,
+    "statement_bytes": 8192,
+    "attestation_bytes": 4096,
+    "credential_signing_input_bytes": 4096
+  },
+  "validity_days": {
+    "L0": 366,
+    "L1": 366,
+    "L2": 200
+  },
+  "status_list": {
+    "credential": "https://api.aria.bar/v1/status/1",
+    "first_index": 4711
+  },
+  "domain_binding": {
+    "validity_days": 366,
+    "freshness_seconds": 300,
+    "dnssec": "when_signed"
+  },
+  "taken_dids": [
+    "did:aria:aria.bar:u-7qk2mx9a:taken-bot"
+  ]
+}

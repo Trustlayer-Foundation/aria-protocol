@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2022"
+    ],
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@trustlayer-foundation/aria-ap": [
+        "./src/index.ts"
+      ],
+      "@trustlayer-foundation/aria-sdk": [
+        "../aria-ts/src/index.ts"
+      ]
+    },
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "examples/**/*.ts",
+    "test-d/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

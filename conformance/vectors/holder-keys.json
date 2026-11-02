@@ -1,0 +1,59 @@
+{
+  "_comment": "The holder key of an ARIA 1.0 credential (credentialSubject.holderKey.publicKeyMultibase) and of an agent statement (holder_keys.ed25519): 'z' and the base58btc of the raw 32-byte Ed25519 public key, in its canonical encoding, of large order and torsion-free. This is ARIA's own encoding, not Multikey: the Multikey of the same key prefixes it with 0xed01, shown as multikey for each accepted case. Whether new issuances move to Multikey is decision D6; already-signed credentials keep this encoding. Keys are synthetic, derived from public labels.",
+  "accept": [
+    {
+      "label": "a synthetic key",
+      "publicKeyMultibase": "z8CzXZjULMXgFp7tmwGuVrJvRWUvPDbpR279tYe3fzHv5",
+      "raw": "6b143e4b6c9d9501371cdaa75fec24de0a5c0b219f5847ba6c1fc8ff0c361c8e",
+      "multikey": "z6MkmfFa9yimh5AivcjUcqsLhQURL4CEdV4mi84pNv1guWhT"
+    },
+    {
+      "label": "another synthetic key",
+      "publicKeyMultibase": "zCzd15W3nyoZ1zHkQk73PrGN3di9FYPNmtRBWubXuhZZc",
+      "raw": "b2335e8098e3124b69298e5f08bffb1a8804d971e1fd4e3d601d25d7c0e721a3",
+      "multikey": "z6MkrSt3fkJEKM3V6nb7Rg1EhMv3THR6xGd8aS6SjsVvcnLz"
+    }
+  ],
+  "reject": [
+    {
+      "label": "the Multikey of an accepted key (0xed01 prefix, 34 bytes)",
+      "publicKeyMultibase": "z6MkmfFa9yimh5AivcjUcqsLhQURL4CEdV4mi84pNv1guWhT"
+    },
+    {
+      "label": "31 bytes",
+      "publicKeyMultibase": "z2dhg6bzrFAfoQN3fjCm4pRT9j2LoGYT9cbUPZ6Dqi5H"
+    },
+    {
+      "label": "33 bytes",
+      "publicKeyMultibase": "zYovuuUTeRcQGNyRXLZCiLe6oB8Ed4cgH1tAEWeWo5sfEf"
+    },
+    {
+      "label": "base64url multibase instead of base58btc",
+      "publicKeyMultibase": "uaxQ-S2ydlQE3HNqnX-wk3gpcCyGfWEe6bB_I_ww2HI4"
+    },
+    {
+      "label": "base58btc without the z prefix",
+      "publicKeyMultibase": "8CzXZjULMXgFp7tmwGuVrJvRWUvPDbpR279tYe3fzHv5"
+    },
+    {
+      "label": "a character outside base58 (0)",
+      "publicKeyMultibase": "z8CzXZjULMXgFp7tmwGuVrJvRWUvPDbpR279tYe3fzHv0"
+    },
+    {
+      "label": "the identity point",
+      "publicKeyMultibase": "z4uQeVj5tqViQh7yWWGStvkEG1Zmhx6uasJtWCJziofM"
+    },
+    {
+      "label": "a point of order 2",
+      "publicKeyMultibase": "zGx9dDNxzpALCowVuZb7pBceBLJugLA8sPa6TJDXrpfeW"
+    },
+    {
+      "label": "a key with a torsion component",
+      "publicKeyMultibase": "zB4ybK6MDuHToi5nkhgqnwE6oKFviDvdq9xjquNcgRkhn"
+    },
+    {
+      "label": "a non-canonical encoding (y + p)",
+      "publicKeyMultibase": "zHDmFoMsLPWK4ShyobcBbmKd6NMAm9xYVj3L1JzmqhtHt"
+    }
+  ]
+}

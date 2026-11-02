@@ -9,7 +9,8 @@
 export { verifyAgent } from './verify';
 export { parseCredential } from './parse';
 
-// Online revocation check (requires network)
+// Status of the presented credential (requires network)
+export { checkCredentialStatus } from './status';
 export { checkRevocation } from './revocation';
 
 // Industry policy presets
@@ -33,6 +34,8 @@ export type {
   PolicyConfig,
   ParsedCredential,
   RevocationResult,
+  CredentialStatusOptions,
+  CredentialStatusResult,
 } from './types';
 
 // Errors
