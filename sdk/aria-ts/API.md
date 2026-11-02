@@ -90,7 +90,7 @@ profiles. The level order is protocol, not configuration: `TRUST_LEVELS` lists t
 lowest first and is frozen, so no consumer can reorder the ranking this verifier and
 ARIA AP apply.
 
-## Credential verification (S1)
+## Credential verification
 
 `verifyCredential(document)` accepts an object or JSON text up to 100 KB, works on a
 private copy, and returns the first failure in this order:
@@ -105,7 +105,7 @@ private copy, and returns the first failure in this order:
 5. both signature halves over the canonical document (`signature_invalid`);
 6. strict RFC 3339 validity, ordered, current within the skew (`invalid_validity`,
    `not_yet_valid`, `expired`);
-7. the holder key: exactly 32 raw Ed25519 bytes in ARIA's own encoding (D6), under
+7. the holder key: exactly 32 raw Ed25519 bytes in ARIA's own encoding, under
    the subject's DID, and acceptable by the authority's own rule — the canonical
    encoding of a point, not of small order, torsion free
    (`holder_key_invalid`). The identity point and other weak keys cannot establish
@@ -116,9 +116,9 @@ private copy, and returns the first failure in this order:
 
 The result has no issuance time: `validFrom` and `validUntil` are the signed bounds and
 `proof.created` is unsigned. `previousCredentialId` is returned as data and never fetched:
-it relates a renewal to the credential before it (D11), and the DID does not change.
+it relates a renewal to the credential before it, and the DID does not change.
 
-## Status (S1)
+## Status
 
 `checkStatus(credential, { via })` concerns the exact document:
 
@@ -185,11 +185,11 @@ document is read under its own schema.
 
 `spec_version` `"1.0"` (`schema/aid-1.0.json`, embedded byte for byte and checked by a
 test) is the supported profile. Its holder key is 32 raw Ed25519 bytes under
-`Ed25519VerificationKey2020` — ARIA's own encoding (D6), `z` and base58btc of the raw
+`Ed25519VerificationKey2020` — ARIA's own encoding, `z` and base58btc of the raw
 key, not the Multikey one; the SDK decodes exactly 32 bytes and projects `0xed01` only
 when producing a Multikey. The proof metadata is outside the signed bytes: the SDK requires the supported
-values, which does not make them signed (D12: the suite is kept for 1.0; the dates that
-count are the signed `validFrom` and `validUntil`, not `proof.created`).
+values, which does not make them signed. The suite is kept for 1.0: the dates that count are
+the signed `validFrom` and `validUntil`, not `proof.created`.
 
 ## Package and runtimes
 

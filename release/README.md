@@ -40,3 +40,7 @@ npm view @trustlayer-foundation/aria-ap@1.0.0 dist.integrity
 A published version is immutable and never reused; a mistake is corrected with a new
 version. 1.0.0 was published this way on 2 November 2026. npm refuses to publish from an
 account without two-factor authentication.
+
+npm shows the README, description and keywords packed in each version. The repository's
+package READMEs and manifests have changed since 1.0.0; npm's pages show them only when a
+later version is published, and the 1.0.0 archives and their integrities stay as they are.
